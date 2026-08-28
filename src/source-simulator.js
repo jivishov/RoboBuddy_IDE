@@ -225,7 +225,19 @@ export class SourceRobotSimulator {
     const key = new THREE.DirectionalLight(0xffffff, 2.15); key.position.set(-650, 1000, 620); key.castShadow = true; this.scene.add(key);
     const fill = new THREE.DirectionalLight(0x93c5fd, 0.45); fill.position.set(700, 500, -600); this.scene.add(fill);
     const grid = new THREE.GridHelper(1800, 36, 0x334155, 0x1f2937); grid.position.y = -0.5; this.scene.add(grid);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(980, 96), new THREE.MeshStandardMaterial({ color: 0x17212b, roughness: 0.95 }));
+    // Several reviewed work-surface proxies intentionally have their top face at y=0,
+    // the same geometric plane as this presentation-only ground disk. Rendering both at
+    // identical depth causes camera-angle-dependent z-fighting. Keep all authored
+    // collision/support geometry untouched and bias only the decorative ground depth.
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x17212b,
+      roughness: 0.95,
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 4,
+    });
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(980, 96), floorMaterial);
+    floor.name = 'presentation-ground-depth-biased';
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; this.scene.add(floor);
   }
   async setScenario(profileId, scenario, fallbackRest = {}) {

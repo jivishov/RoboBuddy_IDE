@@ -41,4 +41,13 @@ if (sourceSimulator.includes('left tool target would enter the modeled work surf
 const app = fs.readFileSync(new URL('../src/app-v2.js', import.meta.url), 'utf8');
 for (const token of ['taskSelect', 'loadPatchedScenario', 'buildPatchedWorkspace', 'sim.advanceTime']) if (!app.includes(token)) throw new Error(`task-aware app missing ${token}`);
 
+for (const token of [
+  "floor.name = 'presentation-ground-depth-biased'",
+  'polygonOffset: true',
+  'polygonOffsetFactor: 1',
+  'polygonOffsetUnits: 4',
+]) {
+  if (!sourceSimulator.includes(token)) throw new Error(`presentation ground is missing z-fighting guard ${token}`);
+}
+
 console.log('pinned latest task patch + physical action visibility: OK');
