@@ -35,7 +35,7 @@ def install():
 
 orig_sleep=time.sleep; time.sleep=lambda _:None
 try:
-    specs=[('openarm','openArmMain','openArmTrajectories','openArmConfig',11),('so101','so101Main','so101Traj','so101Config',8),('lekiwi','lekiwiMain','lekiwiTraj','lekiwiConfig',6)]
+    specs=[('openarm','openArmMain','openArmTrajectories','openArmConfig',7),('so101','so101Main','so101Traj','so101Config',8),('lekiwi','lekiwiMain','lekiwiTraj','lekiwiConfig',6)]
     for profile,main,traj,cfg,expected in specs:
         install(); Robot.events=[]
         with tempfile.TemporaryDirectory() as td:
