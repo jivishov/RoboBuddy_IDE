@@ -27,6 +27,7 @@ for (const token of [
   '`${side}_gripper.pos`',
   'state[`arm_${key}.pos`]',
   'state[`${key}.pos`]',
+  'this.root.rotation.set(0, -(Number(basePose.yaw) || 0), 0)',
 ]) {
   if (!rig.includes(token)) throw new Error(`canonical command mapping missing ${token}`);
 }
