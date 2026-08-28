@@ -17,7 +17,9 @@ export const PATCH_TASKS = Object.freeze({
     task('so101', 'so101', 'so101-v2-08-burette-initial-reading.json', 'so101-v2-08-burette-initial-reading', 'Burette Receiver Clearance Calibration', 'so101_follower'),
     task('so101', 'so101', 'so101-v2-09-vacuum-filtration.json', 'so101-v2-09-vacuum-filtration', 'Vacuum Workcell Keep-Clear Preflight', 'so101_follower'),
   ]),
-  lekiwi: Object.freeze([]),
+  lekiwi: Object.freeze([
+    task('lekiwi', 'lekiwi', 'lekiwi-01-beaker-courier.json', 'lekiwi-01-beaker-courier', 'Beaker Courier', 'lekiwi_sim'),
+  ]),
 });
 
 const cache = new Map();
