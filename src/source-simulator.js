@@ -5,13 +5,14 @@ import { TASK_PATCH_REVISION } from './task-catalog.js';
 
 const DEG = Math.PI / 180;
 
-// Front-view directions are derived from the canonical RoboBuddy_AI camera presets
-// at the pinned robot-model revision. We reuse their direction while fitting the
-// complete current task bounds so load/reset shows the robot from its intended front.
+// SO-101 and LeKiwi reuse their pinned RoboBuddy_AI inspection-camera directions.
+// RoboBuddy_AI's OpenArm inspection preset is rear-facing relative to the bimanual
+// workcell. For the IDE's semantic Front / Fit View we mirror that azimuth 180 degrees
+// around the same target while preserving its elevation and camera-target distance.
 export const FRONT_CAMERA_PRESETS = Object.freeze({
   so101: Object.freeze({ position: [540, 410, 720], target: [140, 105, -35] }),
   lekiwi: Object.freeze({ position: [-620, 350, 240], target: [-60, 125, 45] }),
-  openarm: Object.freeze({ position: [-1550, 820, 0], target: [140, 365, 0] }),
+  openarm: Object.freeze({ position: [1830, 820, 0], target: [140, 365, 0] }),
 });
 const ENGINE_URL = `https://cdn.jsdelivr.net/gh/jivishov/RoboBuddy_AI@${TASK_PATCH_REVISION}/lab/v2/scenario-engine.js`;
 let engineModulePromise = null;
