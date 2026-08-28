@@ -192,7 +192,7 @@ export class CanonicalRobotRig {
       parent.add(tool);
       this.toolFrames[id] = tool;
     }
-    this.root.updateMatrixWorld(true);
+    root.updateMatrixWorld(true);
     return root;
   }
 
