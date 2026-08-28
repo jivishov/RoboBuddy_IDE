@@ -44,8 +44,12 @@
 
   <main id="workspace" class="workspace">
     <aside id="sidebar" class="sidebar">
-      <nav class="activity" aria-label="IDE views"><button class="active" title="Explorer">▧</button><button title="Task">✓</button><button title="Robot">◎</button></nav>
-      <div class="side-content"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div><section id="taskPanel" class="task-panel"></section></div>
+      <nav class="activity" aria-label="IDE views"><button class="active" data-side-view="explorer" title="Explorer — files" aria-label="Explorer — files">▧</button><button data-side-view="task" title="Task — mission instructions" aria-label="Task — mission instructions">✓</button><button data-side-view="robot" title="Robot — view and diagnostics" aria-label="Robot — view and diagnostics">◎</button></nav>
+      <div class="side-content">
+        <section id="explorerSideView" class="side-view"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div></section>
+        <section id="taskSideView" class="side-view" hidden><div class="side-heading">TASK</div><section id="taskPanel" class="task-panel"></section></section>
+        <section id="robotSideView" class="side-view" hidden><div class="side-heading">ROBOT</div><div class="robot-side-card"><p id="sideRobotSummary"></p><button data-side-action="front">Front / Fit View</button><button data-side-action="telemetry">Simulated Telemetry</button><button data-side-action="contacts">Contact Diagnostics</button></div></section>
+      </div>
     </aside>
     <section id="mainPanes" class="main-panes">
       <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
