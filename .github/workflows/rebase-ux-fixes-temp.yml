@@ -1,0 +1,37 @@
+name: Rebase UX fixes onto main
+on:
+  push:
+    branches: [fix/support-pad-z-fighting]
+    paths: [.github/workflows/rebase-ux-fixes-temp.yml]
+permissions:
+  contents: write
+jobs:
+  rebase-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/support-pad-z-fighting
+          fetch-depth: 0
+      - name: Snapshot UX files, reset onto main, and publish clean branch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ux
+          cp index.html styles.css src/app-v2.js src/source-simulator.js tests/browser-smoke.spec.mjs /tmp/ux/
+          git fetch origin main
+          git checkout -B fix/ide-layout-activity-front-view origin/main
+          cp /tmp/ux/index.html index.html
+          cp /tmp/ux/styles.css styles.css
+          cp /tmp/ux/app-v2.js src/app-v2.js
+          cp /tmp/ux/source-simulator.js src/source-simulator.js
+          cp /tmp/ux/browser-smoke.spec.mjs tests/browser-smoke.spec.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html styles.css src/app-v2.js src/source-simulator.js tests/browser-smoke.spec.mjs
+          git diff --cached --check
+          git commit -m "fix: repair IDE diagnostics activity rail and front camera"
+          git push origin HEAD:fix/ide-layout-activity-front-view
+          git checkout fix/support-pad-z-fighting
+          git rm .github/workflows/rebase-ux-fixes-temp.yml
+          git commit -m "chore: remove one-use rebase workflow"
+          git push origin HEAD:fix/support-pad-z-fighting
