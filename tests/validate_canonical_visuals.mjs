@@ -14,25 +14,25 @@ for (const token of [
   "robotId: 'openarm_v2_bimanual'",
   "robotId: 'so101_follower'",
   "robotId: 'lekiwi_sim'",
-  "right_finger_inner_mesh",
-  "right_finger_outer_mesh",
-  "getUint16(index * 2, true)",
+  'right_finger_inner_mesh',
+  'right_finger_outer_mesh',
+  'getUint16(index * 2, true)',
 ]) {
   if (!rig.includes(token)) throw new Error(`canonical rig loader missing ${token}`);
 }
 
 for (const token of [
-  "offsetMm: [0, -168, 0]",
-  "left_joint_1.pos",
-  "right_joint_7.pos",
-  "arm_shoulder_pan.pos",
-  "shoulder_pan.pos",
+  'offsetMm: [0, -168, 0]',
+  '`${side}_joint_${index}.pos`',
+  '`${side}_gripper.pos`',
+  'state[`arm_${key}.pos`]',
+  'state[`${key}.pos`]',
 ]) {
   if (!rig.includes(token)) throw new Error(`canonical command mapping missing ${token}`);
 }
 
 for (const token of [
-  "CanonicalRobotRig.load(profileId)",
+  'CanonicalRobotRig.load(profileId)',
   "canonicalVisual:'unavailable'",
   "hardwareValidation:'pending'",
 ]) {
