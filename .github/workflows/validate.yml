@@ -26,14 +26,17 @@ jobs:
           node --check src/editor.js
           node --check src/profiles.js
           node --check src/python-runtime.js
+          node --check src/canonical-rig.js
           node --check src/simulator.js
       - name: Static fidelity checks
         run: node tests/validate.mjs
+      - name: Canonical RoboBuddy visual checks
+        run: node tests/validate_canonical_visuals.mjs
       - name: Starter Python syntax
         run: python tests/validate_starters.py
       - name: Starter physical-API execution shapes
         run: python tests/execute_starters.py
-      - name: OpenArm modeled geometry invariants
+      - name: OpenArm canonical reference invariants
         run: python tests/validate_openarm_reference.py
       - name: HTML parse smoke test
         run: |
