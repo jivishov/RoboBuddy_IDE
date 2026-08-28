@@ -18,13 +18,13 @@ function py(value, depth = 0) {
 
 function trajectoryModule(scenario) {
   const header = [
-    `# Reviewed atomic physical-target action trace.`,
+    '# Reviewed atomic physical-target action trace.',
     `# Source: ${TASK_PATCH_SOURCE}@${TASK_PATCH_REVISION}`,
     `# Scenario: ${scenario.id} — ${scenario.title}`,
-    `# Every action below is an ordinary public robot.send_action() dictionary.`,
-    `# Edit the numerical joint/gripper targets here and immediately rerun the simulation.`,
-    `# RoboBuddy's source task generated this trace through its collision-checked reference plant;`,
-    `# edits made here are revalidated by the pinned source plant during simulation.`,
+    '# Every action below is an ordinary public robot.send_action() dictionary.',
+    '# Edit the numerical joint/gripper/base targets here and immediately rerun the simulation.',
+    '# RoboBuddy source generated this trace through its reviewed reference plant;',
+    '# edits made here are revalidated by that same pinned source plant during simulation.',
     '',
   ].join('\n');
   const rows = scenario.portablePython.referenceActions.map((record, index) => ({
@@ -42,6 +42,10 @@ function openArmConfig() {
 
 function so101Config() {
   return `from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig\n\nSERIAL_PORT = "/dev/ttyACM0"\n\ndef create_robot():\n    return SO101Follower(SO101FollowerConfig(\n        port=SERIAL_PORT,\n        cameras={},\n    ))\n`;
+}
+
+function lekiwiConfig() {
+  return `from lerobot.robots.lekiwi import LeKiwiClient, LeKiwiClientConfig\n\nROBOT_IP = "192.168.4.1"\n\ndef create_robot():\n    return LeKiwiClient(LeKiwiClientConfig(\n        remote_ip=ROBOT_IP,\n        cameras={},\n    ))\n`;
 }
 
 function mainFile(scenario) {
@@ -63,11 +67,13 @@ function workcellFile(scenario) {
 
 export function buildPatchedWorkspace(profileId, scenario) {
   if (!scenario) throw new Error('A pinned scenario is required to build the patched workspace.');
-  if (profileId !== 'openarm' && profileId !== 'so101') throw new Error(`No patched physical workspace generator for ${profileId}.`);
+  const configs = { openarm: openArmConfig, so101: so101Config, lekiwi: lekiwiConfig };
+  const configFactory = configs[profileId];
+  if (!configFactory) throw new Error(`No patched physical workspace generator for ${profileId}.`);
   return {
     'main.py': mainFile(scenario),
     'trajectories.py': trajectoryModule(scenario),
-    'robot_config.py': profileId === 'openarm' ? openArmConfig() : so101Config(),
+    'robot_config.py': configFactory(),
     'workcell.py': workcellFile(scenario),
   };
 }
