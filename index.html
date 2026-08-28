@@ -10,6 +10,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.css">
   <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
 <div class="app" id="app">
@@ -42,7 +50,7 @@
     <section id="mainPanes" class="main-panes">
       <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
       <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
-      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div class="sim-badge">PINNED ROBObUDDY KINEMATICS / CONTACT PLANT · NOT HARDWARE VALIDATION</div></div></section>
+      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div class="sim-badge">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · NOT HARDWARE VALIDATION</div></div></section>
     </section>
   </main>
 
