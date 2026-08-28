@@ -137,7 +137,9 @@ test('load, Fit, and Reset use pinned canonical front-view directions for every 
     return module.FRONT_CAMERA_PRESETS;
   });
   expect(presets.so101).toEqual({ position: [540, 410, 720], target: [140, 105, -35] });
-  expect(presets.lekiwi).toEqual({ position: [-620, 350, 240], target: [-60, 125, 45] });
+  expect(presets.lekiwi).toEqual({ position: [500, 350, -150], target: [-60, 125, 45] });
+  expect(presets.lekiwi.position[0]).toBeGreaterThan(presets.lekiwi.target[0]);
+  expect(presets.lekiwi.position[2]).toBeLessThan(presets.lekiwi.target[2]);
   expect(presets.openarm).toEqual({ position: [1830, 820, 0], target: [140, 365, 0] });
   expect(presets.openarm.position[0]).toBeGreaterThan(presets.openarm.target[0]);
   for (const profile of ['openarm', 'so101', 'lekiwi']) {
