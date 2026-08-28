@@ -1,1 +1,0 @@
-Fix IDE diagnostics layout, activity rail, and front camera.
