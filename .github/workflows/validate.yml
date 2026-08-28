@@ -2,7 +2,7 @@ name: Validate RoboBuddy IDE
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/**"]
   pull_request:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   fidelity:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,15 +23,21 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check src/app.js
+          node --check src/app-v2.js
           node --check src/editor.js
           node --check src/profiles.js
           node --check src/python-runtime.js
           node --check src/canonical-rig.js
           node --check src/simulator.js
+          node --check src/source-simulator.js
+          node --check src/task-catalog.js
+          node --check src/task-workspace.js
       - name: Static fidelity checks
         run: node tests/validate.mjs
       - name: Canonical RoboBuddy visual checks
         run: node tests/validate_canonical_visuals.mjs
+      - name: Latest pinned task patch and source-plant checks
+        run: node tests/validate_task_patch.mjs
       - name: Starter Python syntax
         run: python tests/validate_starters.py
       - name: Starter physical-API execution shapes
@@ -45,5 +51,7 @@ jobs:
           from pathlib import Path
           class P(HTMLParser): pass
           P().feed(Path('index.html').read_text())
+          assert 'id="taskSelect"' in Path('index.html').read_text()
+          assert './src/app-v2.js' in Path('index.html').read_text()
           print('HTML parse: OK')
           PY
