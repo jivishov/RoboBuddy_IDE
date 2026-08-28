@@ -22,17 +22,15 @@ for (const [profileId, ids] of Object.entries(expected)) {
     }
     const workspace = buildPatchedWorkspace(profileId, scenario);
     for (const file of ['main.py','trajectories.py','robot_config.py','workcell.py']) if (!workspace[file]) throw new Error(`${id}: missing ${file}`);
-    if (!workspace['trajectories.py'].includes(JSON.stringify(actions[0].action)[1] || '')) {
-      // The exact pretty-print differs, but physical public action field names must be visible.
-      const firstKey = Object.keys(actions[0].action)[0];
-      if (!workspace['trajectories.py'].includes(firstKey)) throw new Error(`${id}: first physical action is not visible in trajectories.py`);
+    for (const firstKey of Object.keys(actions[0].action)) {
+      if (!workspace['trajectories.py'].includes(firstKey)) throw new Error(`${id}: physical action field ${firstKey} is not visible in trajectories.py`);
     }
     if (/\.(grasp|attach|teleport|move_to)\s*\(/.test(workspace['main.py'])) throw new Error(`${id}: fake physical robot method exposed`);
   }
 }
 
 const sourceSimulator = fs.readFileSync(new URL('../src/source-simulator.js', import.meta.url), 'utf8');
-for (const token of ['ScenarioV2Engine.create', 'engine.plant.sendAction', 'engine.plant.tick()', 'SIMULATOR_COLLISION_FAULT']) {
+for (const token of ['ScenarioV2Engine.create', 'engine.plant.sendAction', 'engine.plant.tick()', 'engine.plant.fault']) {
   if (!sourceSimulator.includes(token)) throw new Error(`source simulator missing ${token}`);
 }
 if (sourceSimulator.includes('left tool target would enter the modeled work surface')) throw new Error('stale standalone tool-point collision gate remains');
