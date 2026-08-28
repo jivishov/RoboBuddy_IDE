@@ -1,0 +1,104 @@
+name: Apply IDE UX fixes
+
+on:
+  push:
+    branches: [fix/support-pad-z-fighting]
+    paths: [.github/workflows/ide-ux-fixes-temp.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/support-pad-z-fighting
+      - name: Apply focused UX fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"expected block not found in {path}: {old[:80]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace('index.html',
+          '''      <nav class="activity" aria-label="IDE views"><button class="active" title="Explorer">▧</button><button title="Task">✓</button><button title="Robot">◎</button></nav>\n      <div class="side-content"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div><section id="taskPanel" class="task-panel"></section></div>''',
+          '''      <nav class="activity" aria-label="IDE views"><button class="active" data-side-view="explorer" title="Explorer — files" aria-label="Explorer — files">▧</button><button data-side-view="task" title="Task — mission instructions" aria-label="Task — mission instructions">✓</button><button data-side-view="robot" title="Robot — view and diagnostics" aria-label="Robot — view and diagnostics">◎</button></nav>\n      <div class="side-content">\n        <section id="explorerSideView" class="side-view"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div></section>\n        <section id="taskSideView" class="side-view" hidden><div class="side-heading">TASK</div><section id="taskPanel" class="task-panel"></section></section>\n        <section id="robotSideView" class="side-view" hidden><div class="side-heading">ROBOT</div><div class="robot-side-card"><p id="sideRobotSummary"></p><button data-side-action="front">Front / Fit View</button><button data-side-action="telemetry">Simulated Telemetry</button><button data-side-action="contacts">Contact Diagnostics</button></div></section>\n      </div>''')
+
+          p = Path('styles.css')
+          text = p.read_text()
+          text = text.replace('--bottom:220px;', '--bottom:220px;--bottom-open:clamp(120px,30dvh,220px);--bottom-row:31px;')
+          text = text.replace('.app{display:grid;grid-template-rows:35px 42px minmax(0,1fr) auto 24px;height:100dvh;min-height:520px}', '.app{display:grid;grid-template-rows:35px 42px minmax(0,1fr) var(--bottom-row) 24px;height:100dvh;min-height:0}.app.bottom-open{--bottom-row:var(--bottom-open)}')
+          text = text.replace('.workspace{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:0}', '.workspace{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:0;overflow:hidden}')
+          text = text.replace('.side-content{overflow:auto}', '.side-content{overflow:auto;background:#14181e}.side-view[hidden]{display:none!important}.robot-side-card{padding:10px 8px;color:#aab3c0;font-size:12px;line-height:1.45}.robot-side-card p{margin:2px 4px 10px}.robot-side-card button{display:block;width:100%;min-height:32px;margin:5px 0;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:#202630;text-align:left}.robot-side-card button:hover{background:#29313d;color:#fff}')
+          text = text.replace('.main-panes{display:grid;grid-template-columns:minmax(0,var(--editor-pct)) 5px minmax(0,calc(100% - var(--editor-pct) - 5px));min-width:0;min-height:0;background:#11151a}', '.main-panes{display:grid;grid-template-columns:minmax(0,var(--editor-pct)) 5px minmax(0,calc(100% - var(--editor-pct) - 5px));min-width:0;min-height:0;background:#11151a;overflow:hidden}')
+          text = text.replace('.editor-pane,.sim-pane{min-width:0;min-height:0;display:grid;grid-template-rows:34px minmax(0,1fr)}', '.editor-pane,.sim-pane{min-width:0;min-height:0;display:grid;grid-template-rows:34px minmax(0,1fr);overflow:hidden}')
+          text = text.replace('.bottom-panel{height:var(--bottom);display:grid;grid-template-rows:31px minmax(0,1fr);border-top:1px solid var(--line);background:#12161c;min-height:0}.bottom-panel.collapsed{height:31px}', '.bottom-panel{height:100%;grid-row:4;grid-column:1;position:relative;z-index:30;display:grid;grid-template-rows:31px minmax(0,1fr);border-top:1px solid var(--line);background:#12161c;min-height:0;overflow:hidden}.bottom-panel.collapsed{height:100%}')
+          text = text.replace('@media(max-width:800px){:root{--sidebar:42px;--bottom:190px}.sidebar .side-content{display:none}', '@media(max-width:800px){:root{--sidebar:42px;--bottom:190px;--bottom-open:clamp(110px,36dvh,190px)}.sidebar{position:relative;overflow:visible}.sidebar .side-content{display:none;position:absolute;left:42px;top:0;bottom:0;width:min(280px,calc(100vw - 42px));z-index:45;box-shadow:10px 0 28px #0009}.workspace.side-drawer-open .sidebar .side-content{display:block}.workspace.sidebar-collapsed .sidebar .side-content{display:none!important}')
+          text = text.replace('@media(max-height:620px){:root{--bottom:150px}', '@media(max-height:620px){:root{--bottom:150px;--bottom-open:clamp(110px,34dvh,170px)}')
+          p.write_text(text)
+
+          replace('src/source-simulator.js',
+          "const DEG = Math.PI / 180;\n",
+          """const DEG = Math.PI / 180;\n\n// Front-view directions are derived from the canonical RoboBuddy_AI camera presets\n// at the pinned robot-model revision. We reuse their direction while fitting the\n// complete current task bounds so load/reset shows the robot from its intended front.\nexport const FRONT_CAMERA_PRESETS = Object.freeze({\n  so101: Object.freeze({ position: [540, 410, 720], target: [140, 105, -35] }),\n  lekiwi: Object.freeze({ position: [-620, 350, 240], target: [-60, 125, 45] }),\n  openarm: Object.freeze({ position: [-1550, 820, 0], target: [140, 365, 0] }),\n});\n""")
+
+          replace('src/source-simulator.js',
+          '''    const center = box.getCenter(new THREE.Vector3());\n    const size = box.getSize(new THREE.Vector3());\n    const radius = Math.max(260, size.length() * 0.58);\n    this.controls.target.copy(center);\n    this.camera.position.copy(center).add(new THREE.Vector3(-radius * 1.15, radius * 0.72, radius * 1.05));\n    this.camera.near = Math.max(1, radius / 1000); this.camera.far = Math.max(3000, radius * 6); this.camera.updateProjectionMatrix(); this.controls.update();''',
+          '''    const center = box.getCenter(new THREE.Vector3());\n    const size = box.getSize(new THREE.Vector3());\n    const radius = Math.max(260, size.length() * 0.58);\n    const preset = FRONT_CAMERA_PRESETS[this.profileId] || FRONT_CAMERA_PRESETS.so101;\n    const direction = new THREE.Vector3().fromArray(preset.position).sub(new THREE.Vector3().fromArray(preset.target)).normalize();\n    const distance = Math.max(460, radius * 1.72);\n    this.controls.target.copy(center);\n    this.camera.position.copy(center).addScaledVector(direction, distance);\n    this.camera.near = Math.max(1, radius / 1000); this.camera.far = Math.max(3000, radius * 6); this.camera.updateProjectionMatrix(); this.controls.update();\n    this.canvas.dataset.cameraView = 'front';''')
+
+          replace('src/app-v2.js',
+          '''  openBottom(name) {\n    $('bottomPanel').classList.remove('collapsed');''',
+          '''  openBottom(name) {\n    $('app').classList.add('bottom-open');\n    $('bottomPanel').classList.remove('collapsed');''')
+          replace('src/app-v2.js',
+          '''    $(map[name]).hidden = false;\n    this.renderPanels();\n  }\n\n  toggleSidebar() { $('workspace').classList.toggle('sidebar-collapsed'); setTimeout(() => this.editor.refresh(), 30); }\n  togglePanel() { const b = $('bottomPanel'); if (b.classList.contains('collapsed')) this.openBottom('problems'); else b.classList.add('collapsed'); setTimeout(() => this.editor.refresh(), 30); }''',
+          '''    $(map[name]).hidden = false;\n    this.renderPanels();\n    setTimeout(() => { this.editor.refresh(); this.sim.resize(); }, 30);\n  }\n\n  closeBottom() {\n    $('bottomPanel').classList.add('collapsed');\n    $('app').classList.remove('bottom-open');\n    setTimeout(() => { this.editor.refresh(); this.sim.resize(); }, 30);\n  }\n\n  openSideView(name) {\n    const valid = ['explorer', 'task', 'robot'];\n    if (!valid.includes(name)) return;\n    const workspace = $('workspace');\n    workspace.classList.remove('sidebar-collapsed');\n    if (window.matchMedia('(max-width:800px)').matches) workspace.classList.add('side-drawer-open');\n    document.querySelectorAll('[data-side-view]').forEach((button) => button.classList.toggle('active', button.dataset.sideView === name));\n    for (const view of valid) $(`${view}SideView`).hidden = view !== name;\n    setTimeout(() => this.editor.refresh(), 30);\n  }\n\n  toggleSidebar() {\n    const workspace = $('workspace');\n    if (window.matchMedia('(max-width:800px)').matches) workspace.classList.toggle('side-drawer-open');\n    else workspace.classList.toggle('sidebar-collapsed');\n    setTimeout(() => this.editor.refresh(), 30);\n  }\n  togglePanel() { const b = $('bottomPanel'); if (b.classList.contains('collapsed')) this.openBottom('problems'); else this.closeBottom(); }''')
+
+          replace('src/app-v2.js',
+          '''    $('fidelityText').textContent = `${FIDELITY_NOTICE} LeRobot revision ${LEROBOT_REVISION}. Task definitions, reference actions, collision/contact plant, and support rules are pinned to RoboBuddy_AI revision ${TASK_PATCH_REVISION}. ${p.task.limitations}`;''',
+          '''    $('fidelityText').textContent = `${FIDELITY_NOTICE} LeRobot revision ${LEROBOT_REVISION}. Task definitions, reference actions, collision/contact plant, and support rules are pinned to RoboBuddy_AI revision ${TASK_PATCH_REVISION}. ${p.task.limitations}`;\n    $('sideRobotSummary').textContent = `${p.label}. Canonical RoboBuddy view; telemetry and contacts are modeled source-plant values, not hardware measurements.`;''')
+
+          replace('src/app-v2.js',
+          '''    $('runBtn').onclick = () => void this.run(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => $('bottomPanel').classList.add('collapsed');''',
+          '''    $('runBtn').onclick = () => void this.run(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();\n    document.querySelectorAll('[data-side-view]').forEach((button) => button.onclick = () => this.openSideView(button.dataset.sideView));\n    document.querySelectorAll('[data-side-action]').forEach((button) => button.onclick = () => { const action = button.dataset.sideAction; if (action === 'front') this.sim.fit(); else if (action === 'telemetry') this.openBottom('telemetry'); else if (action === 'contacts') this.openBottom('contacts'); });''')
+
+          # Extend browser regression coverage for the three reported UI defects.
+          p = Path('tests/browser-smoke.spec.mjs')
+          text = p.read_text()
+          text += '''\n\ntest('diagnostics panel owns a full-width grid row and activity rail buttons are functional', async ({ page }) => {\n  await page.setViewportSize({ width: 1366, height: 768 });\n  await page.goto('/?ci=ux', { waitUntil: 'domcontentloaded' });\n  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });\n\n  await page.locator('[data-side-view="task"]').click();\n  await expect(page.locator('#taskSideView')).toBeVisible();\n  await page.locator('[data-side-view="robot"]').click();\n  await expect(page.locator('#robotSideView')).toBeVisible();\n  await page.locator('[data-side-action="telemetry"]').click();\n  await expect(page.locator('#telemetryPanel')).toBeVisible();\n\n  const layout = await page.evaluate(() => {\n    const panel = document.getElementById('bottomPanel').getBoundingClientRect();\n    const workspace = document.getElementById('workspace').getBoundingClientRect();\n    const editor = document.querySelector('.editor-pane').getBoundingClientRect();\n    return { panelLeft: panel.left, panelRight: panel.right, panelTop: panel.top, workspaceBottom: workspace.bottom, editorBottom: editor.bottom, viewportWidth: innerWidth };\n  });\n  expect(layout.panelLeft).toBeLessThanOrEqual(1);\n  expect(layout.panelRight).toBeGreaterThanOrEqual(layout.viewportWidth - 1);\n  expect(layout.editorBottom).toBeLessThanOrEqual(layout.panelTop + 1);\n  expect(Math.abs(layout.workspaceBottom - layout.panelTop)).toBeLessThanOrEqual(1);\n});\n\ntest('load, Fit, and Reset use pinned canonical front-view directions for every robot', async ({ page }) => {\n  await page.goto('/?ci=front', { waitUntil: 'domcontentloaded' });\n  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });\n  const presets = await page.evaluate(async () => {\n    const module = await import('/src/source-simulator.js');\n    return module.FRONT_CAMERA_PRESETS;\n  });\n  expect(presets.so101).toEqual({ position: [540, 410, 720], target: [140, 105, -35] });\n  expect(presets.lekiwi).toEqual({ position: [-620, 350, 240], target: [-60, 125, 45] });\n  expect(presets.openarm).toEqual({ position: [-1550, 820, 0], target: [140, 365, 0] });\n  for (const profile of ['openarm', 'so101', 'lekiwi']) {\n    await page.locator('#robotSelect').selectOption(profile);\n    await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });\n    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');\n    await page.locator('#fitBtn').click();\n    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');\n    await page.locator('#resetBtn').click();\n    await expect(page.locator('#statusMessage')).toContainText('Simulation reset', { timeout: 45_000 });\n    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');\n  }\n});\n'''
+          p.write_text(text)
+
+          # Verify all expected semantic markers before committing.
+          for path, tokens in {
+              'styles.css': ['.app.bottom-open', 'grid-row:4', 'side-drawer-open'],
+              'src/app-v2.js': ['openSideView(name)', 'closeBottom()', "[data-side-view]"],
+              'src/source-simulator.js': ['FRONT_CAMERA_PRESETS', "cameraView = 'front'"],
+              'index.html': ['data-side-view="explorer"', 'robotSideView', 'data-side-action="front"'],
+          }.items():
+              body = Path(path).read_text()
+              for token in tokens:
+                  if token not in body:
+                      raise SystemExit(f'{path} missing {token}')
+
+      - name: Syntax and targeted static checks
+        run: |
+          node --check src/app-v2.js
+          node --check src/source-simulator.js
+          node --check tests/browser-smoke.spec.mjs
+          node tests/validate.mjs
+          node tests/validate_canonical_visuals.mjs
+          node tests/validate_task_patch.mjs
+          git diff --check
+      - name: Commit focused changes and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html styles.css src/app-v2.js src/source-simulator.js tests/browser-smoke.spec.mjs
+          git rm .github/workflows/ide-ux-fixes-temp.yml
+          git commit -m "fix: repair IDE diagnostics activity rail and front camera"
+          git push origin HEAD:fix/support-pad-z-fighting
