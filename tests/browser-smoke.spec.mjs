@@ -44,7 +44,10 @@ test('all pinned reference traces run through the source fixed-step plant collis
         const scenario = await catalog.loadPatchedScenario(profileId, descriptor.id);
         const engine = await ScenarioV2Engine.create(scenario, { autoStartPlant: false });
         const instanceId = `browser-${profileId}`;
-        engine.plant.connect(instanceId, { cameras: {} });
+        const connectionConfig = profileId === 'openarm'
+          ? { kind: 'bimanual', side: 'bimanual', cameras: {} }
+          : { cameras: {} };
+        engine.plant.connect(instanceId, connectionConfig);
         let ticks = 0;
         for (const [index, record] of scenario.portablePython.referenceActions.entries()) {
           engine.plant.sendAction(instanceId, record.action, {});

@@ -240,7 +240,10 @@ export class SourceRobotSimulator {
     if (scenario) {
       const { ScenarioV2Engine } = await loadEngineModule();
       this.engine = await ScenarioV2Engine.create(scenario, { autoStartPlant: false });
-      this.engine.plant.connect(this.connectedInstance, { cameras: {} });
+      const connectionConfig = this.profileId === 'openarm'
+        ? { kind: 'bimanual', side: 'bimanual', cameras: {} }
+        : { cameras: {} };
+      this.engine.plant.connect(this.connectedInstance, connectionConfig);
       this.visual = new ScenarioVisual(this.scene, scenario);
       this.syncFromSource();
     } else {
