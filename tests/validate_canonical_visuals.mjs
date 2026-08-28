@@ -32,6 +32,17 @@ for (const token of [
   if (!rig.includes(token)) throw new Error(`canonical command mapping missing ${token}`);
 }
 
+const buildStart = rig.indexOf('  _build() {');
+const buildEnd = rig.indexOf('\n  applyPhysicalState(', buildStart);
+if (buildStart < 0 || buildEnd < 0) throw new Error('canonical rig _build block is missing');
+const buildBlock = rig.slice(buildStart, buildEnd);
+if (!buildBlock.includes('root.updateMatrixWorld(true);')) {
+  throw new Error('canonical rig must update the local root before constructor assignment');
+}
+if (buildBlock.includes('this.root.updateMatrixWorld(true);')) {
+  throw new Error('canonical rig constructor regression: this.root is undefined until _build returns');
+}
+
 for (const token of [
   'CanonicalRobotRig.load(profileId)',
   "canonicalVisual:'unavailable'",
