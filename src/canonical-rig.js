@@ -216,7 +216,8 @@ export class CanonicalRobotRig {
     if (this.profileId === 'lekiwi' && basePose) {
       const ground = Number(this.meshData.groundOffsetMm) || 0;
       this.root.position.set(Number(basePose.x) || 0, ground, Number(basePose.z) || 0);
-      this.root.rotation.set(0, Number(basePose.yaw) || 0, 0);
+      // RoboBuddy_AI's canonical LeKiwi mobile visual mapping uses thetaSign: -1.
+      this.root.rotation.set(0, -(Number(basePose.yaw) || 0), 0);
     }
     this.root.updateMatrixWorld(true);
   }
