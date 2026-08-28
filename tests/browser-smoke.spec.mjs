@@ -117,7 +117,8 @@ test('diagnostics panel owns a full-width grid row and activity rail buttons are
   await page.locator('[data-side-view="task"]').click();
   await expect(page.locator('#taskSideView')).toBeVisible();
   await page.locator('#bottomClose').click();
-  await page.locator('#panelToggle').click();
+  await page.keyboard.press('Control+J');
+  await expect(page.locator('#problemsPanel')).toBeVisible();
   const mobile = await page.evaluate(() => {
     const panel = document.getElementById('bottomPanel').getBoundingClientRect();
     const editor = document.querySelector('.editor-pane').getBoundingClientRect();
