@@ -1,0 +1,46 @@
+name: Validate RoboBuddy IDE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fidelity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: JavaScript syntax
+        run: |
+          node --check src/app.js
+          node --check src/editor.js
+          node --check src/profiles.js
+          node --check src/python-runtime.js
+          node --check src/simulator.js
+      - name: Static fidelity checks
+        run: node tests/validate.mjs
+      - name: Starter Python syntax
+        run: python tests/validate_starters.py
+      - name: Starter physical-API execution shapes
+        run: python tests/execute_starters.py
+      - name: OpenArm modeled geometry invariants
+        run: python tests/validate_openarm_reference.py
+      - name: HTML parse smoke test
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class P(HTMLParser): pass
+          P().feed(Path('index.html').read_text())
+          print('HTML parse: OK')
+          PY
