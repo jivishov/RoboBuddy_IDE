@@ -11,7 +11,7 @@ permissions:
 jobs:
   fidelity:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,3 +55,9 @@ jobs:
           assert './src/app-v2.js' in Path('index.html').read_text()
           print('HTML parse: OK')
           PY
+      - name: Install browser fidelity harness
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Chromium runtime and full source-plant replay
+        run: npm run test:browser
