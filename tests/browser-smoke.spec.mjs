@@ -88,3 +88,65 @@ test('learner Python reaches the first physical action through the IDE Step Acti
   await expect(page.locator('#problemsPanel')).not.toContainText('COLLISION');
   expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
 });
+
+
+test('diagnostics panel owns a full-width grid row and activity rail buttons are functional', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/?ci=ux', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+
+  await page.locator('[data-side-view="task"]').click();
+  await expect(page.locator('#taskSideView')).toBeVisible();
+  await page.locator('[data-side-view="robot"]').click();
+  await expect(page.locator('#robotSideView')).toBeVisible();
+  await page.locator('[data-side-action="telemetry"]').click();
+  await expect(page.locator('#telemetryPanel')).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const panel = document.getElementById('bottomPanel').getBoundingClientRect();
+    const workspace = document.getElementById('workspace').getBoundingClientRect();
+    const editor = document.querySelector('.editor-pane').getBoundingClientRect();
+    return { panelLeft: panel.left, panelRight: panel.right, panelTop: panel.top, workspaceBottom: workspace.bottom, editorBottom: editor.bottom, viewportWidth: innerWidth };
+  });
+  expect(layout.panelLeft).toBeLessThanOrEqual(1);
+  expect(layout.panelRight).toBeGreaterThanOrEqual(layout.viewportWidth - 1);
+  expect(layout.editorBottom).toBeLessThanOrEqual(layout.panelTop + 1);
+  expect(Math.abs(layout.workspaceBottom - layout.panelTop)).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.locator('[data-side-view="task"]').click();
+  await expect(page.locator('#taskSideView')).toBeVisible();
+  await page.locator('#bottomClose').click();
+  await page.keyboard.press('Control+J');
+  await expect(page.locator('#problemsPanel')).toBeVisible();
+  const mobile = await page.evaluate(() => {
+    const panel = document.getElementById('bottomPanel').getBoundingClientRect();
+    const editor = document.querySelector('.editor-pane').getBoundingClientRect();
+    return { panelLeft: panel.left, panelRight: panel.right, panelTop: panel.top, editorBottom: editor.bottom, viewportWidth: innerWidth };
+  });
+  expect(mobile.panelLeft).toBeLessThanOrEqual(1);
+  expect(mobile.panelRight).toBeGreaterThanOrEqual(mobile.viewportWidth - 1);
+  expect(mobile.editorBottom).toBeLessThanOrEqual(mobile.panelTop + 1);
+});
+
+test('load, Fit, and Reset use pinned canonical front-view directions for every robot', async ({ page }) => {
+  await page.goto('/?ci=front', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  const presets = await page.evaluate(async () => {
+    const module = await import('/src/source-simulator.js');
+    return module.FRONT_CAMERA_PRESETS;
+  });
+  expect(presets.so101).toEqual({ position: [540, 410, 720], target: [140, 105, -35] });
+  expect(presets.lekiwi).toEqual({ position: [-620, 350, 240], target: [-60, 125, 45] });
+  expect(presets.openarm).toEqual({ position: [-1550, 820, 0], target: [140, 365, 0] });
+  for (const profile of ['openarm', 'so101', 'lekiwi']) {
+    await page.locator('#robotSelect').selectOption(profile);
+    await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');
+    await page.locator('#fitBtn').click();
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');
+    await page.locator('#resetBtn').click();
+    await expect(page.locator('#statusMessage')).toContainText('Simulation reset', { timeout: 45_000 });
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');
+  }
+});

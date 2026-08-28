@@ -154,6 +154,7 @@ class App {
     }
     $('taskPanel').innerHTML = `<h2>${escapeHtml(scenario?.title || p.task.title)}</h2><p>${escapeHtml(scenario?.brief || p.source)}</p><p><strong>Pinned task source:</strong> RoboBuddy_AI@${TASK_PATCH_REVISION.slice(0, 12)}</p><ol>${labels.map((label, index) => `<li class="${index === 0 ? 'task-current' : ''}">${escapeHtml(label)}</li>`).join('')}</ol><details><summary>Fidelity boundary</summary><p>${escapeHtml(p.task.limitations)}</p></details>`;
     $('fidelityText').textContent = `${FIDELITY_NOTICE} LeRobot revision ${LEROBOT_REVISION}. Task definitions, reference actions, collision/contact plant, and support rules are pinned to RoboBuddy_AI revision ${TASK_PATCH_REVISION}. ${p.task.limitations}`;
+    $('sideRobotSummary').textContent = `${p.label}. Canonical RoboBuddy view; telemetry and contacts are modeled source-plant values, not hardware measurements.`;
   }
 
   save(show = true) {
@@ -349,16 +350,40 @@ class App {
   }
 
   openBottom(name) {
+    $('app').classList.add('bottom-open');
     $('bottomPanel').classList.remove('collapsed');
     document.querySelectorAll('.bottom-tab').forEach((button) => button.classList.toggle('active', button.dataset.panel === name));
     document.querySelectorAll('.panel-view').forEach((view) => { view.hidden = true; });
     const map = { problems: 'problemsPanel', telemetry: 'telemetryPanel', commands: 'commandsPanel', contacts: 'contactsPanel', task: 'taskBottomPanel' };
     $(map[name]).hidden = false;
     this.renderPanels();
+    setTimeout(() => { this.editor.refresh(); this.sim.resize(); }, 30);
   }
 
-  toggleSidebar() { $('workspace').classList.toggle('sidebar-collapsed'); setTimeout(() => this.editor.refresh(), 30); }
-  togglePanel() { const b = $('bottomPanel'); if (b.classList.contains('collapsed')) this.openBottom('problems'); else b.classList.add('collapsed'); setTimeout(() => this.editor.refresh(), 30); }
+  closeBottom() {
+    $('bottomPanel').classList.add('collapsed');
+    $('app').classList.remove('bottom-open');
+    setTimeout(() => { this.editor.refresh(); this.sim.resize(); }, 30);
+  }
+
+  openSideView(name) {
+    const valid = ['explorer', 'task', 'robot'];
+    if (!valid.includes(name)) return;
+    const workspace = $('workspace');
+    workspace.classList.remove('sidebar-collapsed');
+    if (window.matchMedia('(max-width:800px)').matches) workspace.classList.add('side-drawer-open');
+    document.querySelectorAll('[data-side-view]').forEach((button) => button.classList.toggle('active', button.dataset.sideView === name));
+    for (const view of valid) $(`${view}SideView`).hidden = view !== name;
+    setTimeout(() => this.editor.refresh(), 30);
+  }
+
+  toggleSidebar() {
+    const workspace = $('workspace');
+    if (window.matchMedia('(max-width:800px)').matches) workspace.classList.toggle('side-drawer-open');
+    else workspace.classList.toggle('sidebar-collapsed');
+    setTimeout(() => this.editor.refresh(), 30);
+  }
+  togglePanel() { const b = $('bottomPanel'); if (b.classList.contains('collapsed')) this.openBottom('problems'); else this.closeBottom(); }
   setStatus(text) { $('statusMessage').textContent = text; }
 
   download(name, text, type = 'text/plain') {
@@ -398,7 +423,9 @@ class App {
   bind() {
     $('robotSelect').onchange = (event) => void this.loadProfile(event.target.value);
     $('taskSelect').onchange = (event) => { localStorage.setItem(`rbide.task.${this.profileId}`, event.target.value); void this.loadProfile(this.profileId, { taskId: event.target.value }); };
-    $('runBtn').onclick = () => void this.run(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => $('bottomPanel').classList.add('collapsed');
+    $('runBtn').onclick = () => void this.run(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();
+    document.querySelectorAll('[data-side-view]').forEach((button) => button.onclick = () => this.openSideView(button.dataset.sideView));
+    document.querySelectorAll('[data-side-action]').forEach((button) => button.onclick = () => { const action = button.dataset.sideAction; if (action === 'front') this.sim.fit(); else if (action === 'telemetry') this.openBottom('telemetry'); else if (action === 'contacts') this.openBottom('contacts'); });
     $('mobileCodeBtn').onclick = () => { $('workspace').classList.remove('show-sim'); $('mobileCodeBtn').classList.add('active'); $('mobileSimBtn').classList.remove('active'); setTimeout(() => this.editor.refresh(), 20); };
     $('mobileSimBtn').onclick = () => { $('workspace').classList.add('show-sim'); $('mobileCodeBtn').classList.remove('active'); $('mobileSimBtn').classList.add('active'); };
     document.querySelectorAll('.bottom-tab').forEach((b) => b.onclick = () => this.openBottom(b.dataset.panel));
