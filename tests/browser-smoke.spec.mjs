@@ -112,6 +112,20 @@ test('diagnostics panel owns a full-width grid row and activity rail buttons are
   expect(layout.panelRight).toBeGreaterThanOrEqual(layout.viewportWidth - 1);
   expect(layout.editorBottom).toBeLessThanOrEqual(layout.panelTop + 1);
   expect(Math.abs(layout.workspaceBottom - layout.panelTop)).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.locator('[data-side-view="task"]').click();
+  await expect(page.locator('#taskSideView')).toBeVisible();
+  await page.locator('#bottomClose').click();
+  await page.locator('#panelToggle').click();
+  const mobile = await page.evaluate(() => {
+    const panel = document.getElementById('bottomPanel').getBoundingClientRect();
+    const editor = document.querySelector('.editor-pane').getBoundingClientRect();
+    return { panelLeft: panel.left, panelRight: panel.right, panelTop: panel.top, editorBottom: editor.bottom, viewportWidth: innerWidth };
+  });
+  expect(mobile.panelLeft).toBeLessThanOrEqual(1);
+  expect(mobile.panelRight).toBeGreaterThanOrEqual(mobile.viewportWidth - 1);
+  expect(mobile.editorBottom).toBeLessThanOrEqual(mobile.panelTop + 1);
 });
 
 test('load, Fit, and Reset use pinned canonical front-view directions for every robot', async ({ page }) => {
