@@ -33,6 +33,9 @@ const sourceSimulator = fs.readFileSync(new URL('../src/source-simulator.js', im
 for (const token of ['ScenarioV2Engine.create', 'engine.plant.sendAction', 'engine.plant.tick()', 'engine.plant.fault']) {
   if (!sourceSimulator.includes(token)) throw new Error(`source simulator missing ${token}`);
 }
+for (const token of ["kind: 'bimanual'", "side: 'bimanual'", 'connectionConfig']) {
+  if (!sourceSimulator.includes(token)) throw new Error(`OpenArm source-plant connection missing ${token}`);
+}
 if (sourceSimulator.includes('left tool target would enter the modeled work surface')) throw new Error('stale standalone tool-point collision gate remains');
 
 const app = fs.readFileSync(new URL('../src/app-v2.js', import.meta.url), 'utf8');
