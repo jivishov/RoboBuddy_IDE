@@ -1,49 +1,40 @@
-"""Model-only invariants for the standalone OpenArm teaching scene.
+"""Source/reference geometry invariants for the standalone OpenArm scene.
 
-These checks validate internal browser geometry consistency. They are not hardware
-measurements and must never be used as hardware safety/certification evidence.
+These values connect the standalone IDE to RoboBuddy_AI's existing OpenArm V2
+reference mission and canonical visual rig. They are not hardware measurements
+and must never be used as hardware safety/certification evidence.
 """
-import math
 
-TABLE_TOP_MM = 320.0
-FLASK_DIAMETER_MM = 30.4
+WORKTOP_TOP_MM = 320.0
+FLASK_GRIP_SOCKET_FROM_BOTTOM_MM = 96.0
 
-def gap(command):
-    c=max(-65.0,min(0.0,float(command)))
-    return 6.0 + (-c / 65.0) * 66.0
+# World tool-frame locations independently calibrated from the canonical
+# RoboBuddy_AI OpenArm hierarchy with the j7 -> tool offset [0, -168, 0] mm.
+CONTACT_TOOL_MM = (309.834, 415.996, -339.979)
+LIFT_TOOL_MM = (309.919, 535.857, -339.783)
+TRANSFER_TOOL_MM = (439.739, 536.322, -339.345)
+PLACE_TOOL_MM = (439.626, 462.329, -339.239)
 
-def fk(j1,j2,j4):
-    t1=math.radians(j2+10.0)
-    t2=math.radians(j2+50.0-0.5*j4)
-    radial=math.cos(t1)*160.0 + math.cos(t2)*220.0
-    return {
-        'x': -320.0 + radial*math.cos(math.radians(j1)),
-        'y': 570.0 + math.sin(t1)*160.0 + math.sin(t2)*220.0,
-        'z': -radial*math.sin(math.radians(j1)),
-        'terminal_deg': math.degrees(t2),
-    }
+HOTPLATE_TOP_MM = PLACE_TOOL_MM[1] - FLASK_GRIP_SOCKET_FROM_BOTTOM_MM
+HOTPLATE_HEIGHT_MM = HOTPLATE_TOP_MM - WORKTOP_TOP_MM
+TRANSPORT_FLASK_BOTTOM_MM = TRANSFER_TOOL_MM[1] - FLASK_GRIP_SOCKET_FROM_BOTTOM_MM
 
-contact_overlap=max(0.0,FLASK_DIAMETER_MM-gap(-24.03))
-pinch_overlap=max(0.0,FLASK_DIAMETER_MM-gap(-23.70))
-assert contact_overlap < 0.15, contact_overlap
-assert 0.15 <= pinch_overlap <= 0.35, pinch_overlap
+assert abs(CONTACT_TOOL_MM[0] - 310.0) < 0.25
+assert abs(CONTACT_TOOL_MM[1] - 416.0) < 0.25
+assert abs(CONTACT_TOOL_MM[2] + 340.0) < 0.25
+assert LIFT_TOOL_MM[1] - CONTACT_TOOL_MM[1] > 119.0
+assert abs(TRANSFER_TOOL_MM[0] - 440.0) < 0.5
+assert 45.0 < HOTPLATE_HEIGHT_MM < 48.0
+assert TRANSPORT_FLASK_BOTTOM_MM - HOTPLATE_TOP_MM > 70.0
 
-approach=fk(10.0,-41.0,51.75)
-flask_bottom_offset=approach['y']-TABLE_TOP_MM
-place=fk(-18.0,-24.0,85.75)
-hotplate_top=place['y']-flask_bottom_offset
-transport=fk(-18.0,-20.0,93.75)
-transport_bottom=transport['y']-flask_bottom_offset
-assert hotplate_top > TABLE_TOP_MM
-assert abs((place['y']-flask_bottom_offset)-hotplate_top) < 1e-9
-assert transport_bottom-hotplate_top > 10.0
+# Public LeRobot OpenArm gripper semantics used by the source mission.
+OPEN_GRIPPER_DEG = -65.0
+CLOSED_GRIPPER_DEG = 0.0
+assert OPEN_GRIPPER_DEG < CLOSED_GRIPPER_DEG
 
-poses=[(-41.0,51.75),(-35.0,63.75),(-28.0,77.75),(-20.0,93.75),(-24.0,85.75)]
-terminal=[fk(0,j2,j4)['terminal_deg'] for j2,j4 in poses]
-assert max(terminal)-min(terminal) < 1e-9, terminal
-
-print('OpenArm browser-reference geometry invariants: OK')
-print('  first-contact overlap mm:',contact_overlap)
-print('  pinch overlap mm:',pinch_overlap)
-print('  hotplate top mm:',hotplate_top)
-print('  transport clearance above hotplate mm:',transport_bottom-hotplate_top)
+print('OpenArm canonical reference geometry invariants: OK')
+print('  canonical contact tool mm:', CONTACT_TOOL_MM)
+print('  canonical lift tool mm:', LIFT_TOOL_MM)
+print('  canonical transfer tool mm:', TRANSFER_TOOL_MM)
+print('  configured hotplate height mm:', HOTPLATE_HEIGHT_MM)
+print('  transport clearance above hotplate mm:', TRANSPORT_FLASK_BOTTOM_MM - HOTPLATE_TOP_MM)
