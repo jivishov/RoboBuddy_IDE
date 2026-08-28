@@ -4,6 +4,15 @@ import { CanonicalRobotRig } from './canonical-rig.js';
 import { TASK_PATCH_REVISION } from './task-catalog.js';
 
 const DEG = Math.PI / 180;
+
+// Front-view directions are derived from the canonical RoboBuddy_AI camera presets
+// at the pinned robot-model revision. We reuse their direction while fitting the
+// complete current task bounds so load/reset shows the robot from its intended front.
+export const FRONT_CAMERA_PRESETS = Object.freeze({
+  so101: Object.freeze({ position: [540, 410, 720], target: [140, 105, -35] }),
+  lekiwi: Object.freeze({ position: [-620, 350, 240], target: [-60, 125, 45] }),
+  openarm: Object.freeze({ position: [-1550, 820, 0], target: [140, 365, 0] }),
+});
 const ENGINE_URL = `https://cdn.jsdelivr.net/gh/jivishov/RoboBuddy_AI@${TASK_PATCH_REVISION}/lab/v2/scenario-engine.js`;
 let engineModulePromise = null;
 const loadEngineModule = () => engineModulePromise ||= import(ENGINE_URL);
@@ -329,9 +338,13 @@ export class SourceRobotSimulator {
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const radius = Math.max(260, size.length() * 0.58);
+    const preset = FRONT_CAMERA_PRESETS[this.profileId] || FRONT_CAMERA_PRESETS.so101;
+    const direction = new THREE.Vector3().fromArray(preset.position).sub(new THREE.Vector3().fromArray(preset.target)).normalize();
+    const distance = Math.max(460, radius * 1.72);
     this.controls.target.copy(center);
-    this.camera.position.copy(center).add(new THREE.Vector3(-radius * 1.15, radius * 0.72, radius * 1.05));
+    this.camera.position.copy(center).addScaledVector(direction, distance);
     this.camera.near = Math.max(1, radius / 1000); this.camera.far = Math.max(3000, radius * 6); this.camera.updateProjectionMatrix(); this.controls.update();
+    this.canvas.dataset.cameraView = 'front';
   }
   resize() {
     const rect = this.canvas.getBoundingClientRect(); const w = Math.max(1, rect.width); const h = Math.max(1, rect.height);
