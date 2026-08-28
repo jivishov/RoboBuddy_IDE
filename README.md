@@ -4,7 +4,7 @@ A standalone, VS Code-inspired browser IDE for learning robot programming throug
 
 ## What this build fixes
 
-The site root now contains an actual `index.html` application rather than relying on GitHub Pages/Jekyll to render this README. A `.nojekyll` marker is included so Pages serves the static IDE directly.
+The site root contains an actual `index.html` application rather than relying on GitHub Pages/Jekyll to render this README. A `.nojekyll` marker is included so Pages serves the static IDE directly.
 
 ## Design contract
 
@@ -13,7 +13,6 @@ The site root now contains an actual `index.html` application rather than relyin
 - SO-101, OpenArm bimanual, and LeKiwi starter profiles use their public LeRobot import/configuration/action shapes at pinned revision `7e241bd630a3719a56157a497ce5d08f244784f1`.
 - Joint/action envelopes fail closed before simulated motion.
 - OpenArm flask attachment is a consequence of modeled bilateral finger contact while closing. Learner code contains no fake `grasp()`, `attach()`, `teleport()`, or Cartesian hardware method.
-- Pyodide substitutes browser compatibility modules for the physical transport, records `connect()`, `send_action()`, `get_observation()`, `disconnect()`, and `time.sleep()` boundaries, then the browser replays those commands through a lightweight articulated model.
 - Simulated telemetry and contacts are labeled as modeled values.
 - Hardware validation remains explicitly **pending**.
 
@@ -22,6 +21,12 @@ The site root now contains an actual `index.html` application rather than relyin
 This standalone IDE is a teaching/reference simulator, **not a hardware-calibrated digital twin**. The displayed robot geometry is deliberately lightweight. It does not claim motor/controller dynamics, force or torque sensing, friction identification, compliance, backlash, payload certification, device-specific calibration transfer, glassware safety certification, wheel slip/odometry accuracy, ZMQ/CAN timing, or hardware validation.
 
 The OpenArm starter pose values are physical-target action dictionaries but are browser-reference poses only. They must not be represented as hardware-tested trajectories.
+
+### Current Python execution mode
+
+The present standalone runtime is intentionally **open-loop command-queue simulation**. Pyodide executes the visible synchronous physical-target Python against compatibility modules, records `connect()`, `send_action()`, `get_observation()`, `disconnect()`, and `time.sleep()` boundaries, and the browser then replays the validated action sequence through the articulated/contact model.
+
+Accordingly, `get_observation()` while Python is constructing that queue reflects compatibility command state; it is **not live hardware feedback and is not a closed-loop readback from the post-collision browser simulation**. Programs that branch on live observations require a future synchronous JSPI/RPC bridge before RoboBuddy can claim closed-loop simulation fidelity. This limitation is documented rather than hidden.
 
 ## Controls
 
