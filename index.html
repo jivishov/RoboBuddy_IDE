@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="RoboBuddy Robot IDE — visible physical-target Python with immediate 3D robot simulation.">
+  <meta name="description" content="RoboBuddy Robot IDE — visible physical-target Python with immediate source-plant 3D simulation.">
   <meta name="theme-color" content="#101318">
   <title>RoboBuddy Robot IDE</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
@@ -15,30 +15,19 @@
 <div class="app" id="app">
   <header class="menubar">
     <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>RoboBuddy IDE</span></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="file" aria-haspopup="true">File</button><div id="fileMenu" class="menu-popover" hidden>
-      <button data-action="import"><span>Open Python…</span></button><button data-action="save"><span>Save Draft</span><span class="shortcut">Ctrl+S</span></button><button data-action="exportMain"><span>Export main.py</span></button><button data-action="exportWorkspace"><span>Export Workspace</span></button><div class="menu-sep"></div><button data-action="resetWorkspace"><span>Reset to Starter</span></button>
-    </div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="edit" aria-haspopup="true">Edit</button><div id="editMenu" class="menu-popover" hidden>
-      <button data-action="undo"><span>Undo</span><span class="shortcut">Ctrl+Z</span></button><button data-action="redo"><span>Redo</span><span class="shortcut">Ctrl+Y</span></button><button data-action="find"><span>Find</span><span class="shortcut">Ctrl+F</span></button><button data-action="replace"><span>Replace</span><span class="shortcut">Ctrl+H</span></button><button data-action="toggleComment"><span>Toggle Comment</span><span class="shortcut">Ctrl+/</span></button><div class="menu-sep"></div><button data-action="palette"><span>Command Palette</span><span class="shortcut">Ctrl+Shift+P</span></button>
-    </div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="run" aria-haspopup="true">Run</button><div id="runMenu" class="menu-popover" hidden>
-      <button data-action="run"><span>Run</span><span class="shortcut">F5</span></button><button data-action="step"><span>Step Action</span><span class="shortcut">F10</span></button><button data-action="cursor"><span>Run to Cursor</span><span class="shortcut">Ctrl+F10</span></button><button data-action="stop"><span>Stop</span><span class="shortcut">Shift+F5 / Esc</span></button><button data-action="reset"><span>Reset Simulation</span></button>
-    </div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="view" aria-haspopup="true">View</button><div id="viewMenu" class="menu-popover" hidden>
-      <button data-action="sidebar"><span>Toggle Explorer</span><span class="shortcut">Ctrl+B</span></button><button data-action="panel"><span>Toggle Bottom Panel</span><span class="shortcut">Ctrl+J</span></button><button data-action="editorFocus"><span>Focus Editor</span></button><button data-action="simulatorFocus"><span>Focus Simulator</span></button><button data-action="fit"><span>Fit Simulator</span></button>
-    </div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="robot" aria-haspopup="true">Robot</button><div id="robotMenu" class="menu-popover" hidden>
-      <button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Physical-Target Python</span></button>
-    </div></div>
-    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help" aria-haspopup="true">Help</button><div id="helpMenu" class="menu-popover" hidden>
-      <button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button>
-    </div></div>
-    <div class="menubar-spacer"></div><span class="mode-chip">SIMULATION · HW VALIDATION PENDING</span>
+    <div class="menu-wrap"><button class="menu-button" data-menu="file">File</button><div id="fileMenu" class="menu-popover" hidden><button data-action="import"><span>Open Python…</span></button><button data-action="save"><span>Save Draft</span><span class="shortcut">Ctrl+S</span></button><button data-action="exportMain"><span>Export main.py</span></button><button data-action="exportWorkspace"><span>Export Workspace</span></button><div class="menu-sep"></div><button data-action="resetWorkspace"><span>Reset to Starter</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="edit">Edit</button><div id="editMenu" class="menu-popover" hidden><button data-action="undo"><span>Undo</span><span class="shortcut">Ctrl+Z</span></button><button data-action="redo"><span>Redo</span><span class="shortcut">Ctrl+Y</span></button><button data-action="find"><span>Find</span><span class="shortcut">Ctrl+F</span></button><button data-action="replace"><span>Replace</span><span class="shortcut">Ctrl+H</span></button><button data-action="toggleComment"><span>Toggle Comment</span><span class="shortcut">Ctrl+/</span></button><div class="menu-sep"></div><button data-action="palette"><span>Command Palette</span><span class="shortcut">Ctrl+Shift+P</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="run">Run</button><div id="runMenu" class="menu-popover" hidden><button data-action="run"><span>Run</span><span class="shortcut">F5</span></button><button data-action="step"><span>Step Action</span><span class="shortcut">F10</span></button><button data-action="cursor"><span>Run to Cursor</span><span class="shortcut">Ctrl+F10</span></button><button data-action="stop"><span>Stop</span><span class="shortcut">Shift+F5 / Esc</span></button><button data-action="reset"><span>Reset Simulation</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="view">View</button><div id="viewMenu" class="menu-popover" hidden><button data-action="sidebar"><span>Toggle Explorer</span><span class="shortcut">Ctrl+B</span></button><button data-action="panel"><span>Toggle Bottom Panel</span><span class="shortcut">Ctrl+J</span></button><button data-action="editorFocus"><span>Focus Editor</span></button><button data-action="simulatorFocus"><span>Focus Simulator</span></button><button data-action="fit"><span>Fit Simulator</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="robot">Robot</button><div id="robotMenu" class="menu-popover" hidden><button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Physical-Target Python</span></button></div></div>
+    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help">Help</button><div id="helpMenu" class="menu-popover" hidden><button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button></div></div>
+    <div class="menubar-spacer"></div><span class="mode-chip">SOURCE-PLANT SIMULATION · HW VALIDATION PENDING</span>
   </header>
 
   <div class="toolbar">
     <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
     <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option></select>
+    <select id="taskSelect" aria-label="Reviewed lab task"></select>
     <span class="toolbar-sep"></span>
     <button id="runBtn" class="primary" title="Run (F5)">▶ Run</button><button id="stepBtn" title="Step physical action (F10)">▷ Step Action</button><button id="cursorBtn" title="Run to Cursor (Ctrl+F10)">▶│ Cursor</button><button id="stopBtn" class="danger" title="Simulation STOP (Esc)">■ Stop</button><button id="resetBtn" title="Reset simulation">↻ Reset</button>
     <span class="toolbar-sep"></span><button id="mobileCodeBtn" class="mobile-pane active">Code</button><button id="mobileSimBtn" class="mobile-pane">Simulator</button>
@@ -47,13 +36,13 @@
 
   <main id="workspace" class="workspace">
     <aside id="sidebar" class="sidebar">
-      <nav class="activity" aria-label="IDE views"><button class="active" title="Explorer" aria-label="Explorer">▧</button><button title="Task" aria-label="Task">✓</button><button title="Robot" aria-label="Robot">◎</button></nav>
+      <nav class="activity" aria-label="IDE views"><button class="active" title="Explorer">▧</button><button title="Task">✓</button><button title="Robot">◎</button></nav>
       <div class="side-content"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div><section id="taskPanel" class="task-panel"></section></div>
     </aside>
     <section id="mainPanes" class="main-panes">
       <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
       <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
-      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div class="sim-badge">MODELED KINEMATICS / CONTACTS · NOT HARDWARE VALIDATION</div></div></section>
+      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div class="sim-badge">PINNED ROBObUDDY KINEMATICS / CONTACT PLANT · NOT HARDWARE VALIDATION</div></div></section>
     </section>
   </main>
 
@@ -65,7 +54,7 @@
   <footer class="statusbar"><span id="statusMessage">Starting…</span><span id="statusCursor">main.py</span><span class="right">Python 3 · <span id="driverStatus">physical-target API</span> · Hardware validation: pending</span></footer>
 </div>
 
-<div id="commandPalette" class="command-palette" hidden><div class="command-box"><div class="command-input-row"><input id="commandInput" placeholder="Type a command…" aria-label="Command palette"><button id="commandClose" class="close" aria-label="Close command palette">×</button></div><div id="commandList" class="command-list"></div></div></div>
+<div id="commandPalette" class="command-palette" hidden><div class="command-box"><div class="command-input-row"><input id="commandInput" placeholder="Type a command…" aria-label="Command palette"><button id="commandClose" class="close">×</button></div><div id="commandList" class="command-list"></div></div></div>
 <input id="importFile" type="file" accept=".py,text/x-python" hidden>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
@@ -78,6 +67,6 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/searchcursor.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/search.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
-<script type="module" src="./src/app.js"></script>
+<script type="module" src="./src/app-v2.js"></script>
 </body>
 </html>
