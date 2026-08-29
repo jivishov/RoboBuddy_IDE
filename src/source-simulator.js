@@ -210,7 +210,9 @@ export class SourceRobotSimulator {
   constructor(canvas) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0d1720);
+    // A neutral studio grey keeps the canonical dark robot meshes readable without
+    // making the simulator compete with the workcell itself.
+    this.scene.background = new THREE.Color(0xb9c1c4);
     this.camera = new THREE.PerspectiveCamera(44, 1, 1, 5000);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
