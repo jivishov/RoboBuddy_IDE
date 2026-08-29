@@ -4,6 +4,7 @@ import { SourceRobotSimulator } from './source-simulator.js';
 import { PROFILES, validateAction, FIDELITY_NOTICE, LEROBOT_REVISION } from './profiles.js';
 import { TASK_PATCH_REVISION, defaultTaskId, loadPatchedScenario, taskDescriptor, tasksForProfile } from './task-catalog.js';
 import { buildPatchedWorkspace } from './task-workspace.js';
+import { applyTheme, readStoredTheme, THEMES } from './themes.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -20,9 +21,12 @@ class App {
     this.prepared = null;
     this.stepIndex = 0;
     this.runToken = 0;
+    this.executionState = 'idle';
+    this.pauseWaiter = null;
     this.problems = [];
     this.commands = [];
     this.console = { stdout: '', stderr: '' };
+    this.theme = applyTheme(readStoredTheme(), { persist: false });
     this.runtime = new PythonRuntime();
     this.sim = new SourceRobotSimulator($('simCanvas'));
     this.editor = new IdeEditor($('editor'), {
@@ -31,8 +35,11 @@ class App {
       onRun: () => this.run(),
       onCommandPalette: () => this.openPalette(),
       onCursor: (f, l, c) => $('statusCursor').textContent = `${f}:${l}:${c}`,
+      theme: this.theme.editorTheme,
     });
+    this.renderThemeOptions();
     this.bind();
+    this.updateExecutionControls();
     this.setStatus('Loading pinned task…');
     void this.loadProfile(this.profileId, { preserve: false, taskId: this.taskId });
   }
@@ -48,7 +55,7 @@ class App {
 
   async loadProfile(id, { preserve = true, taskId = '' } = {}) {
     if (preserve && Object.keys(this.files).length) this.save(false);
-    this.runToken++;
+    this.cancelExecution();
     this.profileId = id;
     localStorage.setItem('rbide.profile', id);
     const options = tasksForProfile(id);
@@ -221,13 +228,77 @@ class App {
   }
 
   async resetSimulation({ cancel = true } = {}) {
-    if (cancel) this.runToken++;
+    if (cancel) this.cancelExecution();
     if (this.scenario) await this.sim.reset(this.profileId, this.scenario, PROFILES[this.profileId].rest);
     this.editor.highlightLine(null);
     this.stepIndex = 0;
     $('simActionLabel').textContent = 'Ready';
     this.renderPanels();
     this.setStatus('Simulation reset');
+  }
+
+  updateExecutionControls() {
+    const active = this.executionState !== 'idle';
+    const paused = this.executionState === 'paused';
+    const pauseButton = $('pauseBtn');
+    pauseButton.disabled = !active;
+    pauseButton.textContent = paused ? '▶ Resume' : '⏸ Pause';
+    pauseButton.title = paused ? 'Resume simulation' : 'Pause simulation';
+    pauseButton.setAttribute('aria-label', paused ? 'Resume simulation' : 'Pause simulation');
+    pauseButton.setAttribute('aria-pressed', String(paused));
+    $('runBtn').disabled = active;
+    $('stepBtn').disabled = active;
+    $('cursorBtn').disabled = active;
+  }
+
+  beginExecution() {
+    if (this.executionState !== 'idle') return null;
+    const token = ++this.runToken;
+    this.executionState = 'running';
+    this.updateExecutionControls();
+    return token;
+  }
+
+  finishExecution(token) {
+    if (token !== this.runToken) return;
+    this.executionState = 'idle';
+    const waiter = this.pauseWaiter;
+    this.pauseWaiter = null;
+    waiter?.();
+    this.updateExecutionControls();
+  }
+
+  cancelExecution() {
+    this.runToken++;
+    this.executionState = 'idle';
+    const waiter = this.pauseWaiter;
+    this.pauseWaiter = null;
+    waiter?.();
+    this.updateExecutionControls();
+  }
+
+  async waitForResume(token) {
+    while (token === this.runToken && this.executionState === 'paused') {
+      this.setStatus('Simulation paused');
+      await new Promise((resolve) => { this.pauseWaiter = resolve; });
+    }
+    return token === this.runToken;
+  }
+
+  togglePause() {
+    if (this.executionState === 'running') {
+      this.executionState = 'paused';
+      this.updateExecutionControls();
+      this.setStatus('Simulation paused');
+      return;
+    }
+    if (this.executionState !== 'paused') return;
+    this.executionState = 'running';
+    this.updateExecutionControls();
+    this.setStatus('Simulation resumed');
+    const waiter = this.pauseWaiter;
+    this.pauseWaiter = null;
+    waiter?.();
   }
 
   trajectoryLine(index) {
@@ -242,51 +313,67 @@ class App {
   }
 
   async _applyEvent(event, token, { honorSleep = true } = {}) {
-    if (token !== this.runToken) return false;
+    if (!(await this.waitForResume(token))) return false;
+    const beforeTick = () => this.waitForResume(token);
     if (event.kind === 'send_action') {
       const label = this.actionLabel(event.actionIndex || 0);
       if (this.currentFile === event.file) this.editor.highlightLine(event.line);
       else if (this.currentFile === 'trajectories.py') this.editor.highlightLine(this.trajectoryLine(event.actionIndex || 0));
       $('simActionLabel').textContent = `A${String((event.actionIndex || 0) + 1).padStart(2, '0')} · ${label}`;
-      try { await this.sim.applyAction(event.action); }
+      let applied;
+      try { applied = await this.sim.applyAction(event.action, { beforeTick }); }
       catch (error) {
         this.problem('error', 'COLLISION', `${event.file}:${event.line} — ${error.message}`);
         this.setStatus('Source plant rejected modeled motion');
         throw error;
       }
+      if (applied === false) return false;
       this.renderPanels();
     } else if (event.kind === 'sleep' && honorSleep) {
-      try { await this.sim.advanceTime(event.seconds, { realtime: true }); }
+      let advanced;
+      try { advanced = await this.sim.advanceTime(event.seconds, { realtime: true, beforeTick }); }
       catch (error) {
         this.problem('error', 'COLLISION', `${event.file}:${event.line} — ${error.message}`);
         this.setStatus('Source plant stopped at last valid state');
         throw error;
       }
+      if (advanced === false) return false;
       this.renderPanels();
     }
     return token === this.runToken;
   }
 
   async run() {
-    const token = ++this.runToken;
-    await this.resetSimulation({ cancel: false });
-    let prep;
-    try { prep = await this.prepare(); } catch { return; }
-    this.stepIndex = 0;
-    this.setStatus('Running pinned source-plant simulation…');
+    const token = this.beginExecution();
+    if (token === null) return;
+    let completed = false;
     try {
+      await this.resetSimulation({ cancel: false });
+      if (!(await this.waitForResume(token))) return;
+      const prep = await this.prepare();
+      if (!(await this.waitForResume(token))) return;
+      this.stepIndex = 0;
+      this.setStatus('Running pinned source-plant simulation…');
       for (let i = 0; i < prep.events.length; i += 1) {
         if (!(await this._applyEvent(prep.events[i], token))) return;
         this.stepIndex = i + 1;
       }
-    } catch { return; }
-    this.editor.highlightLine(null);
-    $('simActionLabel').textContent = 'Run complete';
-    this.setStatus('Run complete');
-    this.renderPanels();
+      completed = true;
+    } catch {
+      return;
+    } finally {
+      if (completed && token === this.runToken) {
+        this.editor.highlightLine(null);
+        $('simActionLabel').textContent = 'Run complete';
+        this.setStatus('Run complete');
+        this.renderPanels();
+      }
+      this.finishExecution(token);
+    }
   }
 
   async step() {
+    if (this.executionState !== 'idle') return;
     if (!this.prepared) {
       await this.resetSimulation();
       try { await this.prepare(); } catch { return; }
@@ -297,24 +384,27 @@ class App {
     const token = this.runToken;
     const action = events[this.stepIndex++];
     try {
-      await this._applyEvent(action, token, { honorSleep: false });
+      if (!(await this._applyEvent(action, token, { honorSleep: false }))) return;
       while (this.stepIndex < events.length && events[this.stepIndex].kind !== 'send_action') {
         const event = events[this.stepIndex++];
-        await this._applyEvent(event, token, { honorSleep: true });
+        if (!(await this._applyEvent(event, token, { honorSleep: true }))) return;
       }
     } catch { return; }
     this.setStatus(`Stepped A${String((action.actionIndex || 0) + 1).padStart(2, '0')} · ${this.actionLabel(action.actionIndex || 0)}`);
   }
 
   async runToCursor() {
+    const token = this.beginExecution();
+    if (token === null) return;
     const file = this.currentFile;
     const line = this.editor.getCursorLine();
-    const token = ++this.runToken;
-    await this.resetSimulation({ cancel: false });
-    let prep;
-    try { prep = await this.prepare(); } catch { return; }
     let hit = false;
     try {
+      await this.resetSimulation({ cancel: false });
+      if (!(await this.waitForResume(token))) return;
+      const prep = await this.prepare();
+      if (!(await this.waitForResume(token))) return;
+      this.setStatus('Running pinned source-plant simulation to cursor…');
       for (let i = 0; i < prep.events.length; i += 1) {
         const event = prep.events[i];
         if (event.kind === 'send_action' && event.file === file && event.line > line) break;
@@ -322,12 +412,16 @@ class App {
         this.stepIndex = i + 1;
         if (event.kind === 'send_action' && event.file === file && event.line === line) hit = true;
       }
-    } catch { return; }
-    this.setStatus(hit ? `Stopped at ${file}:${line}` : `Ran commands through ${file}:${line}`);
+      if (token === this.runToken) this.setStatus(hit ? `Stopped at ${file}:${line}` : `Ran commands through ${file}:${line}`);
+    } catch {
+      return;
+    } finally {
+      this.finishExecution(token);
+    }
   }
 
   stop() {
-    this.runToken++;
+    this.cancelExecution();
     this.editor.highlightLine(null);
     $('simActionLabel').textContent = 'Stopped';
     this.setStatus('Simulation stopped');
@@ -411,9 +505,31 @@ class App {
     reader.readAsText(file);
   }
 
+  setTheme(themeId) {
+    this.theme = applyTheme(themeId);
+    this.editor.setTheme(this.theme.editorTheme);
+    this.renderThemeOptions();
+  }
+
+  renderThemeOptions() {
+    document.querySelectorAll('[data-theme-id]').forEach((button) => {
+      const active = button.dataset.themeId === this.theme.id;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-checked', String(active));
+    });
+  }
+
+  closeMenus() {
+    document.querySelectorAll('.menu-popover').forEach((menu) => { menu.hidden = true; });
+    document.querySelectorAll('.menu-button').forEach((button) => button.setAttribute('aria-expanded', 'false'));
+  }
+
   openPalette() { const box = $('commandPalette'); box.hidden = false; $('commandInput').value = ''; this.renderPalette(''); setTimeout(() => $('commandInput').focus(), 0); }
   renderPalette(q) { const commands = this.commandsList().filter((c) => c.label.toLowerCase().includes(q.toLowerCase())); $('commandList').innerHTML = ''; commands.forEach((c) => { const b = document.createElement('button'); b.textContent = c.label; b.onclick = () => { $('commandPalette').hidden = true; c.run(); }; $('commandList').appendChild(b); }); }
-  commandsList() { return [{ label: 'Run: Run simulation', run: () => this.run() }, { label: 'Run: Step physical action', run: () => this.step() }, { label: 'Run: Run to cursor', run: () => this.runToCursor() }, { label: 'View: Toggle Explorer', run: () => this.toggleSidebar() }, { label: 'View: Toggle diagnostics panel', run: () => this.togglePanel() }, { label: 'View: Fit simulator', run: () => this.sim.fit() }, { label: 'Robot: Contact diagnostics', run: () => this.openBottom('contacts') }, { label: 'Robot: Simulated telemetry', run: () => this.openBottom('telemetry') }, { label: 'File: Save draft', run: () => this.save() }, { label: 'File: Export workspace', run: () => this.exportWorkspace() }]; }
+  commandsList() {
+    const themeCommands = Object.values(THEMES).map((theme) => ({ label: `Preferences: Color Theme — ${theme.label}`, run: () => this.setTheme(theme.id) }));
+    return [{ label: 'Run: Run simulation', run: () => this.run() }, { label: 'Run: Step physical action', run: () => this.step() }, { label: 'Run: Run to cursor', run: () => this.runToCursor() }, { label: 'View: Toggle Explorer', run: () => this.toggleSidebar() }, { label: 'View: Toggle diagnostics panel', run: () => this.togglePanel() }, { label: 'View: Fit simulator', run: () => this.sim.fit() }, { label: 'Robot: Contact diagnostics', run: () => this.openBottom('contacts') }, { label: 'Robot: Simulated telemetry', run: () => this.openBottom('telemetry') }, { label: 'File: Save draft', run: () => this.save() }, { label: 'File: Export workspace', run: () => this.exportWorkspace() }, ...themeCommands];
+  }
 
   dispatch(action) {
     const map = { import: () => $('importFile').click(), save: () => this.save(), exportMain: () => this.download('main.py', this.files['main.py']), exportWorkspace: () => this.exportWorkspace(), resetWorkspace: () => this.resetWorkspace(), undo: () => this.editor.undo(), redo: () => this.editor.redo(), find: () => this.editor.find(), replace: () => this.editor.replace(), toggleComment: () => this.editor.toggleComment(), palette: () => this.openPalette(), run: () => this.run(), step: () => this.step(), cursor: () => this.runToCursor(), stop: () => this.stop(), reset: () => this.resetSimulation(), sidebar: () => this.toggleSidebar(), panel: () => this.togglePanel(), editorFocus: () => this.editor.focus(), simulatorFocus: () => $('simCanvas').focus(), fit: () => this.sim.fit(), contacts: () => this.openBottom('contacts'), telemetry: () => this.openBottom('telemetry'), api: () => this.openBottom('task'), shortcuts: () => this.openBottom('task'), fidelity: () => this.openBottom('task') };
@@ -423,19 +539,20 @@ class App {
   bind() {
     $('robotSelect').onchange = (event) => void this.loadProfile(event.target.value);
     $('taskSelect').onchange = (event) => { localStorage.setItem(`rbide.task.${this.profileId}`, event.target.value); void this.loadProfile(this.profileId, { taskId: event.target.value }); };
-    $('runBtn').onclick = () => void this.run(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();
+    $('runBtn').onclick = () => void this.run(); $('pauseBtn').onclick = () => this.togglePause(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();
     document.querySelectorAll('[data-side-view]').forEach((button) => button.onclick = () => this.openSideView(button.dataset.sideView));
     document.querySelectorAll('[data-side-action]').forEach((button) => button.onclick = () => { const action = button.dataset.sideAction; if (action === 'front') this.sim.fit(); else if (action === 'telemetry') this.openBottom('telemetry'); else if (action === 'contacts') this.openBottom('contacts'); });
     $('mobileCodeBtn').onclick = () => { $('workspace').classList.remove('show-sim'); $('mobileCodeBtn').classList.add('active'); $('mobileSimBtn').classList.remove('active'); setTimeout(() => this.editor.refresh(), 20); };
     $('mobileSimBtn').onclick = () => { $('workspace').classList.add('show-sim'); $('mobileCodeBtn').classList.remove('active'); $('mobileSimBtn').classList.add('active'); };
     document.querySelectorAll('.bottom-tab').forEach((b) => b.onclick = () => this.openBottom(b.dataset.panel));
-    document.querySelectorAll('.menu-button').forEach((b) => b.onclick = (event) => { event.stopPropagation(); const id = `${b.dataset.menu}Menu`; document.querySelectorAll('.menu-popover').forEach((m) => { if (m.id !== id) m.hidden = true; }); $(id).hidden = !$(id).hidden; });
-    document.querySelectorAll('[data-action]').forEach((b) => b.onclick = (event) => { event.stopPropagation(); document.querySelectorAll('.menu-popover').forEach((m) => { m.hidden = true; }); this.dispatch(b.dataset.action); });
-    document.addEventListener('click', () => document.querySelectorAll('.menu-popover').forEach((m) => { m.hidden = true; }));
+    document.querySelectorAll('.menu-button').forEach((button) => button.onclick = (event) => { event.stopPropagation(); const menu = $(`${button.dataset.menu}Menu`); const open = menu.hidden; this.closeMenus(); menu.hidden = !open; button.setAttribute('aria-expanded', String(open)); });
+    document.querySelectorAll('[data-action]').forEach((button) => button.onclick = (event) => { event.stopPropagation(); this.closeMenus(); this.dispatch(button.dataset.action); });
+    document.querySelectorAll('[data-theme-id]').forEach((button) => button.onclick = (event) => { event.stopPropagation(); this.closeMenus(); this.setTheme(button.dataset.themeId); });
+    document.addEventListener('click', () => this.closeMenus());
     $('commandClose').onclick = () => $('commandPalette').hidden = true; $('commandInput').oninput = (event) => this.renderPalette(event.target.value); $('commandPalette').onclick = (event) => { if (event.target === $('commandPalette')) $('commandPalette').hidden = true; };
     $('importFile').onchange = (event) => { const file = event.target.files?.[0]; if (file) this.importFile(file); event.target.value = ''; };
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') { if (!$('commandPalette').hidden) { $('commandPalette').hidden = true; return; } this.stop(); return; }
+      if (event.key === 'Escape') { if (!$('commandPalette').hidden) { $('commandPalette').hidden = true; return; } if (document.querySelector('.menu-popover:not([hidden])')) { this.closeMenus(); return; } this.stop(); return; }
       if (event.key === 'F10' && !event.ctrlKey) { event.preventDefault(); void this.step(); }
       if (event.key === 'F5') { event.preventDefault(); if (event.shiftKey) this.stop(); else void this.run(); }
       if (event.ctrlKey && event.key === 'F10') { event.preventDefault(); void this.runToCursor(); }

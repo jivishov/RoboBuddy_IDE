@@ -280,26 +280,28 @@ export class SourceRobotSimulator {
   syncFromSource() {
     if (!this.engine || !this.rig) return;
     const snapshot = this.engine.snapshot();
+    this.canvas.dataset.simulationClockS = String(Number(snapshot.simulationClockSeconds || this.engine.plant?.clockSeconds || 0));
     this.rig.applyPhysicalState(internalToPublic(this.profileId, snapshot.jointState), basePoseForRig(snapshot));
     this.visual?.update(snapshot);
   }
-  async applyAction(action) {
+  async applyAction(action, options = {}) {
     if (!this.engine?.plant) {
       this.rig?.applyPhysicalState(action, { x: 0, z: 0, yaw: 0 });
-      return;
+      return true;
     }
     try {
       this.engine.plant.sendAction(this.connectedInstance, action, {});
     } catch (error) {
       throw new Error(`${error.code || 'ACTION_REJECTED'} — ${error.message}`);
     }
-    await this.advanceTime(0.02, { realtime: false });
+    return this.advanceTime(0.02, { ...options, realtime: false });
   }
-  async advanceTime(seconds, { realtime = true } = {}) {
-    if (!this.engine?.plant) return;
+  async advanceTime(seconds, { realtime = true, beforeTick = null } = {}) {
+    if (!this.engine?.plant) return true;
     const ticks = Math.max(0, Math.ceil(Math.max(0, Number(seconds) || 0) / this.engine.plant.tickSeconds));
     const visualStride = Math.max(1, Math.floor(ticks / 30));
     for (let i = 0; i < ticks; i += 1) {
+      if (beforeTick && !(await beforeTick())) return false;
       this.engine.plant.tick();
       if (this.engine.plant.fault) {
         this.syncFromSource();
@@ -312,6 +314,7 @@ export class SourceRobotSimulator {
         if (realtime && ticks > 3) await new Promise((resolve) => requestAnimationFrame(resolve));
       }
     }
+    return true;
   }
   advanceBase(seconds) { return this.advanceTime(seconds); }
   getTelemetry() {

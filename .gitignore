@@ -1,0 +1,9 @@
+# Local dependencies and generated browser-test output
+node_modules/
+test-results/
+playwright-report/
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example

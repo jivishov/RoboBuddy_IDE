@@ -1,0 +1,300 @@
+/* Central color-theme layer. The default is a quiet daylight workspace; dark remains available. */
+:root {
+  font-family: "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+:root[data-theme="midnight-teal"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="calm-light"] {
+  --bg: #eef4f1;
+  --panel: #f9fbfa;
+  --panel2: #f1f6f4;
+  --line: #d3dfdb;
+  --muted: #5e6e6d;
+  --text: #263737;
+  --accent: #2a7975;
+  --blue: #356f91;
+  --danger: #a94c56;
+  --warn: #987033;
+  color-scheme: light;
+}
+
+:root[data-theme="calm-light"] html,
+:root[data-theme="calm-light"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="calm-light"] .menubar {
+  background: #fbfcfb;
+}
+
+:root[data-theme="calm-light"] .menu-button:hover,
+:root[data-theme="calm-light"] .menu-button[aria-expanded="true"] {
+  background: #e8f0ed;
+}
+
+:root[data-theme="calm-light"] .menu-popover {
+  background: #ffffff;
+  border-color: #cad9d5;
+  box-shadow: 0 16px 36px rgba(47, 69, 66, 0.12);
+}
+
+:root[data-theme="calm-light"] .menu-popover button:hover {
+  background: #e9f2ef;
+}
+
+:root[data-theme="calm-light"] .mode-chip {
+  border-color: #bbd8d0;
+  background: #edf7f3;
+  color: #2b655f;
+}
+
+:root[data-theme="calm-light"] .toolbar {
+  background: #f3f7f5;
+}
+
+:root[data-theme="calm-light"] .toolbar button,
+:root[data-theme="calm-light"] .toolbar select {
+  border-color: #c9d8d4;
+  background: #fbfcfc;
+  color: #304241;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="calm-light"] .toolbar button:hover:not(:disabled),
+:root[data-theme="calm-light"] .toolbar select:hover {
+  border-color: #aac7bf;
+  background: #e9f2ef;
+}
+
+:root[data-theme="calm-light"] .toolbar .primary {
+  border-color: #2a7774;
+  background: #2b7774;
+  color: #f8fcfb;
+}
+
+:root[data-theme="calm-light"] .toolbar .primary:hover:not(:disabled) {
+  border-color: #216562;
+  background: #246d69;
+}
+
+:root[data-theme="calm-light"] .toolbar .danger {
+  border-color: #d7adb3;
+  background: #fff7f7;
+  color: #91434d;
+}
+
+:root[data-theme="calm-light"] .toolbar .danger:hover:not(:disabled) {
+  border-color: #c9868f;
+  background: #fdebed;
+}
+
+:root[data-theme="calm-light"] .toolbar-sep {
+  background: #c7d6d1;
+}
+
+:root[data-theme="calm-light"] .sidebar,
+:root[data-theme="calm-light"] .side-content,
+:root[data-theme="calm-light"] .bottom-tabs {
+  background: #f5f8f7;
+}
+
+:root[data-theme="calm-light"] .activity button,
+:root[data-theme="calm-light"] .robot-side-card,
+:root[data-theme="calm-light"] .side-heading,
+:root[data-theme="calm-light"] .task-panel p,
+:root[data-theme="calm-light"] .file-item,
+:root[data-theme="calm-light"] .editor-tab,
+:root[data-theme="calm-light"] .bottom-tab,
+:root[data-theme="calm-light"] .sim-action-label,
+:root[data-theme="calm-light"] .empty-state {
+  color: #5a6a69;
+}
+
+:root[data-theme="calm-light"] .activity button:hover,
+:root[data-theme="calm-light"] .activity button.active,
+:root[data-theme="calm-light"] .file-item:hover,
+:root[data-theme="calm-light"] .file-item.active,
+:root[data-theme="calm-light"] .robot-side-card button:hover {
+  background: #e5efeb;
+  color: #243635;
+}
+
+:root[data-theme="calm-light"] .robot-side-card button,
+:root[data-theme="calm-light"] .sim-head button {
+  border-color: #cedbd7;
+  background: #fbfcfc;
+  color: #334644;
+}
+
+:root[data-theme="calm-light"] .task-current,
+:root[data-theme="calm-light"] .panel-note {
+  color: #2b6f69;
+}
+
+:root[data-theme="calm-light"] .main-panes {
+  background: #e7eeeb;
+}
+
+:root[data-theme="calm-light"] .editor-tabs,
+:root[data-theme="calm-light"] .sim-head,
+:root[data-theme="calm-light"] .bottom-panel {
+  background: #f9fbfa;
+}
+
+:root[data-theme="calm-light"] .editor-tab.active {
+  background: #ffffff;
+  color: #263737;
+}
+
+:root[data-theme="calm-light"] .CodeMirror {
+  background: #ffffff;
+  color: #273839;
+}
+
+:root[data-theme="calm-light"] .CodeMirror-gutters {
+  background: #f6f9f8;
+  border-color: #dce6e2;
+}
+
+:root[data-theme="calm-light"] .CodeMirror-linenumber {
+  color: #8a9998;
+}
+
+:root[data-theme="calm-light"] .cm-s-default .cm-comment { color: #738582; }
+:root[data-theme="calm-light"] .cm-s-default .cm-keyword,
+:root[data-theme="calm-light"] .cm-s-default .cm-def { color: #176e69; }
+:root[data-theme="calm-light"] .cm-s-default .cm-string { color: #8a5c24; }
+:root[data-theme="calm-light"] .cm-s-default .cm-number,
+:root[data-theme="calm-light"] .cm-s-default .cm-atom { color: #8b4b61; }
+:root[data-theme="calm-light"] .cm-s-default .cm-builtin { color: #326e91; }
+
+:root[data-theme="calm-light"] .cm-executing-line {
+  background: rgba(42, 121, 117, 0.1) !important;
+}
+
+:root[data-theme="calm-light"] .splitter {
+  background: #d5e0dc;
+}
+
+:root[data-theme="calm-light"] .sim-viewport {
+  background: #dfe9e5;
+}
+
+:root[data-theme="calm-light"] .sim-badge {
+  border-color: #426e68;
+  background: rgba(28, 55, 52, 0.88);
+  color: #d8f1e9;
+}
+
+:root[data-theme="calm-light"] .panel-view td,
+:root[data-theme="calm-light"] .panel-view th,
+:root[data-theme="calm-light"] .command-row,
+:root[data-theme="calm-light"] .problem {
+  border-color: #d9e3df;
+}
+
+:root[data-theme="calm-light"] .command-row.active {
+  background: #e4f1ed;
+}
+
+:root[data-theme="calm-light"] .command-row code,
+:root[data-theme="calm-light"] .metric-grid strong {
+  color: #314443;
+}
+
+:root[data-theme="calm-light"] .console-line.stderr,
+:root[data-theme="calm-light"] .problem.error strong {
+  color: #a64752;
+}
+
+:root[data-theme="calm-light"] .statusbar {
+  background: #d9ebe6;
+  color: #234743;
+}
+
+:root[data-theme="calm-light"] .command-palette {
+  background: rgba(43, 61, 58, 0.24);
+}
+
+:root[data-theme="calm-light"] .command-box {
+  background: #ffffff;
+  border-color: #c6d6d1;
+  box-shadow: 0 18px 54px rgba(42, 62, 59, 0.16);
+}
+
+:root[data-theme="calm-light"] .command-box input {
+  background: #f7faf9;
+  color: #273938;
+}
+
+:root[data-theme="calm-light"] .command-list button {
+  border-color: #e0e8e5;
+  color: #304342;
+}
+
+:root[data-theme="calm-light"] .command-list button:hover {
+  background: #e7f1ee;
+}
+
+.theme-menu {
+  min-width: 224px;
+  padding: 6px;
+}
+
+.theme-menu-label {
+  padding: 4px 8px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theme-option {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-option.active {
+  background: rgba(43, 196, 201, 0.12);
+}
+
+.theme-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(111, 130, 144, 0.45);
+  border-radius: 4px;
+}
+
+.theme-swatch.calm-light { background: #edf4f1; }
+.theme-swatch.midnight-teal { background: #173137; }
+
+.theme-option-check {
+  color: transparent;
+  font-weight: 700;
+}
+
+.theme-option.active .theme-option-check {
+  color: var(--accent);
+}
+
+:root[data-theme="calm-light"] .theme-option.active {
+  background: #e4f1ed;
+}
+
+@media (max-width: 800px) {
+  .menubar .menu-wrap.theme-menu-wrap {
+    display: block;
+  }
+
+  .theme-menu-wrap .theme-menu {
+    right: 0;
+    left: auto;
+  }
+}

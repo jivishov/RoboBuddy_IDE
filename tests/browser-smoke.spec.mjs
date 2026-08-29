@@ -90,6 +90,32 @@ test('learner Python reaches the first physical action through the IDE Step Acti
 });
 
 
+test('Pause holds an active source-plant run and resumes it in place', async ({ page }) => {
+  await page.goto('/?ci=pause', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  expect(await page.locator('#runBtn').evaluate((button) => button.nextElementSibling?.id)).toBe('pauseBtn');
+
+  await page.locator('#runBtn').click();
+  await expect(page.locator('#pauseBtn')).toBeEnabled();
+  await expect(page.locator('#simActionLabel')).toContainText('A01', { timeout: 90_000 });
+  await page.locator('#pauseBtn').click();
+  await expect(page.locator('#statusMessage')).toHaveText('Simulation paused');
+  await expect(page.locator('#pauseBtn')).toHaveText('▶ Resume');
+  await expect(page.locator('#pauseBtn')).toHaveAttribute('aria-pressed', 'true');
+
+  const pausedAction = await page.locator('#simActionLabel').textContent();
+  const pausedClock = await page.locator('#simCanvas').getAttribute('data-simulation-clock-s');
+  await page.waitForTimeout(250);
+  await expect(page.locator('#simActionLabel')).toHaveText(pausedAction || '');
+  await expect(page.locator('#simCanvas')).toHaveAttribute('data-simulation-clock-s', pausedClock || '0');
+
+  await page.locator('#pauseBtn').click();
+  await expect(page.locator('#pauseBtn')).toHaveText('⏸ Pause');
+  await expect(page.locator('#pauseBtn')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#statusMessage')).toHaveText('Run complete', { timeout: 90_000 });
+  await expect(page.locator('#pauseBtn')).toBeDisabled();
+});
+
 test('diagnostics panel owns a full-width grid row and activity rail buttons are functional', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/?ci=ux', { waitUntil: 'domcontentloaded' });

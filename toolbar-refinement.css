@@ -1,0 +1,108 @@
+/* Compact command-bar controls: understated surfaces with clear action hierarchy. */
+.toolbar {
+  gap: 4px;
+  padding: 3px 8px;
+  background: #151a20;
+}
+
+.toolbar button,
+.toolbar select {
+  height: 28px;
+  min-height: 28px;
+  border-radius: 7px;
+  border-color: rgba(173, 190, 211, 0.17);
+  background: #1c232d;
+  padding: 0 8px;
+  color: #d5dee9;
+  font-family: "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.toolbar button {
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toolbar button:hover:not(:disabled),
+.toolbar select:hover {
+  border-color: rgba(191, 207, 228, 0.3);
+  background: #252e3a;
+}
+
+.toolbar button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.toolbar button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.toolbar button:focus-visible,
+.toolbar select:focus-visible {
+  outline: 2px solid #51c7c4;
+  outline-offset: 2px;
+}
+
+.toolbar .primary {
+  border-color: #248e8d;
+  background: #177b7b;
+  color: #f4fbfb;
+  font-weight: 650;
+}
+
+.toolbar .primary:hover:not(:disabled) {
+  border-color: #3aa6a3;
+  background: #1c8988;
+}
+
+.toolbar .danger {
+  border-color: #6b3944;
+  background: #3b252c;
+  color: #ffc6c9;
+}
+
+.toolbar .danger:hover:not(:disabled) {
+  border-color: #8a4653;
+  background: #482a32;
+}
+
+.toolbar #sidebarToggle {
+  width: 28px;
+  padding-inline: 0;
+  font-size: 14px;
+}
+
+.toolbar #robotSelect {
+  width: 160px;
+}
+
+.toolbar-sep {
+  height: 18px;
+  margin-inline: 4px;
+  background: #303946;
+}
+
+@media (max-width: 800px) {
+  .toolbar button,
+  .toolbar select {
+    height: 28px;
+    min-height: 28px;
+  }
+}
+
+@media (max-height: 620px) {
+  .toolbar button,
+  .toolbar select {
+    height: 28px;
+    min-height: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar button {
+    transition: none;
+  }
+}

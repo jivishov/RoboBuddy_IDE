@@ -1,11 +1,11 @@
 export class IdeEditor {
-  constructor(parent, { onChange, onSave, onRun, onCommandPalette, onCursor }) {
+  constructor(parent, { onChange, onSave, onRun, onCommandPalette, onCursor, theme = 'material-darker' }) {
     if (!window.CodeMirror) throw new Error('CodeMirror failed to load.');
     this.currentFile = 'main.py';
     this.executionHandle = null;
     this.suppress = false;
     this.cm = window.CodeMirror(parent, {
-      value: '', mode: 'python', theme: 'material-darker', lineNumbers: true,
+      value: '', mode: 'python', theme, lineNumbers: true,
       indentUnit: 4, tabSize: 4, indentWithTabs: false, lineWrapping: false,
       matchBrackets: true, autoCloseBrackets: true, foldGutter: true,
       gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
@@ -42,6 +42,7 @@ export class IdeEditor {
   }
   focus() { this.cm.focus(); }
   refresh() { this.cm.refresh(); }
+  setTheme(theme) { this.cm.setOption('theme', theme); this.cm.refresh(); }
   undo() { this.cm.undo(); }
   redo() { this.cm.redo(); }
   find() { this.cm.execCommand('find'); }

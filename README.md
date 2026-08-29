@@ -51,6 +51,7 @@ It is **not yet a closed-loop Python feedback runtime**: branching Python code d
 ## Controls
 
 - `F5` Run
+- Click `Pause` / `Resume` to hold or continue an in-progress run
 - `F10` Step Action
 - `Ctrl+F10` Run to Cursor
 - `Shift+F5` or `Esc` Stop
