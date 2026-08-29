@@ -2,6 +2,18 @@ export const FIDELITY_NOTICE = 'Physical-target Python API with RoboBuddy_AI can
 export const LEROBOT_REVISION = '7e241bd630a3719a56157a497ce5d08f244784f1';
 export const ROBOBUDDY_AI_VISUAL_REVISION = '66d18a029a0caeb6a6075e681dbd9ecd6b22affa';
 const d = (values) => Object.freeze(values.map(Number));
+const unitreeG1JointLimits = Object.freeze({
+  left_hip_pitch_joint:d([-144.9984,165.0004]), left_hip_roll_joint:d([-30.0001,170.0023]), left_hip_yaw_joint:d([-157.9988,157.9988]),
+  left_knee_joint:d([-5,165.0004]), left_ankle_pitch_joint:d([-50.0003,30.0001]), left_ankle_roll_joint:d([-15,15]),
+  right_hip_pitch_joint:d([-144.9984,165.0004]), right_hip_roll_joint:d([-170.0023,30.0001]), right_hip_yaw_joint:d([-157.9988,157.9988]),
+  right_knee_joint:d([-5,165.0004]), right_ankle_pitch_joint:d([-50.0003,30.0001]), right_ankle_roll_joint:d([-15,15]),
+  waist_yaw_joint:d([-150.0004,150.0004]), waist_roll_joint:d([-29.7938,29.7938]), waist_pitch_joint:d([-29.7938,29.7938]),
+  left_shoulder_pitch_joint:d([-176.9981,153.0026]), left_shoulder_roll_joint:d([-90.9972,129.0014]), left_shoulder_yaw_joint:d([-150.0004,150.0004]),
+  left_elbow_joint:d([-60.0001,120.0003]), left_wrist_roll_joint:d([-112.9999,112.9999]), left_wrist_pitch_joint:d([-92.5,92.5]), left_wrist_yaw_joint:d([-92.5,92.5]),
+  right_shoulder_pitch_joint:d([-176.9981,153.0026]), right_shoulder_roll_joint:d([-129.0014,90.9972]), right_shoulder_yaw_joint:d([-150.0004,150.0004]),
+  right_elbow_joint:d([-60.0001,120.0003]), right_wrist_roll_joint:d([-112.9999,112.9999]), right_wrist_pitch_joint:d([-92.5,92.5]), right_wrist_yaw_joint:d([-92.5,92.5]),
+});
+const unitreeG1Rest = Object.freeze(Object.fromEntries(Object.keys(unitreeG1JointLimits).map((key) => [key, 0])));
 
 export const PROFILES = Object.freeze({
   so101: Object.freeze({
@@ -43,7 +55,23 @@ export const PROFILES = Object.freeze({
     source:'LeRobot LeKiwiClient public action fields plus the same generated LeKiwi visual mesh and arm hierarchy used by RoboBuddy_AI, source revision efa608d7ee5a495a4803b1d28cd0c955b4f1e033. Browser base motion remains kinematic.',
     task:Object.freeze({title:'Arm positioning and bounded base velocity', steps:['Send a stowed arm pose','Pan the arm left and right on the canonical LeKiwi model','Return the arm to stow','Command a bounded forward base velocity','Stop base velocity explicitly'], limitations:'Canonical RoboBuddy visual geometry is used. No wheel-contact dynamics, odometry, SLAM, network timing, or hardware validation.'}),
   }),
+  unitree: Object.freeze({
+    id:'unitree', label:'Unitree G1 29-DoF', shortLabel:'Unitree G1', driver:'RoboBuddy G1 pose rig (kinematic only)', transport:'none — browser-only pose workspace', simulationMode:'kinematic_pose',
+    visual:Object.freeze({robotId:'unitree_g1_29dof', repository:'jivishov/RoboBuddy_AI', revision:ROBOBUDDY_AI_VISUAL_REVISION, modelRevision:'dd4fa6866e523ad61324f658d63736e4eda3a6e4', modelRepository:'unitreerobotics/unitree_ros', modelPath:'robots/g1_description/g1_29dof.urdf', license:'BSD-3-Clause'}),
+    limits:unitreeG1JointLimits,
+    rest:unitreeG1Rest,
+    source:'RoboBuddy_AI canonical Unitree G1 mesh with 29 source-manifest joint envelopes, generated from unitreerobotics/unitree_ros at dd4fa6866e523ad61324f658d63736e4eda3a6e4. This is a browser-only visual pose workspace, not a Unitree SDK or hardware-control API.',
+    task:Object.freeze({title:'29-axis kinematic pose inspection', steps:['Inspect the neutral source-mesh pose','Send a bounded upper-body joint pose','Inspect a lower-body joint pose without moving the root','Return joints to neutral'], limitations:'The canonical G1 visual mesh and source joint ranges are used. Dynamic balance, walking, root translation, foot contact, collision, hand actuation, grasping, force/torque control, Unitree SDK control, and hardware validation are not simulated.'}),
+  }),
 });
+
+export function fidelityNoticeFor(profileId) {
+  const profile = PROFILES[profileId];
+  if (profile?.simulationMode === 'kinematic_pose') {
+    return 'Reference-sourced Unitree G1 mesh and bounded joint-pose visualization. No fixed-step contact plant, balance, locomotion, collision, or hardware validation is active.';
+  }
+  return FIDELITY_NOTICE;
+}
 
 export function validateAction(profileId, action) {
   const profile=PROFILES[profileId];

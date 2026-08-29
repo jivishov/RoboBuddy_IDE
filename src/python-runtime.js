@@ -74,7 +74,13 @@ bi.BiOpenArmFollower = type("BiOpenArmFollower", (_Robot,), {})
 lekiwi = types.ModuleType("lerobot.robots.lekiwi")
 lekiwi.LeKiwiClientConfig = _config_class("LeKiwiClientConfig")
 lekiwi.LeKiwiClient = type("LeKiwiClient", (_LeKiwiRobot,), {})
+robobuddy = types.ModuleType("robobuddy")
+simulation = types.ModuleType("robobuddy.simulation")
+simulation.UnitreeG1KinematicPoseAdapter = type("UnitreeG1KinematicPoseAdapter", (_Robot,), {})
+robobuddy.simulation = simulation
 for name, mod in [("lerobot",lerobot),("lerobot.robots",robots),("lerobot.robots.so_follower",so),("lerobot.robots.openarm_follower",openarm),("lerobot.robots.bi_openarm_follower",bi),("lerobot.robots.lekiwi",lekiwi)]:
+    sys.modules[name] = mod
+for name, mod in [("robobuddy",robobuddy),("robobuddy.simulation",simulation)]:
     sys.modules[name] = mod
 `;
 

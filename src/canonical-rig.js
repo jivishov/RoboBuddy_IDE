@@ -30,6 +30,15 @@ export const CANONICAL_VISUALS = Object.freeze({
     module: `${ASSET_BASE}/robot-mesh-data-lekiwi.js`,
     sourceModelRevision: 'efa608d7ee5a495a4803b1d28cd0c955b4f1e033',
   }),
+  unitree: Object.freeze({
+    robotId: 'unitree_g1_29dof',
+    title: 'Unitree G1 29-DoF — RoboBuddy canonical mesh',
+    module: `${ASSET_BASE}/robot-mesh-data-unitree-g1.js`,
+    sourceModelRevision: 'dd4fa6866e523ad61324f658d63736e4eda3a6e4',
+    sourceModelRepository: 'https://github.com/unitreerobotics/unitree_ros',
+    sourceModelPath: 'robots/g1_description/g1_29dof.urdf',
+    license: 'BSD-3-Clause',
+  }),
 });
 
 const DEG = Math.PI / 180;
@@ -56,6 +65,13 @@ function physicalToCanonical(profileId, state = {}) {
       ['shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll', 'gripper']
         .filter((key) => Number.isFinite(Number(state[`${key}.pos`])))
         .map((key) => [key, Number(state[`${key}.pos`])])
+    );
+  }
+  if (profileId === 'unitree') {
+    return Object.fromEntries(
+      Object.entries(state)
+        .filter(([key, value]) => key.endsWith('_joint') && Number.isFinite(Number(value)))
+        .map(([key, value]) => [key, Number(value)])
     );
   }
   const out = {};
@@ -130,6 +146,10 @@ export class CanonicalRobotRig {
       repo: 'jivishov/RoboBuddy_AI',
       revision: ROBOBUDDY_AI_VISUAL_REVISION,
       robotId: meshData.robotId,
+      sourceModelRepository: this.source.sourceModelRepository || null,
+      sourceModelRevision: this.source.sourceModelRevision,
+      sourceModelPath: this.source.sourceModelPath || null,
+      license: this.source.license || null,
     };
     this.groups.root = root;
 
@@ -286,5 +306,8 @@ export function canonicalVisualProvenance(profileId) {
     robotId: visual.robotId,
     modelRevision: visual.sourceModelRevision,
     module: visual.module,
+    sourceModelRepository: visual.sourceModelRepository || null,
+    sourceModelPath: visual.sourceModelPath || null,
+    license: visual.license || null,
   } : null;
 }

@@ -298,3 +298,63 @@
     left: auto;
   }
 }
+
+:root[data-theme="calm-light"] .sim-head .scene-contrast-toggle.active {
+  border-color: #2d7774;
+  background: #d9efea;
+  color: #184542;
+}
+
+:root[data-theme="calm-light"] .about-dialog {
+  border-color: #b8ccc4;
+  background: #ffffff;
+  color: #243936;
+  box-shadow: 0 28px 80px rgb(36 57 54 / 0.24);
+}
+
+:root[data-theme="calm-light"] .about-dialog-shell {
+  background: linear-gradient(135deg, #f7fbf9, #ecf4f1 72%);
+}
+
+:root[data-theme="calm-light"] .about-dialog-shell::before {
+  background-image: linear-gradient(rgb(38 104 98 / 0.1) 1px, transparent 1px), linear-gradient(90deg, rgb(38 104 98 / 0.1) 1px, transparent 1px);
+}
+
+:root[data-theme="calm-light"] .about-close {
+  border-color: #c8d9d3;
+  background: rgb(255 255 255 / 0.72);
+  color: #4f6661;
+}
+
+:root[data-theme="calm-light"] .about-close:hover,
+:root[data-theme="calm-light"] .about-close:focus-visible {
+  border-color: #2f8c88;
+  background: #dff1ec;
+  color: #174a47;
+}
+
+:root[data-theme="calm-light"] .about-mark {
+  border-color: #3b9994;
+  background: linear-gradient(145deg, #5da9a5, #2c726f);
+}
+
+:root[data-theme="calm-light"] .about-eyebrow,
+:root[data-theme="calm-light"] .about-license-label {
+  color: #497c76;
+}
+
+:root[data-theme="calm-light"] .about-dialog h2,
+:root[data-theme="calm-light"] .about-license strong {
+  color: #233b37;
+}
+
+:root[data-theme="calm-light"] .about-copy,
+:root[data-theme="calm-light"] .about-license,
+:root[data-theme="calm-light"] .about-copyright {
+  color: #58716b;
+}
+
+:root[data-theme="calm-light"] .about-license {
+  border-color: #cfdfda;
+  background: rgb(255 255 255 / 0.66);
+}

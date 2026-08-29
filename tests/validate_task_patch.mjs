@@ -43,11 +43,27 @@ for (const token of ['taskSelect', 'loadPatchedScenario', 'buildPatchedWorkspace
 
 for (const token of [
   "floor.name = 'presentation-ground-depth-biased'",
+  'PRESENTATION_GROUND_COLOR = 0x687378',
+  'color: PRESENTATION_GROUND_COLOR',
   'polygonOffset: true',
   'polygonOffsetFactor: 1',
   'polygonOffsetUnits: 4',
+  'presentation-only-high-contrast-scene',
+  "accessibilityRole: 'floor-contact-perimeter'",
+  'collisionGeometry: false',
+  'kinematics: false',
 ]) {
   if (!sourceSimulator.includes(token)) throw new Error(`presentation ground is missing z-fighting guard ${token}`);
+}
+if (sourceSimulator.includes('color: 0x17212b')) throw new Error('legacy dark presentation ground color remains');
+for (const token of [
+  'this.scene.background = new THREE.Color(0xb9c1c4)',
+  'new THREE.HemisphereLight(0xffffff, 0x334155, 1.35)',
+  'new THREE.DirectionalLight(0xffffff, 2.15)',
+  'new THREE.DirectionalLight(0x93c5fd, 0.45)',
+  'new THREE.GridHelper(1800, 36, 0x334155, 0x1f2937)',
+]) {
+  if (!sourceSimulator.includes(token)) throw new Error(`non-ground scene configuration drifted: ${token}`);
 }
 
 console.log('pinned latest task patch + physical action visibility: OK');

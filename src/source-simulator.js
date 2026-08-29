@@ -1,9 +1,22 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
-import { CanonicalRobotRig } from './canonical-rig.js';
+import { CanonicalRobotRig, canonicalVisualProvenance } from './canonical-rig.js';
 import { TASK_PATCH_REVISION } from './task-catalog.js';
 
 const DEG = Math.PI / 180;
+
+// Presentation tokens intentionally live outside the pinned robot and scenario
+// sources. They tune the viewport only; they are not calibrated material values.
+export const PRESENTATION_GROUND_COLOR = 0x687378;
+export const HIGH_CONTRAST_SCENE_COLORS = Object.freeze({
+  light: 0xf8fafc,
+  dark: 0x111827,
+});
+const CONTACT_PERIMETER = Object.freeze({
+  clearanceMm: 3,
+  widthMm: 5,
+  liftMm: 0.8,
+});
 
 // SO-101 reuses its pinned RoboBuddy_AI inspection-camera direction.
 // The pinned LeKiwi and OpenArm inspection presets are rear-facing relative to the
@@ -14,6 +27,7 @@ export const FRONT_CAMERA_PRESETS = Object.freeze({
   so101: Object.freeze({ position: [540, 410, 720], target: [140, 105, -35] }),
   lekiwi: Object.freeze({ position: [500, 350, -150], target: [-60, 125, 45] }),
   openarm: Object.freeze({ position: [1830, 820, 0], target: [140, 365, 0] }),
+  unitree: Object.freeze({ position: [1950, 1180, 1650], target: [150, 660, 0] }),
 });
 const ENGINE_URL = `https://cdn.jsdelivr.net/gh/jivishov/RoboBuddy_AI@${TASK_PATCH_REVISION}/lab/v2/scenario-engine.js`;
 let engineModulePromise = null;
@@ -30,6 +44,9 @@ function internalToPublic(profileId, jointState = {}) {
   }
   if (profileId === 'so101') {
     return Object.fromEntries(['shoulder_pan','shoulder_lift','elbow_flex','wrist_flex','wrist_roll','gripper'].map((key) => [`${key}.pos`, Number(jointState[key] ?? 0)]));
+  }
+  if (profileId === 'unitree') {
+    return Object.fromEntries(Object.entries(jointState).map(([key, value]) => [key, Number(value ?? 0)]));
   }
   return Object.fromEntries(['shoulder_pan','shoulder_lift','elbow_flex','wrist_flex','wrist_roll','gripper'].map((key) => [`arm_${key}.pos`, Number(jointState[key] ?? 0)]));
 }
@@ -155,6 +172,244 @@ function buildObjectVisual(item) {
   return group;
 }
 
+function presentationMaterial(color) {
+  return new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.96,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function presentationOnly(node, name, colorRole) {
+  node.name = name;
+  node.renderOrder = 3;
+  node.userData = {
+    presentationOnly: true,
+    configured: true,
+    accessibilityRole: 'floor-contact-perimeter',
+    colorRole,
+    canonicalMesh: false,
+    collisionGeometry: false,
+    kinematics: false,
+  };
+  return node;
+}
+
+function rectangularPerimeter(halfX, halfZ, color, name) {
+  const outerX = Math.max(5, Number(halfX) + CONTACT_PERIMETER.clearanceMm + CONTACT_PERIMETER.widthMm);
+  const outerZ = Math.max(5, Number(halfZ) + CONTACT_PERIMETER.clearanceMm + CONTACT_PERIMETER.widthMm);
+  const innerX = Math.max(1, outerX - CONTACT_PERIMETER.widthMm);
+  const innerZ = Math.max(1, outerZ - CONTACT_PERIMETER.widthMm);
+  const shape = new THREE.Shape();
+  shape.moveTo(-outerX, -outerZ);
+  shape.lineTo(outerX, -outerZ);
+  shape.lineTo(outerX, outerZ);
+  shape.lineTo(-outerX, outerZ);
+  shape.closePath();
+  const hole = new THREE.Path();
+  hole.moveTo(-innerX, -innerZ);
+  hole.lineTo(-innerX, innerZ);
+  hole.lineTo(innerX, innerZ);
+  hole.lineTo(innerX, -innerZ);
+  hole.closePath();
+  shape.holes.push(hole);
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), presentationMaterial(color));
+  mesh.rotation.x = -Math.PI / 2;
+  return presentationOnly(mesh, name, color === HIGH_CONTRAST_SCENE_COLORS.light ? 'light' : 'dark');
+}
+
+function circularPerimeter(radius, color, name) {
+  const inner = Math.max(4, Number(radius) + CONTACT_PERIMETER.clearanceMm);
+  const outer = inner + CONTACT_PERIMETER.widthMm;
+  const mesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 64), presentationMaterial(color));
+  mesh.rotation.x = -Math.PI / 2;
+  return presentationOnly(mesh, name, color === HIGH_CONTRAST_SCENE_COLORS.light ? 'light' : 'dark');
+}
+
+function proxyOrientation(proxy, target) {
+  if (!Array.isArray(proxy?.axes) || proxy.axes.length !== 3) return;
+  const a = proxy.axes;
+  const matrix = new THREE.Matrix4().set(
+    a[0][0], a[1][0], a[2][0], 0,
+    a[0][1], a[1][1], a[2][1], 0,
+    a[0][2], a[1][2], a[2][2], 0,
+    0, 0, 0, 1,
+  );
+  target.quaternion.setFromRotationMatrix(matrix);
+}
+
+function isSupportProxy(proxy = {}) {
+  return proxy.physicalSupportSurface === true || proxy.planningRole === 'contact_surface' || proxy.planningRole === 'contact_support';
+}
+
+function objectFootprint(item = {}) {
+  const visual = Array.isArray(item.visual?.footprintMm) ? item.visual.footprintMm.map(Number) : null;
+  if (visual?.length >= 2 && visual.every(Number.isFinite)) return visual;
+  const half = Array.isArray(item.physicalRest?.geometry?.halfExtentsMm) ? item.physicalRest.geometry.halfExtentsMm.map(Number) : null;
+  if (half?.length >= 3 && half.every(Number.isFinite)) return [half[0] * 2, half[2] * 2];
+  return [45, 45];
+}
+
+class HighContrastSceneLayer {
+  constructor(scene) {
+    this.scene = scene;
+    this.enabled = true;
+    this.root = new THREE.Group();
+    this.root.name = 'presentation-only-high-contrast-scene';
+    this.root.userData = {
+      presentationOnly: true,
+      configured: true,
+      canonicalMesh: false,
+      collisionGeometry: false,
+      kinematics: false,
+      description: 'Configured accessibility aids; they do not alter the source plant or canonical mesh.',
+    };
+    this.objectMarkers = new Map();
+    this.rigMarker = null;
+    this.rig = null;
+    this.scene.add(this.root);
+  }
+
+  setEnabled(enabled) {
+    this.enabled = Boolean(enabled);
+    this.root.visible = this.enabled;
+    return this.enabled;
+  }
+
+  getPerimeterCount() {
+    let count = 0;
+    this.root.traverse((node) => {
+      if (node.isMesh && node.userData?.accessibilityRole === 'floor-contact-perimeter') count += 1;
+    });
+    return count;
+  }
+
+  clear() {
+    this.root.traverse((node) => {
+      if (!node.isMesh) return;
+      node.geometry?.dispose?.();
+      node.material?.dispose?.();
+    });
+    this.root.clear();
+    this.objectMarkers.clear();
+    this.rigMarker = null;
+    this.rig = null;
+  }
+
+  addFixturePerimeters(definition) {
+    const seen = new Set();
+    for (const fixture of definition?.fixtures || []) {
+      if (fixture.visible === false) continue;
+      const proxies = fixture.collisionProxies || (fixture.collisionProxy ? [fixture.collisionProxy] : []);
+      for (const proxy of proxies) {
+        if (isSupportProxy(proxy) || proxy.planningRole === 'robot_mount_contact') continue;
+        const center = Array.isArray(proxy.centerMm) ? proxy.centerMm.map(Number) : null;
+        if (!center || center.length !== 3 || !center.every(Number.isFinite)) continue;
+        const key = JSON.stringify([proxy.type, proxy.id, center, proxy.halfExtentsMm, proxy.radiusMm, proxy.outerRadiusMm]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        let marker = null;
+        let floorY = null;
+        if (proxy.type === 'box' && Array.isArray(proxy.halfExtentsMm)) {
+          const [halfX, halfY, halfZ] = proxy.halfExtentsMm.map(Number);
+          floorY = center[1] - halfY;
+          marker = rectangularPerimeter(halfX, halfZ, HIGH_CONTRAST_SCENE_COLORS.light, `presentation-contact:${fixture.id}:${proxy.id || 'box'}`);
+        } else if (proxy.type === 'cylinder' || proxy.type === 'annulus') {
+          const height = Number(proxy.heightMm || (proxy.halfExtentsMm?.[1] || 0) * 2 || 0);
+          const radius = Number(proxy.outerRadiusMm || proxy.radiusMm || proxy.halfExtentsMm?.[0] || 0);
+          if (!Number.isFinite(radius) || radius <= 0) continue;
+          floorY = proxy.type === 'annulus' ? center[1] : center[1] - height / 2;
+          marker = circularPerimeter(radius, HIGH_CONTRAST_SCENE_COLORS.light, `presentation-contact:${fixture.id}:${proxy.id || proxy.type}`);
+        }
+        // These are floor-contact cues only. Equipment resting on a light worktop
+        // already has a distinct support boundary and intentionally receives no halo.
+        if (!marker || !Number.isFinite(floorY) || Math.abs(floorY) > 2) continue;
+        const anchor = presentationOnly(new THREE.Group(), `presentation-contact-anchor:${fixture.id}:${proxy.id || proxy.type}`, 'light');
+        anchor.position.set(center[0], floorY + CONTACT_PERIMETER.liftMm, center[2]);
+        proxyOrientation(proxy, anchor);
+        anchor.add(marker);
+        this.root.add(anchor);
+      }
+    }
+  }
+
+  addObjectPerimeters(definition) {
+    for (const item of definition?.objects || []) {
+      if (item.visible === false || !item.id) continue;
+      const [width, depth] = objectFootprint(item);
+      const kind = objectKind(item);
+      const round = kind === 'flask' || kind === 'beaker' || kind === 'bottle';
+      const perimeter = round
+        ? circularPerimeter(Math.max(width, depth) / 2, HIGH_CONTRAST_SCENE_COLORS.dark, `presentation-glass-contact:${item.id}`)
+        : rectangularPerimeter(width / 2, depth / 2, HIGH_CONTRAST_SCENE_COLORS.dark, `presentation-glass-contact:${item.id}`);
+      const anchor = presentationOnly(new THREE.Group(), `presentation-glass-anchor:${item.id}`, 'dark');
+      anchor.visible = false;
+      anchor.add(perimeter);
+      this.objectMarkers.set(item.id, anchor);
+      this.root.add(anchor);
+    }
+  }
+
+  addLeKiwiWheelPerimeters(rig) {
+    if (rig?.profileId !== 'lekiwi') return;
+    const marker = presentationOnly(new THREE.Group(), 'presentation-lekiwi-floor-contacts', 'light');
+    const groundOffset = Number(rig.meshData?.groundOffsetMm) || 0;
+    const wheelJoints = (rig.meshData?.chain || []).filter((joint) => /^base_(back|left|right)_wheel$/.test(String(joint.id || '')));
+    for (const wheel of wheelJoints) {
+      const [x = 0, , z = 0] = Array.isArray(wheel.pivotMm) ? wheel.pivotMm.map(Number) : [];
+      const perimeter = circularPerimeter(51, HIGH_CONTRAST_SCENE_COLORS.light, `presentation-lekiwi-wheel-contact:${wheel.id}`);
+      perimeter.position.set(x, -groundOffset + CONTACT_PERIMETER.liftMm, z);
+      marker.add(perimeter);
+    }
+    if (marker.children.length) {
+      this.rigMarker = marker;
+      this.rig = rig;
+      this.root.add(marker);
+      this.syncRigMarker();
+    }
+  }
+
+  configure({ definition, rig }) {
+    this.clear();
+    this.addFixturePerimeters(definition);
+    this.addObjectPerimeters(definition);
+    this.addLeKiwiWheelPerimeters(rig);
+    this.root.visible = this.enabled;
+  }
+
+  syncRigMarker() {
+    if (!this.rigMarker || !this.rig?.root) return;
+    this.rig.root.updateMatrixWorld(true);
+    this.rig.root.getWorldPosition(this.rigMarker.position);
+    this.rig.root.getWorldQuaternion(this.rigMarker.quaternion);
+  }
+
+  update(snapshot) {
+    for (const state of Object.values(snapshot?.objects || {})) {
+      const marker = this.objectMarkers.get(state.id);
+      if (!marker || !Array.isArray(state.worldPositionMm)) continue;
+      marker.position.fromArray(state.worldPositionMm.map(Number));
+      marker.position.y += CONTACT_PERIMETER.liftMm;
+      const rotation = state.worldRotationMatrix;
+      if (Array.isArray(rotation) && rotation.length === 9) {
+        const matrix = new THREE.Matrix4().set(rotation[0], rotation[1], rotation[2], 0, rotation[3], rotation[4], rotation[5], 0, rotation[6], rotation[7], rotation[8], 0, 0, 0, 0, 1);
+        const yaw = new THREE.Euler().setFromRotationMatrix(matrix, 'YXZ').y;
+        marker.rotation.set(0, yaw, 0);
+      }
+      marker.visible = !state.attachedTo && !state.releasedUnsupported;
+    }
+    this.syncRigMarker();
+  }
+
+  dispose() {
+    this.clear();
+    this.scene.remove(this.root);
+  }
+}
+
 class ScenarioVisual {
   constructor(scene, definition) {
     this.scene = scene;
@@ -226,8 +481,14 @@ export class SourceRobotSimulator {
     this.visual = null;
     this.profileId = '';
     this.scenario = null;
+    this.fallbackState = {};
+    this.fallbackClockSeconds = 0;
+    this.rigTransitionSeconds = 0.25;
     this.connectedInstance = 'ide-robot';
     this.installScene();
+    this.highContrastScene = new HighContrastSceneLayer(this.scene);
+    this.canvas.dataset.highContrastScene = 'true';
+    this.canvas.dataset.presentationGroundColor = '#687378';
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas.parentElement || canvas);
     this.resize();
@@ -243,7 +504,7 @@ export class SourceRobotSimulator {
     // identical depth causes camera-angle-dependent z-fighting. Keep all authored
     // collision/support geometry untouched and bias only the decorative ground depth.
     const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x17212b,
+      color: PRESENTATION_GROUND_COLOR,
       roughness: 0.95,
       polygonOffset: true,
       polygonOffsetFactor: 1,
@@ -251,14 +512,25 @@ export class SourceRobotSimulator {
     });
     const floor = new THREE.Mesh(new THREE.CircleGeometry(980, 96), floorMaterial);
     floor.name = 'presentation-ground-depth-biased';
+    floor.userData = {
+      presentationOnly: true,
+      configured: true,
+      materialNote: 'Neutral Lab Grey #687378 is a configured viewport material, not a real-world calibrated surface.',
+      collisionGeometry: false,
+      kinematics: false,
+    };
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; this.scene.add(floor);
   }
   async setScenario(profileId, scenario, fallbackRest = {}) {
     this.profileId = profileId;
     this.scenario = scenario || null;
+    this.fallbackState = { ...fallbackRest };
+    this.fallbackClockSeconds = 0;
+    this.canvas.dataset.simulationClockS = '0';
     this.engine?.plant?.dispose?.();
     this.engine = null;
     this.visual?.dispose?.(); this.visual = null;
+    this.highContrastScene?.clear();
     if (this.rig) { this.scene.remove(this.rig.root); this.rig.dispose(); this.rig = null; }
     this.rig = await CanonicalRobotRig.load(profileId);
     this.scene.add(this.rig.root);
@@ -270,9 +542,13 @@ export class SourceRobotSimulator {
         : { cameras: {} };
       this.engine.plant.connect(this.connectedInstance, connectionConfig);
       this.visual = new ScenarioVisual(this.scene, scenario);
+      this.highContrastScene.configure({ definition: scenario, rig: this.rig });
+      this.canvas.dataset.highContrastPerimeterCount = String(this.highContrastScene.getPerimeterCount());
       this.syncFromSource();
     } else {
-      this.rig.applyPhysicalState(fallbackRest, { x: 0, z: 0, yaw: 0 });
+      this.rig.applyPhysicalState(this.fallbackState, { x: 0, z: 0, yaw: 0 });
+      this.highContrastScene.configure({ definition: null, rig: this.rig });
+      this.canvas.dataset.highContrastPerimeterCount = String(this.highContrastScene.getPerimeterCount());
     }
     this.fit();
   }
@@ -285,10 +561,38 @@ export class SourceRobotSimulator {
     this.canvas.dataset.simulationClockS = String(Number(snapshot.simulationClockSeconds || this.engine.plant?.clockSeconds || 0));
     this.rig.applyPhysicalState(internalToPublic(this.profileId, snapshot.jointState), basePoseForRig(snapshot));
     this.visual?.update(snapshot);
+    this.highContrastScene?.update(snapshot);
   }
+  setHighContrastScene(enabled) {
+    const active = this.highContrastScene?.setEnabled(enabled) ?? false;
+    this.canvas.dataset.highContrastScene = String(active);
+    return active;
+  }
+  isHighContrastSceneEnabled() { return Boolean(this.highContrastScene?.enabled); }
   async applyAction(action, options = {}) {
     if (!this.engine?.plant) {
-      this.rig?.applyPhysicalState(action, { x: 0, z: 0, yaw: 0 });
+      if (!this.rig) throw new Error('Canonical rig is unavailable.');
+      const before = { ...this.fallbackState };
+      const target = { ...before, ...action };
+      const keys = Object.keys(action || {});
+      const frames = Math.max(1, Math.ceil(this.rigTransitionSeconds / 0.025));
+      for (let frame = 1; frame <= frames; frame += 1) {
+        if (options.beforeTick && !(await options.beforeTick())) return false;
+        const progress = frame / frames;
+        const smooth = progress * progress * (3 - 2 * progress);
+        const interpolated = { ...before };
+        for (const key of keys) {
+          const start = Number(before[key] ?? 0);
+          const end = Number(target[key]);
+          interpolated[key] = start + (end - start) * smooth;
+        }
+        this.fallbackState = interpolated;
+        this.rig.applyPhysicalState(this.fallbackState, { x: 0, z: 0, yaw: 0 });
+        this.fallbackClockSeconds += this.rigTransitionSeconds / frames;
+        this.canvas.dataset.simulationClockS = String(this.fallbackClockSeconds);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      this.fallbackState = target;
       return true;
     }
     try {
@@ -299,7 +603,13 @@ export class SourceRobotSimulator {
     return this.advanceTime(0.02, { ...options, realtime: false });
   }
   async advanceTime(seconds, { realtime = true, beforeTick = null } = {}) {
-    if (!this.engine?.plant) return true;
+    if (!this.engine?.plant) {
+      if (beforeTick && !(await beforeTick())) return false;
+      this.fallbackClockSeconds += Math.max(0, Number(seconds) || 0);
+      this.canvas.dataset.simulationClockS = String(this.fallbackClockSeconds);
+      if (realtime && Number(seconds) > 0) await new Promise((resolve) => requestAnimationFrame(resolve));
+      return true;
+    }
     const ticks = Math.max(0, Math.ceil(Math.max(0, Number(seconds) || 0) / this.engine.plant.tickSeconds));
     const visualStride = Math.max(1, Math.floor(ticks / 30));
     for (let i = 0; i < ticks; i += 1) {
@@ -320,12 +630,19 @@ export class SourceRobotSimulator {
   }
   advanceBase(seconds) { return this.advanceTime(seconds); }
   getTelemetry() {
-    if (!this.engine) return {};
+    if (!this.engine) return { ...this.fallbackState, simulation_clock_s: this.fallbackClockSeconds };
     const snapshot = this.engine.snapshot();
     return { ...internalToPublic(this.profileId, snapshot.jointState), simulation_clock_s: Number(snapshot.simulationClockSeconds || this.engine.plant?.clockSeconds || 0) };
   }
   getContacts() {
-    if (!this.engine) return { sourcePlant: 'not active' };
+    if (!this.engine) return {
+      simulationMode: 'kinematic pose only',
+      canonicalVisual: canonicalVisualProvenance(this.profileId)?.robotId || this.profileId,
+      sourcePlant: 'not active',
+      contactModel: 'not simulated',
+      locomotion: 'not simulated; fixed visual root',
+      hardwareValidation: 'pending',
+    };
     const snapshot = this.engine.snapshot();
     const held = Object.values(snapshot.objects || {}).filter((item) => item.attachedTo).map((item) => `${item.id}→${item.attachedTo}`);
     const unsupported = Object.values(snapshot.objects || {}).filter((item) => item.releasedUnsupported).map((item) => item.id);
@@ -347,7 +664,7 @@ export class SourceRobotSimulator {
     const radius = Math.max(260, size.length() * 0.58);
     const preset = FRONT_CAMERA_PRESETS[this.profileId] || FRONT_CAMERA_PRESETS.so101;
     const direction = new THREE.Vector3().fromArray(preset.position).sub(new THREE.Vector3().fromArray(preset.target)).normalize();
-    const distance = Math.max(460, radius * 1.72);
+    const distance = Math.max(460, radius * 1.72) * (this.profileId === 'unitree' ? 1.22 : 1);
     this.controls.target.copy(center);
     this.camera.position.copy(center).addScaledVector(direction, distance);
     this.camera.near = Math.max(1, radius / 1000); this.camera.far = Math.max(3000, radius * 6); this.camera.updateProjectionMatrix(); this.controls.update();
@@ -358,5 +675,5 @@ export class SourceRobotSimulator {
     this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
   }
   animate() { requestAnimationFrame(() => this.animate()); this.controls.update(); this.renderer.render(this.scene, this.camera); }
-  dispose() { this.engine?.plant?.dispose?.(); this.visual?.dispose?.(); this.rig?.dispose?.(); this.resizeObserver?.disconnect?.(); this.renderer?.dispose?.(); }
+  dispose() { this.engine?.plant?.dispose?.(); this.visual?.dispose?.(); this.highContrastScene?.dispose?.(); this.rig?.dispose?.(); this.resizeObserver?.disconnect?.(); this.renderer?.dispose?.(); }
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="RoboBuddy Robot IDE — visible physical-target Python with immediate source-plant 3D simulation.">
+  <meta name="description" content="RoboBuddy Robot IDE — source-pinned robot programming with immediate articulated 3D simulation.">
   <meta name="theme-color" content="#eef4f1">
   <title>RoboBuddy Robot IDE</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
@@ -36,15 +36,15 @@
     <div class="menu-wrap"><button class="menu-button" data-menu="run">Run</button><div id="runMenu" class="menu-popover" hidden><button data-action="run"><span>Run</span><span class="shortcut">F5</span></button><button data-action="step"><span>Step Action</span><span class="shortcut">F10</span></button><button data-action="cursor"><span>Run to Cursor</span><span class="shortcut">Ctrl+F10</span></button><button data-action="stop"><span>Stop</span><span class="shortcut">Shift+F5 / Esc</span></button><button data-action="reset"><span>Reset Simulation</span></button></div></div>
     <div class="menu-wrap theme-menu-wrap"><button class="menu-button" data-menu="theme" aria-haspopup="menu" aria-expanded="false">Theme</button><div id="themeMenu" class="menu-popover theme-menu" role="menu" aria-label="Color theme" hidden><div class="theme-menu-label">Color Theme</div><button class="theme-option" type="button" data-theme-id="calm-light" role="menuitemradio" aria-checked="false"><span class="theme-swatch calm-light" aria-hidden="true"></span><span>Calm Light</span><span class="theme-option-check" aria-hidden="true">✓</span></button><button class="theme-option" type="button" data-theme-id="midnight-teal" role="menuitemradio" aria-checked="false"><span class="theme-swatch midnight-teal" aria-hidden="true"></span><span>Midnight Teal</span><span class="theme-option-check" aria-hidden="true">✓</span></button></div></div>
     <div class="menu-wrap"><button class="menu-button" data-menu="view">View</button><div id="viewMenu" class="menu-popover" hidden><button data-action="sidebar"><span>Toggle Explorer</span><span class="shortcut">Ctrl+B</span></button><button data-action="panel"><span>Toggle Bottom Panel</span><span class="shortcut">Ctrl+J</span></button><button data-action="editorFocus"><span>Focus Editor</span></button><button data-action="simulatorFocus"><span>Focus Simulator</span></button><button data-action="fit"><span>Fit Simulator</span></button></div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="robot">Robot</button><div id="robotMenu" class="menu-popover" hidden><button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Physical-Target Python</span></button></div></div>
-    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help">Help</button><div id="helpMenu" class="menu-popover" hidden><button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button></div></div>
-    <div class="menubar-spacer"></div><span class="mode-chip">SOURCE-PLANT SIMULATION · HW VALIDATION PENDING</span>
+    <div class="menu-wrap"><button class="menu-button" data-menu="robot">Robot</button><div id="robotMenu" class="menu-popover" hidden><button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Python Workspace</span></button></div></div>
+    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help">Help</button><div id="helpMenu" class="menu-popover" hidden><button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button><div class="menu-sep"></div><button data-action="about"><span>About RoboBuddy IDE</span></button></div></div>
+    <div class="menubar-spacer"></div><span id="modeChip" class="mode-chip">SOURCE-PLANT SIMULATION · HW VALIDATION PENDING</span>
   </header>
 
   <div class="toolbar">
     <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
-    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option></select>
-    <select id="taskSelect" aria-label="Reviewed lab task"></select>
+    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="unitree">Unitree G1 29-DoF</option></select>
+    <select id="taskSelect" aria-label="Robot workspace or reviewed lab task"></select>
     <span class="toolbar-sep"></span>
     <button id="runBtn" class="primary" title="Run (F5)">▶ Run</button><button id="pauseBtn" title="Pause simulation" aria-label="Pause simulation" aria-pressed="false" disabled>⏸ Pause</button><button id="stepBtn" title="Step physical action (F10)">▷ Step Action</button><button id="cursorBtn" title="Run to Cursor (Ctrl+F10)">▶│ Cursor</button><button id="stopBtn" class="danger" title="Simulation STOP (Esc)">■ Stop</button><button id="resetBtn" title="Reset simulation">↻ Reset</button>
     <span class="toolbar-sep"></span><button id="mobileCodeBtn" class="mobile-pane active">Code</button><button id="mobileSimBtn" class="mobile-pane">Simulator</button>
@@ -63,7 +63,7 @@
     <section id="mainPanes" class="main-panes">
       <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
       <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
-      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div class="sim-badge">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · NOT HARDWARE VALIDATION</div></div></section>
+      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="highContrastSceneBtn" class="scene-contrast-toggle" type="button" aria-pressed="true" title="High-contrast scene boundaries are configured presentation aids; they do not alter collision, kinematics, or canonical mesh data.">Contrast</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div id="simBadge" class="sim-badge" title="Neutral Lab Grey floor and contrast boundaries are configured viewport aids, not real-world calibrated materials.">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION</div></div></section>
     </section>
   </main>
 
@@ -75,6 +75,26 @@
   <footer class="statusbar"><span id="statusMessage">Starting…</span><span id="statusCursor">main.py</span><span class="right">Python 3 · <span id="driverStatus">physical-target API</span> · Hardware validation: pending</span></footer>
 </div>
 
+<dialog id="aboutDialog" class="about-dialog" aria-labelledby="aboutDialogTitle" aria-describedby="aboutDialogDescription">
+  <div class="about-dialog-shell">
+    <button id="aboutCloseBtn" class="about-close" type="button" aria-label="Close About RoboBuddy IDE dialog">×</button>
+    <div class="about-head">
+      <div class="about-mark" aria-hidden="true">RB</div>
+      <div>
+        <p class="about-eyebrow">Robotics learning environment</p>
+        <h2 id="aboutDialogTitle">RoboBuddy IDE</h2>
+      </div>
+    </div>
+    <p id="aboutDialogDescription" class="about-copy">A source-pinned workspace for visible Python, contact-aware simulation, and careful technical exploration.</p>
+    <div class="about-rule" aria-hidden="true"></div>
+    <div class="about-license">
+      <span class="about-license-label">License</span>
+      <strong>PolyForm Noncommercial 1.0.0</strong>
+      <span>Free for non-commercial use. Commercial use requires prior written permission.</span>
+    </div>
+    <p class="about-copyright">© 2026 Dr. Emil Jivishov</p>
+  </div>
+</dialog>
 <div id="commandPalette" class="command-palette" hidden><div class="command-box"><div class="command-input-row"><input id="commandInput" placeholder="Type a command…" aria-label="Command palette"><button id="commandClose" class="close">×</button></div><div id="commandList" class="command-list"></div></div></div>
 <input id="importFile" type="file" accept=".py,text/x-python" hidden>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>

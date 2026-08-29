@@ -11,10 +11,66 @@ test('IDE loads canonical robots and pinned reviewed tasks without runtime excep
   await expect(page.locator('#taskSelect')).toHaveValue('openarm-04-filtration-workcell');
   await expect(page.locator('#taskPanel')).toContainText('Bimanual Heater and Ring-Stand Stack');
 
-  for (const profile of ['so101', 'lekiwi', 'openarm']) {
+  for (const profile of ['so101', 'lekiwi', 'openarm', 'unitree']) {
     await page.locator('#robotSelect').selectOption(profile);
     await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
     await expect(page.locator('#simActionLabel')).toHaveText('Ready');
+  }
+
+  expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
+});
+
+test('Help opens and closes the accessible About dialog with the non-commercial license notice', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error?.stack || error)));
+
+  await page.goto('/?ci=about', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  await page.locator('[data-menu="help"]').click();
+  await expect(page.locator('#helpMenu')).toBeVisible();
+  await page.locator('[data-action="about"]').click();
+
+  const dialog = page.locator('#aboutDialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute('open', '');
+  await expect(dialog).toContainText('RoboBuddy IDE');
+  await expect(dialog).toContainText('© 2026 Dr. Emil Jivishov');
+  await expect(dialog).toContainText('PolyForm Noncommercial 1.0.0');
+  await expect(dialog).toContainText('Commercial use requires prior written permission.');
+  await expect(page.locator('#aboutCloseBtn')).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toHaveAttribute('open', '');
+  expect(pageErrors).toEqual([]);
+});
+
+test('high-contrast scene boundaries are default-on presentation aids for every pinned workcell', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error?.stack || error)));
+  await page.goto('/?ci=contrast', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+
+  for (const profile of ['openarm', 'so101', 'lekiwi']) {
+    await page.locator('#robotSelect').selectOption(profile);
+    await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+    const on = await page.evaluate(() => ({
+      pressed: document.getElementById('highContrastSceneBtn').getAttribute('aria-pressed'),
+      active: document.getElementById('simCanvas').dataset.highContrastScene,
+      floor: document.getElementById('simCanvas').dataset.presentationGroundColor,
+      perimeters: Number(document.getElementById('simCanvas').dataset.highContrastPerimeterCount),
+    }));
+    expect(on).toEqual({ pressed: 'true', active: 'true', floor: '#687378', perimeters: expect.any(Number) });
+    expect(on.perimeters).toBeGreaterThan(0);
+
+    const clockBefore = await page.locator('#simCanvas').getAttribute('data-simulation-clock-s');
+    await page.locator('#highContrastSceneBtn').click();
+    await expect(page.locator('#highContrastSceneBtn')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-high-contrast-scene', 'false');
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-presentation-ground-color', '#687378');
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-simulation-clock-s', clockBefore || '0');
+    await page.locator('#highContrastSceneBtn').click();
+    await expect(page.locator('#highContrastSceneBtn')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#simCanvas')).toHaveAttribute('data-high-contrast-scene', 'true');
   }
 
   expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
@@ -30,9 +86,9 @@ test('all pinned reference traces run through the source fixed-step plant collis
     const { ScenarioV2Engine } = await import(`https://cdn.jsdelivr.net/gh/jivishov/RoboBuddy_AI@${revision}/lab/v2/scenario-engine.js`);
     const results = [];
 
-    // Explicitly construct all three canonical rigs in-browser. This protects
+    // Explicitly construct all four canonical rigs in-browser. This protects
     // against constructor-order errors that static syntax tests cannot catch.
-    for (const profileId of ['openarm', 'so101', 'lekiwi']) {
+    for (const profileId of ['openarm', 'so101', 'lekiwi', 'unitree']) {
       const rig = await CanonicalRobotRig.load(profileId);
       if (!rig?.root?.isObject3D) throw new Error(`${profileId}: canonical root was not constructed`);
       rig.root.updateMatrixWorld(true);
@@ -75,6 +131,49 @@ test('all pinned reference traces run through the source fixed-step plant collis
     'lekiwi-01-beaker-courier',
   ]);
   expect(report.every((item) => item.actions > 1 && item.ticks >= item.actions)).toBeTruthy();
+});
+
+test('Unitree G1 loads the source-pinned 29-joint mesh as a truthful kinematic pose workspace', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error?.stack || error)));
+  await page.goto('/?ci=unitree', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  await page.locator('#robotSelect').selectOption('unitree');
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  await expect(page.locator('#taskSelect')).toHaveValue('unitree-g1-kinematic-pose-inspection');
+  await expect(page.locator('#taskPanel')).toContainText('Unitree G1 29-DoF Kinematic Pose Inspection');
+  await expect(page.locator('#modeChip')).toContainText('KINEMATIC POSE RIG');
+  await expect(page.locator('#simBadge')).toContainText('NO CONTACT PLANT');
+
+  const rig = await page.evaluate(async () => {
+    const { CanonicalRobotRig } = await import('/src/canonical-rig.js');
+    const { validateAction } = await import('/src/profiles.js');
+    const instance = await CanonicalRobotRig.load('unitree');
+    const result = {
+      robotId: instance.meshData.robotId,
+      joints: instance.meshData.chain.length,
+      parts: instance.meshData.parts.length,
+      groundOffsetMm: instance.meshData.groundOffsetMm,
+      valid: validateAction('unitree', { left_knee_joint: 20 }).left_knee_joint,
+      rejected: false,
+    };
+    try { validateAction('unitree', { left_knee_joint: 999 }); }
+    catch { result.rejected = true; }
+    instance.dispose();
+    return result;
+  });
+  expect(rig).toEqual({ robotId: 'unitree_g1_29dof', joints: 29, parts: 36, groundOffsetMm: 792.266, valid: 20, rejected: true });
+
+  await page.locator('#stepBtn').click();
+  await expect(page.locator('#statusMessage')).toContainText('Stepped A01', { timeout: 90_000 });
+  await page.locator('[data-side-view="robot"]').click();
+  await expect(page.locator('#robotSideView')).toBeVisible();
+  await page.locator('[data-side-action="telemetry"]').click();
+  await expect(page.locator('#telemetryPanel')).toContainText('BROWSER-HELD KINEMATIC G1 JOINT STATE');
+  await expect(page.locator('#telemetryPanel')).toContainText('waist_pitch_joint');
+  await page.locator('[data-side-action="contacts"]').click();
+  await expect(page.locator('#contactsPanel')).toContainText('NOT SIMULATED');
+  expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
 });
 
 test('learner Python reaches the first physical action through the IDE Step Action path', async ({ page }) => {
@@ -168,7 +267,8 @@ test('load, Fit, and Reset use pinned canonical front-view directions for every 
   expect(presets.lekiwi.position[2]).toBeLessThan(presets.lekiwi.target[2]);
   expect(presets.openarm).toEqual({ position: [1830, 820, 0], target: [140, 365, 0] });
   expect(presets.openarm.position[0]).toBeGreaterThan(presets.openarm.target[0]);
-  for (const profile of ['openarm', 'so101', 'lekiwi']) {
+  expect(presets.unitree).toEqual({ position: [1950, 1180, 1650], target: [150, 660, 0] });
+  for (const profile of ['openarm', 'so101', 'lekiwi', 'unitree']) {
     await page.locator('#robotSelect').selectOption(profile);
     await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
     await expect(page.locator('#simCanvas')).toHaveAttribute('data-camera-view', 'front');

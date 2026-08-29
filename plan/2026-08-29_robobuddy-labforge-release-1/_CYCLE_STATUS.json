@@ -1,0 +1,44 @@
+{
+  "project": "RoboBuddy LabForge Release 1",
+  "planDate": "2026-08-29",
+  "currentCycle": 1,
+  "totalCycles": 5,
+  "lastCompleted": null,
+  "lastCompletedAt": null,
+  "cycles": {
+    "01": {
+      "title": "Baseline reconciliation and characterization",
+      "status": "ready",
+      "dependsOn": []
+    },
+    "02": {
+      "title": "Opt-in read-only WebMCP inspection",
+      "status": "pending",
+      "dependsOn": [
+        "01"
+      ]
+    },
+    "03": {
+      "title": "Terminable Python worker core",
+      "status": "pending",
+      "dependsOn": [
+        "01"
+      ]
+    },
+    "04": {
+      "title": "Structured runs, evidence, and PR 2 integration",
+      "status": "pending",
+      "dependsOn": [
+        "02",
+        "03"
+      ]
+    },
+    "05": {
+      "title": "Revision-locked staged edits with human Apply",
+      "status": "pending",
+      "dependsOn": [
+        "04"
+      ]
+    }
+  }
+}

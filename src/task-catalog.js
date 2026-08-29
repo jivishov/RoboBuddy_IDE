@@ -2,6 +2,7 @@ export const TASK_PATCH_REVISION = '75fe2669c0ab0b029986de424c69162071174df8';
 export const TASK_PATCH_SOURCE = 'jivishov/RoboBuddy_AI';
 
 const ROOT = `https://cdn.jsdelivr.net/gh/${TASK_PATCH_SOURCE}@${TASK_PATCH_REVISION}/missions/lab-assistant/v2/definitions`;
+export const UNITREE_G1_VISUAL_REVISION = '66d18a029a0caeb6a6075e681dbd9ecd6b22affa';
 
 const task = (profileId, family, file, id, title, robotId) => Object.freeze({
   profileId, family, file, id, title, robotId,
@@ -22,9 +23,77 @@ export const PATCH_TASKS = Object.freeze({
   ]),
 });
 
+const UNITREE_G1_RIG_SCENARIO = Object.freeze({
+  schema: 'robobuddy.ide-rig-inspection.v1',
+  simulationMode: 'kinematic_pose',
+  workspaceRevision: 'unitree-g1-rig-v1',
+  id: 'unitree-g1-kinematic-pose-inspection',
+  title: 'Unitree G1 29-DoF Kinematic Pose Inspection',
+  brief: 'Inspect the canonical Unitree G1 mesh through bounded named joint poses. This workspace deliberately has no collision/contact plant, gait, balance, or hardware-control claim.',
+  robotId: 'unitree_g1_29dof',
+  canonicalModel: Object.freeze({
+    repository: 'jivishov/RoboBuddy_AI',
+    revision: UNITREE_G1_VISUAL_REVISION,
+    module: 'simulator/js/robot-mesh-data-unitree-g1.js',
+    sourceRepository: 'unitreerobotics/unitree_ros',
+    sourceRevision: 'dd4fa6866e523ad61324f658d63736e4eda3a6e4',
+    sourcePath: 'robots/g1_description/g1_29dof.urdf',
+    license: 'BSD-3-Clause',
+  }),
+  frames: Object.freeze({
+    geometry: 'Three.js Y-up metres',
+    transforms: 'Three.js Y-up millimetres',
+    root: 'fixed visual root; no locomotion model',
+  }),
+  portablePython: Object.freeze({
+    referenceActions: Object.freeze([
+      Object.freeze({
+        label: 'Upper-body joint-pose inspection',
+        hold_seconds: 0.35,
+        action: Object.freeze({
+          waist_pitch_joint: 8,
+          left_shoulder_pitch_joint: -35, left_shoulder_roll_joint: 28, left_elbow_joint: 45, left_wrist_pitch_joint: -10,
+          right_shoulder_pitch_joint: -35, right_shoulder_roll_joint: -28, right_elbow_joint: 45, right_wrist_pitch_joint: -10,
+        }),
+      }),
+      Object.freeze({
+        label: 'Lower-body joint-pose inspection (root fixed)',
+        hold_seconds: 0.35,
+        action: Object.freeze({
+          left_hip_roll_joint: 8, left_knee_joint: 22, left_ankle_pitch_joint: -10,
+          right_hip_roll_joint: -8, right_knee_joint: 22, right_ankle_pitch_joint: -10,
+        }),
+      }),
+      Object.freeze({
+        label: 'Return inspected joints to neutral',
+        hold_seconds: 0.35,
+        action: Object.freeze({
+          waist_pitch_joint: 0,
+          left_shoulder_pitch_joint: 0, left_shoulder_roll_joint: 0, left_elbow_joint: 0, left_wrist_pitch_joint: 0,
+          right_shoulder_pitch_joint: 0, right_shoulder_roll_joint: 0, right_elbow_joint: 0, right_wrist_pitch_joint: 0,
+          left_hip_roll_joint: 0, left_knee_joint: 0, left_ankle_pitch_joint: 0,
+          right_hip_roll_joint: 0, right_knee_joint: 0, right_ankle_pitch_joint: 0,
+        }),
+      }),
+    ]),
+  }),
+});
+
+export const UNITREE_G1_RIG_TASKS = Object.freeze([
+  Object.freeze({
+    profileId: 'unitree',
+    id: UNITREE_G1_RIG_SCENARIO.id,
+    title: UNITREE_G1_RIG_SCENARIO.title,
+    robotId: UNITREE_G1_RIG_SCENARIO.robotId,
+    simulationMode: 'kinematic_pose',
+    source: `RoboBuddy_AI@${UNITREE_G1_VISUAL_REVISION}/simulator/js/robot-mesh-data-unitree-g1.js`,
+  }),
+]);
+
 const cache = new Map();
 
 export function tasksForProfile(profileId) {
+  if (profileId === 'unitree') return UNITREE_G1_RIG_TASKS;
   return PATCH_TASKS[profileId] || [];
 }
 
@@ -39,6 +108,7 @@ export function taskDescriptor(profileId, taskId) {
 export async function loadPatchedScenario(profileId, taskId) {
   const descriptor = taskDescriptor(profileId, taskId);
   if (!descriptor) return null;
+  if (descriptor.simulationMode === 'kinematic_pose') return structuredClone(UNITREE_G1_RIG_SCENARIO);
   if (cache.has(descriptor.id)) return structuredClone(cache.get(descriptor.id));
   const response = await fetch(descriptor.url, { cache: 'force-cache' });
   if (!response.ok) throw new Error(`Pinned task ${descriptor.id} returned HTTP ${response.status}.`);
@@ -58,10 +128,23 @@ export async function loadPatchedScenario(profileId, taskId) {
 }
 
 export function taskPatchProvenance(descriptor) {
+  if (descriptor?.simulationMode === 'kinematic_pose') {
+    return {
+      repository: 'jivishov/RoboBuddy_AI',
+      revision: UNITREE_G1_VISUAL_REVISION,
+      scenarioId: descriptor.id,
+      source: descriptor.source,
+      simulationMode: 'kinematic_pose',
+    };
+  }
   return descriptor ? {
     repository: TASK_PATCH_SOURCE,
     revision: TASK_PATCH_REVISION,
     scenarioId: descriptor.id,
     source: descriptor.url,
   } : null;
+}
+
+export function isKinematicRigScenario(scenario) {
+  return scenario?.simulationMode === 'kinematic_pose';
 }

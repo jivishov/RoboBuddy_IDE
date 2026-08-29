@@ -11,9 +11,13 @@ for (const token of [
   'robot-mesh-data-openarm-v2.js',
   'robot-mesh-data-so101.js',
   'robot-mesh-data-lekiwi.js',
+  'robot-mesh-data-unitree-g1.js',
   "robotId: 'openarm_v2_bimanual'",
   "robotId: 'so101_follower'",
   "robotId: 'lekiwi_sim'",
+  "robotId: 'unitree_g1_29dof'",
+  'dd4fa6866e523ad61324f658d63736e4eda3a6e4',
+  'BSD-3-Clause',
   'right_finger_inner_mesh',
   'right_finger_outer_mesh',
   'getUint16(index * 2, true)',
@@ -27,6 +31,7 @@ for (const token of [
   '`${side}_gripper.pos`',
   'state[`arm_${key}.pos`]',
   'state[`${key}.pos`]',
+  "profileId === 'unitree'",
   'this.root.rotation.set(0, -(Number(basePose.yaw) || 0), 0)',
 ]) {
   if (!rig.includes(token)) throw new Error(`canonical command mapping missing ${token}`);
@@ -51,7 +56,7 @@ for (const token of [
   if (!sim.includes(token)) throw new Error(`simulator missing fail-closed canonical behavior ${token}`);
 }
 
-for (const id of ['openarm_v2_bimanual','so101_follower','lekiwi_sim']) {
+for (const id of ['openarm_v2_bimanual','so101_follower','lekiwi_sim','unitree_g1_29dof']) {
   if (!profiles.includes(id)) throw new Error(`profile does not declare canonical robot id ${id}`);
 }
 

@@ -1,8 +1,8 @@
 import { IdeEditor } from './editor.js';
 import { PythonRuntime } from './python-runtime.js';
 import { SourceRobotSimulator } from './source-simulator.js';
-import { PROFILES, validateAction, FIDELITY_NOTICE, LEROBOT_REVISION } from './profiles.js';
-import { TASK_PATCH_REVISION, defaultTaskId, loadPatchedScenario, taskDescriptor, tasksForProfile } from './task-catalog.js';
+import { PROFILES, validateAction, fidelityNoticeFor, LEROBOT_REVISION } from './profiles.js';
+import { TASK_PATCH_REVISION, defaultTaskId, isKinematicRigScenario, loadPatchedScenario, taskDescriptor, tasksForProfile } from './task-catalog.js';
 import { buildPatchedWorkspace } from './task-workspace.js';
 import { applyTheme, readStoredTheme, THEMES } from './themes.js';
 
@@ -28,7 +28,10 @@ class App {
     this.console = { stdout: '', stderr: '' };
     this.theme = applyTheme(readStoredTheme(), { persist: false });
     this.runtime = new PythonRuntime();
+    this.highContrastScene = true;
     this.sim = new SourceRobotSimulator($('simCanvas'));
+    this.sim.setHighContrastScene(this.highContrastScene);
+    this.renderHighContrastSceneControl();
     this.editor = new IdeEditor($('editor'), {
       onChange: (f, v) => this.onEdit(f, v),
       onSave: () => this.save(),
@@ -40,12 +43,27 @@ class App {
     this.renderThemeOptions();
     this.bind();
     this.updateExecutionControls();
-    this.setStatus('Loading pinned task…');
+    this.setStatus('Loading robot workspace…');
     void this.loadProfile(this.profileId, { preserve: false, taskId: this.taskId });
   }
 
   storageKey() {
-    return `rbide.workspace.${TASK_PATCH_REVISION.slice(0, 12)}.${this.profileId}.${this.taskId}`;
+    const revision = this.scenario?.workspaceRevision || TASK_PATCH_REVISION.slice(0, 12);
+    return `rbide.workspace.${revision}.${this.profileId}.${this.taskId}`;
+  }
+
+  usesSourcePlant() { return !isKinematicRigScenario(this.scenario); }
+
+  isKinematicPoseWorkspace() { return isKinematicRigScenario(this.scenario); }
+
+  updateSimulationPresentation(profile) {
+    const kinematic = profile?.simulationMode === 'kinematic_pose';
+    $('modeChip').textContent = kinematic
+      ? 'KINEMATIC POSE RIG · NO CONTACT PLANT · HW VALIDATION PENDING'
+      : 'SOURCE-PLANT SIMULATION · HW VALIDATION PENDING';
+    $('simBadge').textContent = kinematic
+      ? 'PINNED UNITREE G1 MESH / BOUNDED JOINT-POSE VIEW · NO CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION'
+      : 'PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION';
   }
 
   loadStored() {
@@ -74,26 +92,30 @@ class App {
     $('robotLabel').textContent = p.label;
     $('driverLabel').textContent = p.driver;
     $('driverStatus').textContent = p.driver;
-    this.setStatus('Loading reviewed mission and source plant…');
+    this.updateSimulationPresentation(p);
+    this.setStatus(p.simulationMode === 'kinematic_pose' ? 'Loading Unitree canonical pose workspace…' : 'Loading reviewed mission and source plant…');
     try {
       this.scenario = await loadPatchedScenario(id, this.taskId);
       if (!this.scenario) throw new Error(`No pinned source task is configured for ${id}.`);
       const starter = buildPatchedWorkspace(id, this.scenario);
       this.files = this.loadStored() || starter;
       this.currentFile = 'main.py';
-      await this.sim.setScenario(id, this.scenario, p.rest);
+      await this.sim.setScenario(id, this.isKinematicPoseWorkspace() ? null : this.scenario, p.rest);
       this.renderFiles();
       this.openFile('main.py');
       this.renderTask();
       this.renderPanels();
-      this.setStatus(`Ready · ${this.scenario.title} · source ${TASK_PATCH_REVISION.slice(0, 12)}`);
+      const source = this.isKinematicPoseWorkspace()
+        ? `canonical mesh ${this.scenario.canonicalModel.revision.slice(0, 12)}`
+        : `source ${TASK_PATCH_REVISION.slice(0, 12)}`;
+      this.setStatus(`Ready · ${this.scenario.title} · ${source}`);
     } catch (error) {
       this.scenario = null;
-      this.files = { 'main.py': `# Pinned RoboBuddy task failed to load.\n# ${String(error.message || error)}\n` };
+      this.files = { 'main.py': `# RoboBuddy workspace failed to load.\n# ${String(error.message || error)}\n` };
       this.renderFiles();
       this.openFile('main.py');
-      this.problem('error', 'SOURCE_TASK', String(error.message || error));
-      this.setStatus('Pinned source task unavailable');
+      this.problem('error', p.simulationMode === 'kinematic_pose' ? 'RIG_WORKSPACE' : 'SOURCE_TASK', String(error.message || error));
+      this.setStatus(p.simulationMode === 'kinematic_pose' ? 'Unitree rig workspace unavailable' : 'Pinned source task unavailable');
     }
   }
 
@@ -153,15 +175,24 @@ class App {
   renderTask() {
     const p = PROFILES[this.profileId];
     const scenario = this.scenario;
+    const kinematic = this.isKinematicPoseWorkspace();
     const labels = [];
     for (const item of scenario?.portablePython?.referenceActions || []) {
       const label = String(item.label || 'physical action');
       if (!labels.includes(label)) labels.push(label);
       if (labels.length >= 12) break;
     }
-    $('taskPanel').innerHTML = `<h2>${escapeHtml(scenario?.title || p.task.title)}</h2><p>${escapeHtml(scenario?.brief || p.source)}</p><p><strong>Pinned task source:</strong> RoboBuddy_AI@${TASK_PATCH_REVISION.slice(0, 12)}</p><ol>${labels.map((label, index) => `<li class="${index === 0 ? 'task-current' : ''}">${escapeHtml(label)}</li>`).join('')}</ol><details><summary>Fidelity boundary</summary><p>${escapeHtml(p.task.limitations)}</p></details>`;
-    $('fidelityText').textContent = `${FIDELITY_NOTICE} LeRobot revision ${LEROBOT_REVISION}. Task definitions, reference actions, collision/contact plant, and support rules are pinned to RoboBuddy_AI revision ${TASK_PATCH_REVISION}. ${p.task.limitations}`;
-    $('sideRobotSummary').textContent = `${p.label}. Canonical RoboBuddy view; telemetry and contacts are modeled source-plant values, not hardware measurements.`;
+    const sourceLabel = kinematic ? 'Canonical mesh source' : 'Pinned task source';
+    const sourceText = kinematic
+      ? `RoboBuddy_AI@${scenario.canonicalModel.revision.slice(0, 12)} · Unitree URDF ${scenario.canonicalModel.sourceRevision.slice(0, 12)} · ${scenario.canonicalModel.license}`
+      : `RoboBuddy_AI@${TASK_PATCH_REVISION.slice(0, 12)}`;
+    $('taskPanel').innerHTML = `<h2>${escapeHtml(scenario?.title || p.task.title)}</h2><p>${escapeHtml(scenario?.brief || p.source)}</p><p><strong>${sourceLabel}:</strong> ${escapeHtml(sourceText)}</p><ol>${labels.map((label, index) => `<li class="${index === 0 ? 'task-current' : ''}">${escapeHtml(label)}</li>`).join('')}</ol><details><summary>Fidelity boundary</summary><p>${escapeHtml(p.task.limitations)}</p></details>`;
+    $('fidelityText').textContent = kinematic
+      ? `${fidelityNoticeFor(this.profileId)} ${p.task.limitations}`
+      : `${fidelityNoticeFor(this.profileId)} LeRobot revision ${LEROBOT_REVISION}. Task definitions, reference actions, collision/contact plant, and support rules are pinned to RoboBuddy_AI revision ${TASK_PATCH_REVISION}. ${p.task.limitations}`;
+    $('sideRobotSummary').textContent = kinematic
+      ? `${p.label}. Canonical 29-joint mesh pose view; telemetry is browser-held joint state and contact values are intentionally unavailable.`
+      : `${p.label}. Canonical RoboBuddy view; telemetry and contacts are modeled source-plant values, not hardware measurements.`;
   }
 
   save(show = true) {
@@ -174,7 +205,10 @@ class App {
   }
 
   async resetWorkspace() {
-    if (!confirm('Reset all files for this task to its pinned reviewed physical-Python starter?')) return;
+    const prompt = this.isKinematicPoseWorkspace()
+      ? 'Reset all files for this Unitree workspace to its browser-only kinematic-pose starter?'
+      : 'Reset all files for this task to its pinned reviewed physical-Python starter?';
+    if (!confirm(prompt)) return;
     localStorage.removeItem(this.storageKey());
     if (!this.scenario) return;
     this.files = buildPatchedWorkspace(this.profileId, this.scenario);
@@ -229,7 +263,7 @@ class App {
 
   async resetSimulation({ cancel = true } = {}) {
     if (cancel) this.cancelExecution();
-    if (this.scenario) await this.sim.reset(this.profileId, this.scenario, PROFILES[this.profileId].rest);
+    if (this.scenario) await this.sim.reset(this.profileId, this.isKinematicPoseWorkspace() ? null : this.scenario, PROFILES[this.profileId].rest);
     this.editor.highlightLine(null);
     this.stepIndex = 0;
     $('simActionLabel').textContent = 'Ready';
@@ -323,8 +357,8 @@ class App {
       let applied;
       try { applied = await this.sim.applyAction(event.action, { beforeTick }); }
       catch (error) {
-        this.problem('error', 'COLLISION', `${event.file}:${event.line} — ${error.message}`);
-        this.setStatus('Source plant rejected modeled motion');
+        this.problem('error', this.usesSourcePlant() ? 'COLLISION' : 'KINEMATIC_RIG', `${event.file}:${event.line} — ${error.message}`);
+        this.setStatus(this.usesSourcePlant() ? 'Source plant rejected modeled motion' : 'Kinematic pose update failed');
         throw error;
       }
       if (applied === false) return false;
@@ -333,8 +367,8 @@ class App {
       let advanced;
       try { advanced = await this.sim.advanceTime(event.seconds, { realtime: true, beforeTick }); }
       catch (error) {
-        this.problem('error', 'COLLISION', `${event.file}:${event.line} — ${error.message}`);
-        this.setStatus('Source plant stopped at last valid state');
+        this.problem('error', this.usesSourcePlant() ? 'COLLISION' : 'KINEMATIC_RIG', `${event.file}:${event.line} — ${error.message}`);
+        this.setStatus(this.usesSourcePlant() ? 'Source plant stopped at last valid state' : 'Kinematic pose timeline failed');
         throw error;
       }
       if (advanced === false) return false;
@@ -353,7 +387,7 @@ class App {
       const prep = await this.prepare();
       if (!(await this.waitForResume(token))) return;
       this.stepIndex = 0;
-      this.setStatus('Running pinned source-plant simulation…');
+      this.setStatus(this.usesSourcePlant() ? 'Running pinned source-plant simulation…' : 'Running Unitree kinematic pose sequence…');
       for (let i = 0; i < prep.events.length; i += 1) {
         if (!(await this._applyEvent(prep.events[i], token))) return;
         this.stepIndex = i + 1;
@@ -404,7 +438,7 @@ class App {
       if (!(await this.waitForResume(token))) return;
       const prep = await this.prepare();
       if (!(await this.waitForResume(token))) return;
-      this.setStatus('Running pinned source-plant simulation to cursor…');
+      this.setStatus(this.usesSourcePlant() ? 'Running pinned source-plant simulation to cursor…' : 'Running Unitree kinematic pose sequence to cursor…');
       for (let i = 0; i < prep.events.length; i += 1) {
         const event = prep.events[i];
         if (event.kind === 'send_action' && event.file === file && event.line > line) break;
@@ -436,11 +470,18 @@ class App {
     const problems = $('problemsPanel');
     problems.innerHTML = this.problems.length ? this.problems.map((item) => `<div class="problem ${item.level}"><strong>${item.code}</strong><div>${escapeHtml(item.message).replace(/\n/g, '<br>')}</div></div>`).join('') : '<div class="empty-state">No problems.</div>';
     if (this.console.stdout || this.console.stderr) problems.innerHTML += `<div class="console-block">${this.console.stdout.split('\n').filter(Boolean).map((line) => `<div class="console-line">${escapeHtml(line)}</div>`).join('')}${this.console.stderr.split('\n').filter(Boolean).map((line) => `<div class="console-line stderr">${escapeHtml(line)}</div>`).join('')}</div>`;
+    const kinematic = this.isKinematicPoseWorkspace();
     const telemetry = this.sim.getTelemetry();
-    $('telemetryPanel').innerHTML = `<div class="panel-note">SIMULATED ACTUAL STATE FROM THE PINNED ROBObUDDY FIXED-STEP PLANT — not measured hardware telemetry.</div><table><tr><th>Field</th><th>Modeled value</th></tr>${Object.entries(telemetry).map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${Number(value).toFixed(3)}</td></tr>`).join('')}</table>`;
-    $('commandsPanel').innerHTML = this.commands.length ? this.commands.map((command, index) => `<div class="command-row ${index === this.stepIndex - 1 ? 'active' : ''}"><span>${index + 1}</span><span>${escapeHtml(this.actionLabel(index))}</span><code>${escapeHtml(JSON.stringify(command.action))}</code><span>physical target</span></div>`).join('') : '<div class="empty-state">Run or Step Action to prepare the physical command queue.</div>';
+    const telemetryNote = kinematic
+      ? 'BROWSER-HELD KINEMATIC G1 JOINT STATE — not measured telemetry, controller state, or a physical robot observation.'
+      : 'SIMULATED ACTUAL STATE FROM THE PINNED ROBObUDDY FIXED-STEP PLANT — not measured hardware telemetry.';
+    $('telemetryPanel').innerHTML = `<div class="panel-note">${telemetryNote}</div><table><tr><th>Field</th><th>Modeled value</th></tr>${Object.entries(telemetry).map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${Number(value).toFixed(3)}</td></tr>`).join('')}</table>`;
+    $('commandsPanel').innerHTML = this.commands.length ? this.commands.map((command, index) => `<div class="command-row ${index === this.stepIndex - 1 ? 'active' : ''}"><span>${index + 1}</span><span>${escapeHtml(this.actionLabel(index))}</span><code>${escapeHtml(JSON.stringify(command.action))}</code><span>${kinematic ? 'kinematic pose' : 'physical target'}</span></div>`).join('') : `<div class="empty-state">Run or Step Action to prepare the ${kinematic ? 'kinematic pose' : 'physical command'} queue.</div>`;
     const contacts = this.sim.getContacts();
-    $('contactsPanel').innerHTML = `<div class="panel-note">MODELED CONTACT / SUPPORT STATE FROM THE PINNED SOURCE PLANT — no force, torque, current, or tactile sensor data.</div><div class="metric-grid">${Object.entries(contacts).map(([key, value]) => `<span>${escapeHtml(key)}</span><strong>${typeof value === 'number' ? value.toFixed(3) : escapeHtml(String(value))}</strong>`).join('')}</div>`;
+    const contactsNote = kinematic
+      ? 'G1 CONTACT / SUPPORT IS NOT SIMULATED. This panel reports the explicit kinematic boundary, not physical contact data.'
+      : 'MODELED CONTACT / SUPPORT STATE FROM THE PINNED SOURCE PLANT — no force, torque, current, or tactile sensor data.';
+    $('contactsPanel').innerHTML = `<div class="panel-note">${contactsNote}</div><div class="metric-grid">${Object.entries(contacts).map(([key, value]) => `<span>${escapeHtml(key)}</span><strong>${typeof value === 'number' ? value.toFixed(3) : escapeHtml(String(value))}</strong>`).join('')}</div>`;
   }
 
   openBottom(name) {
@@ -511,6 +552,23 @@ class App {
     this.renderThemeOptions();
   }
 
+  renderHighContrastSceneControl() {
+    const button = $('highContrastSceneBtn');
+    if (!button) return;
+    button.classList.toggle('active', this.highContrastScene);
+    button.setAttribute('aria-pressed', String(this.highContrastScene));
+    button.setAttribute('aria-label', this.highContrastScene ? 'Disable high-contrast scene boundaries' : 'Enable high-contrast scene boundaries');
+    button.title = this.highContrastScene
+      ? 'High-contrast scene is on. Its configured floor-contact boundaries do not alter collision, kinematics, or canonical mesh data.'
+      : 'High-contrast scene is off. Enable configured floor-contact boundaries without changing collision, kinematics, or canonical mesh data.';
+  }
+
+  toggleHighContrastScene() {
+    this.highContrastScene = this.sim.setHighContrastScene(!this.highContrastScene);
+    this.renderHighContrastSceneControl();
+    this.setStatus(this.highContrastScene ? 'High-contrast scene enabled (presentation only)' : 'High-contrast scene disabled');
+  }
+
   renderThemeOptions() {
     document.querySelectorAll('[data-theme-id]').forEach((button) => {
       const active = button.dataset.themeId === this.theme.id;
@@ -525,21 +583,22 @@ class App {
   }
 
   openPalette() { const box = $('commandPalette'); box.hidden = false; $('commandInput').value = ''; this.renderPalette(''); setTimeout(() => $('commandInput').focus(), 0); }
+  openAbout() { this.closeMenus(); const dialog = $('aboutDialog'); if (!dialog?.open) dialog?.showModal(); setTimeout(() => $('aboutCloseBtn')?.focus(), 0); }
   renderPalette(q) { const commands = this.commandsList().filter((c) => c.label.toLowerCase().includes(q.toLowerCase())); $('commandList').innerHTML = ''; commands.forEach((c) => { const b = document.createElement('button'); b.textContent = c.label; b.onclick = () => { $('commandPalette').hidden = true; c.run(); }; $('commandList').appendChild(b); }); }
   commandsList() {
     const themeCommands = Object.values(THEMES).map((theme) => ({ label: `Preferences: Color Theme — ${theme.label}`, run: () => this.setTheme(theme.id) }));
-    return [{ label: 'Run: Run simulation', run: () => this.run() }, { label: 'Run: Step physical action', run: () => this.step() }, { label: 'Run: Run to cursor', run: () => this.runToCursor() }, { label: 'View: Toggle Explorer', run: () => this.toggleSidebar() }, { label: 'View: Toggle diagnostics panel', run: () => this.togglePanel() }, { label: 'View: Fit simulator', run: () => this.sim.fit() }, { label: 'Robot: Contact diagnostics', run: () => this.openBottom('contacts') }, { label: 'Robot: Simulated telemetry', run: () => this.openBottom('telemetry') }, { label: 'File: Save draft', run: () => this.save() }, { label: 'File: Export workspace', run: () => this.exportWorkspace() }, ...themeCommands];
+    return [{ label: 'Run: Run simulation', run: () => this.run() }, { label: 'Run: Step physical action', run: () => this.step() }, { label: 'Run: Run to cursor', run: () => this.runToCursor() }, { label: 'View: Toggle Explorer', run: () => this.toggleSidebar() }, { label: 'View: Toggle diagnostics panel', run: () => this.togglePanel() }, { label: 'View: Toggle high-contrast scene', run: () => this.toggleHighContrastScene() }, { label: 'View: Fit simulator', run: () => this.sim.fit() }, { label: 'Robot: Contact diagnostics', run: () => this.openBottom('contacts') }, { label: 'Robot: Simulated telemetry', run: () => this.openBottom('telemetry') }, { label: 'Help: About RoboBuddy IDE', run: () => this.openAbout() }, { label: 'File: Save draft', run: () => this.save() }, { label: 'File: Export workspace', run: () => this.exportWorkspace() }, ...themeCommands];
   }
 
   dispatch(action) {
-    const map = { import: () => $('importFile').click(), save: () => this.save(), exportMain: () => this.download('main.py', this.files['main.py']), exportWorkspace: () => this.exportWorkspace(), resetWorkspace: () => this.resetWorkspace(), undo: () => this.editor.undo(), redo: () => this.editor.redo(), find: () => this.editor.find(), replace: () => this.editor.replace(), toggleComment: () => this.editor.toggleComment(), palette: () => this.openPalette(), run: () => this.run(), step: () => this.step(), cursor: () => this.runToCursor(), stop: () => this.stop(), reset: () => this.resetSimulation(), sidebar: () => this.toggleSidebar(), panel: () => this.togglePanel(), editorFocus: () => this.editor.focus(), simulatorFocus: () => $('simCanvas').focus(), fit: () => this.sim.fit(), contacts: () => this.openBottom('contacts'), telemetry: () => this.openBottom('telemetry'), api: () => this.openBottom('task'), shortcuts: () => this.openBottom('task'), fidelity: () => this.openBottom('task') };
+    const map = { import: () => $('importFile').click(), save: () => this.save(), exportMain: () => this.download('main.py', this.files['main.py']), exportWorkspace: () => this.exportWorkspace(), resetWorkspace: () => this.resetWorkspace(), undo: () => this.editor.undo(), redo: () => this.editor.redo(), find: () => this.editor.find(), replace: () => this.editor.replace(), toggleComment: () => this.editor.toggleComment(), palette: () => this.openPalette(), run: () => this.run(), step: () => this.step(), cursor: () => this.runToCursor(), stop: () => this.stop(), reset: () => this.resetSimulation(), sidebar: () => this.toggleSidebar(), panel: () => this.togglePanel(), highContrastScene: () => this.toggleHighContrastScene(), editorFocus: () => this.editor.focus(), simulatorFocus: () => $('simCanvas').focus(), fit: () => this.sim.fit(), contacts: () => this.openBottom('contacts'), telemetry: () => this.openBottom('telemetry'), api: () => this.openBottom('task'), shortcuts: () => this.openBottom('task'), fidelity: () => this.openBottom('task'), about: () => this.openAbout() };
     map[action]?.();
   }
 
   bind() {
     $('robotSelect').onchange = (event) => void this.loadProfile(event.target.value);
     $('taskSelect').onchange = (event) => { localStorage.setItem(`rbide.task.${this.profileId}`, event.target.value); void this.loadProfile(this.profileId, { taskId: event.target.value }); };
-    $('runBtn').onclick = () => void this.run(); $('pauseBtn').onclick = () => this.togglePause(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();
+    $('runBtn').onclick = () => void this.run(); $('pauseBtn').onclick = () => this.togglePause(); $('stepBtn').onclick = () => void this.step(); $('cursorBtn').onclick = () => void this.runToCursor(); $('stopBtn').onclick = () => this.stop(); $('resetBtn').onclick = () => void this.resetSimulation(); $('fitBtn').onclick = () => this.sim.fit(); $('highContrastSceneBtn').onclick = () => this.toggleHighContrastScene(); $('panelToggle').onclick = () => this.togglePanel(); $('sidebarToggle').onclick = () => this.toggleSidebar(); $('bottomClose').onclick = () => this.closeBottom();
     document.querySelectorAll('[data-side-view]').forEach((button) => button.onclick = () => this.openSideView(button.dataset.sideView));
     document.querySelectorAll('[data-side-action]').forEach((button) => button.onclick = () => { const action = button.dataset.sideAction; if (action === 'front') this.sim.fit(); else if (action === 'telemetry') this.openBottom('telemetry'); else if (action === 'contacts') this.openBottom('contacts'); });
     $('mobileCodeBtn').onclick = () => { $('workspace').classList.remove('show-sim'); $('mobileCodeBtn').classList.add('active'); $('mobileSimBtn').classList.remove('active'); setTimeout(() => this.editor.refresh(), 20); };
@@ -550,9 +609,10 @@ class App {
     document.querySelectorAll('[data-theme-id]').forEach((button) => button.onclick = (event) => { event.stopPropagation(); this.closeMenus(); this.setTheme(button.dataset.themeId); });
     document.addEventListener('click', () => this.closeMenus());
     $('commandClose').onclick = () => $('commandPalette').hidden = true; $('commandInput').oninput = (event) => this.renderPalette(event.target.value); $('commandPalette').onclick = (event) => { if (event.target === $('commandPalette')) $('commandPalette').hidden = true; };
+    $('aboutCloseBtn').onclick = () => $('aboutDialog').close();
     $('importFile').onchange = (event) => { const file = event.target.files?.[0]; if (file) this.importFile(file); event.target.value = ''; };
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') { if (!$('commandPalette').hidden) { $('commandPalette').hidden = true; return; } if (document.querySelector('.menu-popover:not([hidden])')) { this.closeMenus(); return; } this.stop(); return; }
+      if (event.key === 'Escape') { const aboutDialog = $('aboutDialog'); if (aboutDialog?.open) { event.preventDefault(); aboutDialog.close(); return; } if (!$('commandPalette').hidden) { $('commandPalette').hidden = true; return; } if (document.querySelector('.menu-popover:not([hidden])')) { this.closeMenus(); return; } this.stop(); return; }
       if (event.key === 'F10' && !event.ctrlKey) { event.preventDefault(); void this.step(); }
       if (event.key === 'F5') { event.preventDefault(); if (event.shiftKey) this.stop(); else void this.run(); }
       if (event.ctrlKey && event.key === 'F10') { event.preventDefault(); void this.runToCursor(); }
