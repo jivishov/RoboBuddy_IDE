@@ -94,3 +94,13 @@ Do not mark completed until the selected settings actually perform the review.
 ## Status Handoff
 
 Record the PR-3 branch/commit, actual coding/review settings, fidelity findings/refinements, changed files, exact checks and manual journeys, unrun evidence, and residual risk. Mark Cycle 05 completed only when the Release-1 gate is satisfied; do not create benchmark cycles automatically.
+
+## Completion Record - 2026-08-29
+
+- Release branch/commit: `feat/labforge-03-staged-edits` at `fdd587522e3dc0ab2a6ce2610a74ee633c9b3b95`, directly based on reviewed PR-2 commit `17d086abce09eb01a0b7c15d26e9019d966df52b`.
+- Models: implementation `gpt-5.6-sol` at `medium`; fidelity review `gpt-5.6-sol` at `xhigh`.
+- Fidelity refinements: use deterministic code-unit filename ordering; reject an existing null byte anywhere in a staged target; require trusted activation to originate from the currently visible Patch controls; remove a machine-local path from implementation documentation.
+- Verification: complete Release-1 unit gate 19/19 and Chromium gate 28/28; review-affected revision/staging unit slice 6/6 and repair-flow browser slice 2/2; five affected syntax checks, static/canonical/pinned-task/Python/OpenArm checks, 1366x768 and 390x740 Patch reachability, and `git diff --check` passed.
+- The final exact-path audit found no credentials, real `.env`, machine-local paths, runtime attachment values, vendor `file_id`, provider implementation, benchmark implementation/evidence, or coordinator-package changes. The final feature worktree is clean and contains no temporary test artifacts.
+- Unrun/residual: Chrome Inspector and ChatGPT desktop built-in-browser journeys were unavailable and remain separate unproven manual lanes; deployed Pages, CI-host execution, benchmark/private evaluator, live providers, closed-loop Python, hardware, broad browser, visual regression, accessibility, performance, penetration, dependency-security, and generic security suites were not run.
+- The source-plant repair journey is instructional/open-loop and is not benchmark or hardware evidence. No dependency installation, push, merge, PR, publication, or deployment occurred.

@@ -81,3 +81,14 @@ Do not mark completed until the selected settings actually perform the review.
 ## Status Handoff
 
 Record the shared Cycle-01 base SHA, branch and exact commit(s), `git diff --name-only <base-sha>...HEAD` ownership proof, model settings, findings/refinements, owned files, checks run, unrun integration evidence, and remaining risk in this continuation record. Do not race Cycle 02 on central status files; send the record to the coordinator for serial reconciliation.
+
+## Completion Record - 2026-08-29
+
+- Shared reviewed base: `ca879e9032280dfcb7a0471c46d38285aef13fe6`.
+- Branch/commit: `feat/labforge-02-cancellable-runs` at `09fb411aee40153636098f5e2fdcdec5dc17d9d4`.
+- Models: implementation `gpt-5.6-sol` at `medium`; fidelity review `gpt-5.6-sol` at `xhigh`.
+- Ownership: only `src/runtime/python-runtime-client.js`, `src/runtime/python-worker.js`, `src/runtime/python-shim.js`, and `tests/runtime-worker-core.spec.mjs`.
+- Fidelity refinements: enforce the 30-second hard run ceiling; validate learner files before `postMessage` plus worker defense-in-depth; strengthen malformed-response/request-correlation handling; prove init time is outside run timing; add multi-file shim parity, advisory CANCEL evidence, event-payload bounds, and fresh-worker recovery.
+- Verification: all four syntax checks passed; real-worker Playwright spec passed 1/1; staged/diff hygiene passed.
+- Unrun/residual: production app integration, exact generated-starter matrix through the new worker, the full PR-2 suite, Pages/UI journeys, Chrome Inspector, ChatGPT Site tools, layouts, hardware, deployment, and broad out-of-ceiling checks. The app remains on the legacy main-thread runtime until Cycle 04.
+- No shared integration file, coordinator file, dependency installation, push, merge, PR, publication, or deployment occurred.
