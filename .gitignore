@@ -3,6 +3,17 @@ node_modules/
 test-results/
 playwright-report/
 
+# Local planning artifacts
+plan/
+plans/
+planning/
+*_PLAN.md
+*_PLAN_*.md
+*_plan.md
+*_plan_*.md
+*-plan.md
+*-plan-*.md
+
 # Local credentials and machine-specific configuration
 .env
 .env.*
