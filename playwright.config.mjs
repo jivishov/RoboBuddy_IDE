@@ -5,6 +5,7 @@ const pythonLauncher = process.platform === 'win32' ? 'py -3' : 'python3';
 export default defineConfig({
   testDir: './tests',
   testMatch: /(?:browser-smoke|microduck-policy-trace|webmcp)\.spec\.mjs/,
+  workers: process.env.CI ? 1 : undefined,
   timeout: 120_000,
   expect: { timeout: 20_000 },
   use: {
