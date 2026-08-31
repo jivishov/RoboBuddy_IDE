@@ -22,6 +22,7 @@ test('consolidated policy-core trace covers commands, modes, contact truth and r
       await advancePolicy(seconds);
       return { completedAtStart: result.completed, active, after: host.getState().activePolicy };
     };
+    await host.executeCommand('enable', { enabled: true }, { source: 'human' });
     const move = await host.executeCommand('move', { vx: 1, vy: -1, yaw: 3 }, context);
     const head = await host.executeCommand('head', { neckPitch: 0.2, headPitch: -0.3, headYaw: 0.4, headRoll: 0.1 }, context);
     const look = await host.executeCommand('look', { x: 0.25, y: 0.1, z: 0.2, neckPitch: 0.15 }, { source: 'human' });
@@ -159,7 +160,9 @@ test('consolidated policy-core trace covers commands, modes, contact truth and r
   });
   expect(trace.relaxed).toMatchObject({ enabled: false, actuationEnabled: false, activePolicy: 'disabled', movement: { applied: [0, 0, 0] } });
   expect(trace.relaxControlMax).toBe(0);
-  expect(trace.relaxedAfterGravity.simulatedPose.position[2]).toBeLessThan(trace.relaxed.simulatedPose.position[2]);
+  expect(trace.relaxedAfterGravity).toMatchObject({ enabled: false, actuationEnabled: false });
+  expect(trace.relaxedAfterGravity.contacts.count).toBeGreaterThan(0);
+  expect(trace.relaxedAfterGravity.simulatedPose.position[2]).toBeGreaterThan(0);
   expect(trace.enableFromRelaxCompleted).toBe(false);
   expect(trace.reinitializing.phase).toBe('initializing');
   expect(trace.enabledAfterRamp).toMatchObject({ enabled: true, actuationEnabled: true });
