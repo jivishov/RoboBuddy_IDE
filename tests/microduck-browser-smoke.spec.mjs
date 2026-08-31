@@ -649,7 +649,7 @@ test('vendored ORT matches walking and roller CPU fixtures', async ({ page }) =>
   const result = await page.evaluate(async () => {
     const fixture = await (await fetch('./assets/microduck/fixtures/inference-parity.json')).json();
     const ort = await import('./assets/microduck/runtime/onnx/ort.wasm.min.mjs');
-    ort.env.wasm.wasmPaths = `${location.origin}/assets/microduck/runtime/onnx/`;
+    ort.env.wasm.wasmPaths = new URL('./assets/microduck/runtime/onnx/', location.href).href;
     ort.env.wasm.numThreads = 1;
     const errors = {};
     for (const [name, item] of Object.entries(fixture.policies)) {

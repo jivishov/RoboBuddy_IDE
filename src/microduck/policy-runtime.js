@@ -1,9 +1,13 @@
 import { EAGER_WALKING_POLICIES, LAZY_ROLLER_POLICIES, POLICY_FILES } from './contract.js';
 
-const BASE = './assets/microduck/';
+// Resolve from this module rather than the site origin so GitHub Pages project
+// deployments retain their repository path (for example, /RoboBuddy_IDE/).
+const ASSET_ROOT = new URL('../../assets/microduck/', import.meta.url);
+const ONNX_RUNTIME_ROOT = new URL('runtime/onnx/', ASSET_ROOT);
+const ORT_MODULE_URL = new URL('ort.wasm.min.mjs', ONNX_RUNTIME_ROOT);
 
 export class MicroDuckPolicyRuntime {
-  constructor({ importOrt = () => import('../../assets/microduck/runtime/onnx/ort.wasm.min.mjs') } = {}) {
+  constructor({ importOrt = () => import(ORT_MODULE_URL.href) } = {}) {
     this.importOrt = importOrt;
     this.sessions = new Map();
     this.loading = new Map();
@@ -12,7 +16,7 @@ export class MicroDuckPolicyRuntime {
 
   async initialize() {
     this.ort = await this.importOrt();
-    this.ort.env.wasm.wasmPaths = `${location.origin}/assets/microduck/runtime/onnx/`;
+    this.ort.env.wasm.wasmPaths = ONNX_RUNTIME_ROOT.href;
     this.ort.env.wasm.numThreads = 1;
     await Promise.all(EAGER_WALKING_POLICIES.map((name) => this.load(name)));
   }
@@ -24,7 +28,7 @@ export class MicroDuckPolicyRuntime {
   async load(name) {
     if (this.sessions.has(name)) return this.sessions.get(name);
     if (this.loading.has(name)) return this.loading.get(name);
-    const promise = this.ort.InferenceSession.create(`${BASE}policies/${POLICY_FILES[name]}`, { executionProviders: ['wasm'] }).then((session) => {
+    const promise = this.ort.InferenceSession.create(new URL(`policies/${POLICY_FILES[name]}`, ASSET_ROOT).href, { executionProviders: ['wasm'] }).then((session) => {
       this.loading.delete(name);
       if (this.disposed) { void session.release(); throw new Error('Policy runtime was disposed while loading.'); }
       this.sessions.set(name, session);

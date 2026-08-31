@@ -6,6 +6,7 @@ import { HOME_POLICY_POSITION, POLICY_JOINT_ORDER, policyToWire, wireToPolicy } 
 import { InferenceGate } from '../src/microduck/inference-gate.js';
 import { buildObservation, OBSERVATION_LAYOUT } from '../src/microduck/observation.js';
 import { MicroDuckPolicyDirector } from '../src/microduck/policy-director.js';
+import { MicroDuckPolicyRuntime } from '../src/microduck/policy-runtime.js';
 import { createMicroDuckState } from '../src/microduck/state.js';
 import { MICRODUCK_FIELD_HALF_EXTENT_M, MICRODUCK_FIELD_SIZE_M, stopPlanarBodyAtFieldEdge } from '../src/microduck/field-bounds.js';
 import { applyConfiguredKick, applyRollingResistance, BALL_STOP_SPEED_MPS } from '../src/microduck/ball-motion.js';
@@ -102,6 +103,26 @@ test('policy priority, mode mapping, timings, scaling and bounded target filteri
 test('stale and overlapping inference are rejected by epoch and single-flight gate', () => {
   const gate = new InferenceGate(); const first = gate.begin(); assert(first); assert.equal(gate.begin(), null); assert(gate.accepts(first));
   gate.invalidate(); assert(!gate.accepts(first)); const second = gate.begin(); assert(second); assert(!gate.accepts(first)); assert(gate.accepts(second)); gate.finish(second); assert.equal(gate.inFlight, false);
+});
+
+test('policy runtime resolves its ONNX files relative to the module for GitHub Pages project deployments', async () => {
+  const requests = [];
+  const ort = {
+    env: { wasm: {} },
+    InferenceSession: {
+      create: async (url) => {
+        requests.push(url);
+        return { release: async () => {} };
+      },
+    },
+  };
+  const runtime = new MicroDuckPolicyRuntime({ importOrt: async () => ort });
+  await runtime.initialize();
+  const assetRoot = new URL('../assets/microduck/', import.meta.url);
+  assert.equal(ort.env.wasm.wasmPaths, new URL('runtime/onnx/', assetRoot).href);
+  assert.equal(requests.length, 7);
+  assert(requests.every((url) => url.startsWith(assetRoot.href)));
+  await runtime.dispose();
 });
 
 test('published state is bounded, immutable and truthful about fidelity', () => {
