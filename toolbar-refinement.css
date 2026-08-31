@@ -85,6 +85,92 @@
   background: #303946;
 }
 
+.agent-access-control {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 28px;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(173, 190, 211, 0.17);
+  border-radius: 7px;
+  background: rgba(12, 17, 23, 0.36);
+  white-space: nowrap;
+}
+
+.agent-access-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 3px 0 5px;
+  color: #9eabb9;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.agent-access-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #667281;
+}
+
+.agent-access-control[data-tools="enabled"] .agent-access-dot {
+  background: #5bd0c9;
+  box-shadow: 0 0 0 2px rgba(91, 208, 201, .14);
+}
+
+.agent-access-control[data-tools="enabling"] .agent-access-dot {
+  background: #e7b75b;
+}
+
+.toolbar .agent-access-control button {
+  height: 22px;
+  min-height: 22px;
+  padding-inline: 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: none;
+  color: #aeb9c6;
+  font-size: 11px;
+}
+
+.toolbar .agent-access-control button.active {
+  background: #2c3742;
+  color: #f1f7fa;
+}
+
+.toolbar .agent-access-control[data-access="assist"][data-tools="enabled"] button.active {
+  background: #17494b;
+  color: #dffffc;
+}
+
+:root[data-theme="calm-light"] .agent-access-control {
+  border-color: #c9d8d4;
+  background: #e7efec;
+}
+
+:root[data-theme="calm-light"] .agent-access-label {
+  color: #556967;
+}
+
+:root[data-theme="calm-light"] .toolbar .agent-access-control button {
+  color: #526562;
+}
+
+:root[data-theme="calm-light"] .toolbar .agent-access-control button.active {
+  background: #d1dfda;
+  color: #213c39;
+}
+
+:root[data-theme="calm-light"] .toolbar .agent-access-control[data-access="assist"][data-tools="enabled"] button.active {
+  background: #cce7df;
+  color: #184d48;
+}
+
 @media (max-width: 800px) {
   .toolbar button,
   .toolbar select {

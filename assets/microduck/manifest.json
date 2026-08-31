@@ -1,0 +1,317 @@
+{
+  "schema": "robobuddy.microduck-asset-manifest.v1",
+  "generatedBy": "node scripts/prepare_microduck_assets.mjs",
+  "manifestSelfExcludedFromEntries": true,
+  "pins": {
+    "microduck": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+    "mujoco": "3.11.0",
+    "onnxruntimeWeb": "1.27.0"
+  },
+  "policyContract": {
+    "input": [
+      1,
+      61
+    ],
+    "output": [
+      1,
+      14
+    ],
+    "claim": "exact-byte deterministic inference only; no RL, MuJoCo, dynamics, or hardware parity"
+  },
+  "policyPairing": {
+    "model": "none claimed",
+    "hierarchy": "kinematics/robot_walk.xml",
+    "fixture": "fixtures/inference-parity.json",
+    "scope": "policy bytes and inference outputs only"
+  },
+  "visualContract": {
+    "path": "visual/duck.bin",
+    "format": "DUCK v1",
+    "meshes": 28,
+    "bodies": 15,
+    "parts": 58,
+    "claim": "exact Apache-2.0 source-monitor visual byte; local two-sided winding reconstruction, normals and coordinate conversion do not establish dynamics, contact, locomotion, RL-environment, or hardware parity"
+  },
+  "jointMapping": {
+    "positionUnit": "metres",
+    "angleUnit": "radians",
+    "positiveDirection": "right-hand rotation about each source XML joint axis",
+    "wireJointOrder": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "mouth",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "mouthWireIndex": 9,
+    "policyJointOrder": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "policyActionMapping": "action[i] maps positionally to policyJointOrder[i]; mouth is not policy-controlled",
+    "sourcePaths": [
+      "duck-ipc-proto/src/lib.rs",
+      "duck-control/src/model.rs",
+      "kinematics/assets/alpha/robot_walk.xml"
+    ]
+  },
+  "scoreContract": {
+    "inputs": [
+      "scores/wistful.duckscore",
+      "scores/duck_strut.mid"
+    ],
+    "outputAudio": "none in Cycle 01; Cycle 03 will synthesize locally in the browser",
+    "excluded": [
+      "sounds/scores/outer_wilds.mid (upstream explicitly marks it copyrighted/test-only/not for release)"
+    ]
+  },
+  "excludedSources": [
+    "pollen-robotics/microduck_rl mesh/MJCF bytes",
+    "Hugging Face Space implementation/assets",
+    "pollen-robotics/microduck sounds/scores/outer_wilds.mid"
+  ],
+  "entries": [
+    {
+      "path": "fixtures/inference-parity.json",
+      "bytes": 1859,
+      "sha256": "d717598ffc4809797612bb10df36c3c296437a8a1794a201b9dcbb779e34bafc",
+      "license": "PolyForm-Noncommercial-1.0.0",
+      "repository": "local",
+      "revision": "cycle01",
+      "sourcePath": "fixtures/inference-parity.json",
+      "status": "recorded_generated_evidence",
+      "purpose": "fixed CPU/browser exact-byte inference comparison"
+    },
+    {
+      "path": "generated/procedural-rig.json",
+      "bytes": 19274,
+      "sha256": "40401694268f73b36fd81ecdf612cd5e002720d02ae91f9258068bffd8989c3e",
+      "license": "Apache-2.0 AND PolyForm-Noncommercial-1.0.0",
+      "repository": "local + pollen-robotics/microduck",
+      "revision": "post-cycle-visual-repair + 590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "scripts/prepare_microduck_assets.mjs + kinematics/assets/alpha/robot_walk.xml",
+      "status": "deterministic_generated_derivative",
+      "purpose": "Apache-extracted hierarchy plus configured official lower-bill articulation, roller and visual-alignment metadata"
+    },
+    {
+      "path": "kinematics/robot_walk.xml",
+      "bytes": 6990,
+      "sha256": "e41f0619795a62a6f99a39c33230a7552064938ebe7b0a181368fdb5aaaef7a6",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "kinematics/assets/alpha/robot_walk.xml",
+      "status": "exact_source_byte",
+      "purpose": "fourteen-joint hierarchy, inertials and named frames"
+    },
+    {
+      "path": "policies/alpha_ground_pick.onnx",
+      "bytes": 793685,
+      "sha256": "ffbf5109982ff999b0ba53afe86b9ae731bbec679d67fb7f8ab4c52152c88872",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/alpha_ground_pick.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/alpha_sitstand.onnx",
+      "bytes": 793695,
+      "sha256": "c6c40e35e726eabd803d633e090d112994f469921152448367953fbaf9799bc8",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/alpha_sitstand.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/alpha_stand.onnx",
+      "bytes": 793705,
+      "sha256": "1569268713e40deea795dd2922dba50d3621e15a872855408b6b1b125b1c094b",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/alpha_stand.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/alpha_walking.onnx",
+      "bytes": 793705,
+      "sha256": "e36332d383997d51401897734cd3e79cf5038406feddb18b4d57ecfb141daa6c",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/alpha_walking.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/ball_kick_left.onnx",
+      "bytes": 793685,
+      "sha256": "d6928284dccd3dd61e08bf2f760effa74309fbefd97b2b31afb2a60f526d196a",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/ball_kick_left.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/ball_kick_right.onnx",
+      "bytes": 793685,
+      "sha256": "147a32c388c6b19111b3ac3b550a9a6dc8b8bf267118af4d8c3712522eedb5af",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/ball_kick_right.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/roller.onnx",
+      "bytes": 793685,
+      "sha256": "cf05651d2708a2f9364212e86b866c97a70ace8131c492500105e8f28bf99afd",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/roller.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/roller_crouch.onnx",
+      "bytes": 793685,
+      "sha256": "a1a084be240469c76ac9d3fa44d4792f16d4b1da60398b3ecd3cfc5e2244d990",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/roller_crouch.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "policies/roulade.onnx",
+      "bytes": 793685,
+      "sha256": "3d60da08fc13f29c1b57f41977aa898132c0d60042100149d8e775affcbca32b",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "policies/roulade.onnx",
+      "status": "exact_source_byte",
+      "purpose": "pinned deployed ONNX policy"
+    },
+    {
+      "path": "runtime/mujoco/mujoco.js",
+      "bytes": 292469,
+      "sha256": "cce67e14001aa5556438ef7cf1b9c858837a40fd0eca6ddf96f28a9065796205",
+      "license": "Apache-2.0",
+      "repository": "npm:@mujoco/mujoco",
+      "revision": "3.11.0",
+      "sourcePath": "package/mujoco.js",
+      "status": "exact_distribution_byte",
+      "purpose": "local browser MuJoCo runtime reserved for Cycle 02"
+    },
+    {
+      "path": "runtime/mujoco/mujoco.wasm",
+      "bytes": 10117577,
+      "sha256": "1e3ba4ae1f4dfb4f918314dc472b253d5a00ed61abd59a5a91f6994c882ad560",
+      "license": "Apache-2.0",
+      "repository": "npm:@mujoco/mujoco",
+      "revision": "3.11.0",
+      "sourcePath": "package/mujoco.wasm",
+      "status": "exact_distribution_byte",
+      "purpose": "local browser MuJoCo runtime reserved for Cycle 02"
+    },
+    {
+      "path": "runtime/onnx/ort-wasm-simd-threaded.mjs",
+      "bytes": 24180,
+      "sha256": "0a1e718d99c41b22c21f2520ff4f9e883a6b5533856e398d21816ee8eb8185d3",
+      "license": "MIT",
+      "repository": "npm:onnxruntime-web",
+      "revision": "1.27.0",
+      "sourcePath": "dist/ort-wasm-simd-threaded.mjs",
+      "status": "exact_distribution_byte",
+      "purpose": "local browser ONNX inference runtime"
+    },
+    {
+      "path": "runtime/onnx/ort-wasm-simd-threaded.wasm",
+      "bytes": 13479978,
+      "sha256": "d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6",
+      "license": "MIT",
+      "repository": "npm:onnxruntime-web",
+      "revision": "1.27.0",
+      "sourcePath": "dist/ort-wasm-simd-threaded.wasm",
+      "status": "exact_distribution_byte",
+      "purpose": "local browser ONNX inference runtime"
+    },
+    {
+      "path": "runtime/onnx/ort.wasm.min.mjs",
+      "bytes": 50069,
+      "sha256": "9608e98a3fba9716f0cbd0bca0c94808b71dae2e9265ca3fe742ddc393a53ebc",
+      "license": "MIT",
+      "repository": "npm:onnxruntime-web",
+      "revision": "1.27.0",
+      "sourcePath": "dist/ort.wasm.min.mjs",
+      "status": "exact_distribution_byte",
+      "purpose": "local browser ONNX inference runtime"
+    },
+    {
+      "path": "scores/duck_strut.mid",
+      "bytes": 2958,
+      "sha256": "221b8a64a9dfe9567909bca372bbeb00b1bf40a1bc96112f503a69651b32eed4",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "sounds/scores/duck_strut.mid",
+      "status": "exact_source_byte",
+      "purpose": "original release-safe score input reserved for Cycle 03 generated browser audio"
+    },
+    {
+      "path": "scores/wistful.duckscore",
+      "bytes": 4255,
+      "sha256": "f277c7355e34f3ac36047ba14668ac3355d56c123aaaaaacb0c8ef9c2dc7334d",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "sounds/scores/wistful.duckscore",
+      "status": "exact_source_byte",
+      "purpose": "original release-safe score input reserved for Cycle 03 generated browser audio"
+    },
+    {
+      "path": "visual/duck.bin",
+      "bytes": 68622,
+      "sha256": "1e1200053e2326706632306bc80831d5e0dfa5462d792a677fc05a43f145651e",
+      "license": "Apache-2.0",
+      "repository": "pollen-robotics/microduck",
+      "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+      "sourcePath": "robotctl/assets/duck.bin",
+      "status": "exact_source_byte",
+      "purpose": "official compact articulated visual used by the source robotctl monitor"
+    }
+  ]
+}

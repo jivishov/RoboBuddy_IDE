@@ -462,7 +462,7 @@ class ScenarioVisual {
 }
 
 export class SourceRobotSimulator {
-  constructor(canvas) {
+  constructor(canvas, { externalClock = false } = {}) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
     // A neutral studio grey keeps the canonical dark robot meshes readable without
@@ -485,14 +485,19 @@ export class SourceRobotSimulator {
     this.fallbackClockSeconds = 0;
     this.rigTransitionSeconds = 0.25;
     this.connectedInstance = 'ide-robot';
+    this.disposed = false;
+    this.paused = false;
+    this.animationFrame = 0;
     this.installScene();
     this.highContrastScene = new HighContrastSceneLayer(this.scene);
+    this.canvas.dataset.simulatorBackend = 'source-robot';
     this.canvas.dataset.highContrastScene = 'true';
     this.canvas.dataset.presentationGroundColor = '#687378';
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas.parentElement || canvas);
     this.resize();
-    this.animate();
+    this.externalClock = externalClock;
+    if (!externalClock) this.animate();
   }
   installScene() {
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 1.35));
@@ -522,6 +527,7 @@ export class SourceRobotSimulator {
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; this.scene.add(floor);
   }
   async setScenario(profileId, scenario, fallbackRest = {}) {
+    if (this.disposed) return false;
     this.profileId = profileId;
     this.scenario = scenario || null;
     this.fallbackState = { ...fallbackRest };
@@ -532,11 +538,16 @@ export class SourceRobotSimulator {
     this.visual?.dispose?.(); this.visual = null;
     this.highContrastScene?.clear();
     if (this.rig) { this.scene.remove(this.rig.root); this.rig.dispose(); this.rig = null; }
-    this.rig = await CanonicalRobotRig.load(profileId);
+    const rig = await CanonicalRobotRig.load(profileId);
+    if (this.disposed) { rig.dispose(); return false; }
+    this.rig = rig;
     this.scene.add(this.rig.root);
     if (scenario) {
       const { ScenarioV2Engine } = await loadEngineModule();
-      this.engine = await ScenarioV2Engine.create(scenario, { autoStartPlant: false });
+      if (this.disposed) return false;
+      const engine = await ScenarioV2Engine.create(scenario, { autoStartPlant: false });
+      if (this.disposed) { engine.plant?.dispose?.(); return false; }
+      this.engine = engine;
       const connectionConfig = this.profileId === 'openarm'
         ? { kind: 'bimanual', side: 'bimanual', cameras: {} }
         : { cameras: {} };
@@ -551,6 +562,7 @@ export class SourceRobotSimulator {
       this.canvas.dataset.highContrastPerimeterCount = String(this.highContrastScene.getPerimeterCount());
     }
     this.fit();
+    return true;
   }
   async reset(profileId = this.profileId, scenario = this.scenario, fallbackRest = {}) {
     await this.setScenario(profileId, scenario, fallbackRest);
@@ -570,6 +582,7 @@ export class SourceRobotSimulator {
   }
   isHighContrastSceneEnabled() { return Boolean(this.highContrastScene?.enabled); }
   async applyAction(action, options = {}) {
+    if (this.paused || this.disposed) return false;
     if (!this.engine?.plant) {
       if (!this.rig) throw new Error('Canonical rig is unavailable.');
       const before = { ...this.fallbackState };
@@ -577,6 +590,7 @@ export class SourceRobotSimulator {
       const keys = Object.keys(action || {});
       const frames = Math.max(1, Math.ceil(this.rigTransitionSeconds / 0.025));
       for (let frame = 1; frame <= frames; frame += 1) {
+        if (this.paused || this.disposed) return false;
         if (options.beforeTick && !(await options.beforeTick())) return false;
         const progress = frame / frames;
         const smooth = progress * progress * (3 - 2 * progress);
@@ -603,6 +617,7 @@ export class SourceRobotSimulator {
     return this.advanceTime(0.02, { ...options, realtime: false });
   }
   async advanceTime(seconds, { realtime = true, beforeTick = null } = {}) {
+    if (this.paused || this.disposed) return false;
     if (!this.engine?.plant) {
       if (beforeTick && !(await beforeTick())) return false;
       this.fallbackClockSeconds += Math.max(0, Number(seconds) || 0);
@@ -613,6 +628,7 @@ export class SourceRobotSimulator {
     const ticks = Math.max(0, Math.ceil(Math.max(0, Number(seconds) || 0) / this.engine.plant.tickSeconds));
     const visualStride = Math.max(1, Math.floor(ticks / 30));
     for (let i = 0; i < ticks; i += 1) {
+      if (this.paused || this.disposed) return false;
       if (beforeTick && !(await beforeTick())) return false;
       this.engine.plant.tick();
       if (this.engine.plant.fault) {
@@ -629,6 +645,10 @@ export class SourceRobotSimulator {
     return true;
   }
   advanceBase(seconds) { return this.advanceTime(seconds); }
+  pause() { if (this.disposed) return false; this.paused = true; return true; }
+  resume() { if (this.disposed) return false; this.paused = false; return true; }
+  stop() { if (this.disposed) return false; this.paused = false; return true; }
+  isReady() { return !this.disposed && Boolean(this.rig); }
   getTelemetry() {
     if (!this.engine) return { ...this.fallbackState, simulation_clock_s: this.fallbackClockSeconds };
     const snapshot = this.engine.snapshot();
@@ -674,6 +694,19 @@ export class SourceRobotSimulator {
     const rect = this.canvas.getBoundingClientRect(); const w = Math.max(1, rect.width); const h = Math.max(1, rect.height);
     this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
   }
-  animate() { requestAnimationFrame(() => this.animate()); this.controls.update(); this.renderer.render(this.scene, this.camera); }
-  dispose() { this.engine?.plant?.dispose?.(); this.visual?.dispose?.(); this.highContrastScene?.dispose?.(); this.rig?.dispose?.(); this.resizeObserver?.disconnect?.(); this.renderer?.dispose?.(); }
+  animate() {
+    if (this.disposed) return;
+    this.animationFrame = requestAnimationFrame(() => this.animate());
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  }
+  renderFrame() { if (this.disposed) return; this.controls.update(); this.renderer.render(this.scene, this.camera); }
+  dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = 0;
+    this.engine?.plant?.dispose?.(); this.visual?.dispose?.(); this.highContrastScene?.dispose?.(); this.rig?.dispose?.();
+    this.controls?.dispose?.(); this.resizeObserver?.disconnect?.(); this.renderer?.dispose?.();
+  }
 }

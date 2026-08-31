@@ -215,6 +215,33 @@ test('Pause holds an active source-plant run and resumes it in place', async ({ 
   await expect(page.locator('#pauseBtn')).toBeDisabled();
 });
 
+test('source-plant and Unitree keep their main-thread compile/replay Run and Run-to-Cursor paths', async ({ page }) => {
+  await page.goto('/?ci=cycle04-preservation', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  const setFirstActionCursor = () => page.evaluate(() => {
+    const app = window.__robobuddyCi.app;
+    const lines = app.files['main.py'].split('\n');
+    const index = lines.findIndex((line) => line.includes('robot.send_action('));
+    app.openFile('main.py');
+    app.editor.cm.setCursor({ line: Math.max(0, index), ch: 0 });
+    return index + 1;
+  });
+
+  const sourceLine = await setFirstActionCursor();
+  await page.click('#cursorBtn');
+  await expect(page.locator('#statusMessage')).toContainText(`main.py:${sourceLine}`, { timeout: 90_000 });
+  expect(await page.evaluate(() => ({ policyWorker: window.__robobuddyCi.app.microduckRuntime.isActive(), prepared: window.__robobuddyCi.app.prepared?.events?.length > 0 }))).toEqual({ policyWorker: false, prepared: true });
+
+  await page.selectOption('#robotSelect', 'unitree');
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  await page.click('#runBtn');
+  await expect(page.locator('#statusMessage')).toHaveText('Run complete', { timeout: 90_000 });
+  const unitreeLine = await setFirstActionCursor();
+  await page.click('#cursorBtn');
+  await expect(page.locator('#statusMessage')).toContainText(`main.py:${unitreeLine}`, { timeout: 90_000 });
+  expect(await page.evaluate(() => ({ policyWorker: window.__robobuddyCi.app.microduckRuntime.isActive(), prepared: window.__robobuddyCi.app.prepared?.events?.length > 0 }))).toEqual({ policyWorker: false, prepared: true });
+});
+
 test('diagnostics panel owns a full-width grid row and activity rail buttons are functional', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/?ci=ux', { waitUntil: 'domcontentloaded' });

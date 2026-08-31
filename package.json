@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:browser": "playwright test tests/browser-smoke.spec.mjs"
+    "test:browser": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"

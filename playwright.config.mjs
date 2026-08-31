@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: /browser-smoke\.spec\.mjs/,
+  testMatch: /(?:browser-smoke|microduck-policy-trace|webmcp)\.spec\.mjs/,
   timeout: 120_000,
   expect: { timeout: 20_000 },
   use: {

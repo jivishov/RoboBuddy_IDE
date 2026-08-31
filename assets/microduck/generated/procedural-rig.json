@@ -1,0 +1,973 @@
+{
+  "schema": "robobuddy.microduck-procedural-rig.v1",
+  "units": "metres",
+  "source": {
+    "repository": "pollen-robotics/microduck",
+    "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+    "path": "kinematics/assets/alpha/robot_walk.xml",
+    "license": "Apache-2.0"
+  },
+  "fidelity": {
+    "tier": "reference-aligned policy demonstrator",
+    "extracted": [
+      "body hierarchy",
+      "body transforms",
+      "body inertials",
+      "14 joint names/axes/ranges",
+      "named site transforms",
+      "official compact robotctl monitor visual"
+    ],
+    "configuredApproximation": [
+      "configured articulation of official lower-bill part",
+      "roller placement and geometry",
+      "visual floor alignment",
+      "collision geometry",
+      "contacts",
+      "dynamics"
+    ],
+    "excludedEvidence": [
+      "microduck_rl meshes",
+      "microduck_rl MJCF",
+      "Hugging Face Space bytes"
+    ]
+  },
+  "officialVisual": {
+    "path": "visual/duck.bin",
+    "repository": "pollen-robotics/microduck",
+    "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
+    "sourcePath": "robotctl/assets/duck.bin",
+    "license": "Apache-2.0",
+    "format": "DUCK v1",
+    "scope": "exact compact source-monitor mesh, body hierarchy, part transforms and baked colors; two-sided centroid winding reconstruction, rendering normals and Z-up to Y-up conversion are local"
+  },
+  "jointContract": {
+    "positionUnit": "metres",
+    "angleUnit": "radians",
+    "positiveDirection": "right-hand rotation about each source XML joint axis",
+    "wireJointOrder": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "mouth",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "mouthWireIndex": 9,
+    "policyJointOrder": [
+      "left_hip_yaw",
+      "left_hip_roll",
+      "left_hip_pitch",
+      "left_knee",
+      "left_ankle",
+      "neck_pitch",
+      "head_pitch",
+      "head_yaw",
+      "head_roll",
+      "right_hip_yaw",
+      "right_hip_roll",
+      "right_hip_pitch",
+      "right_knee",
+      "right_ankle"
+    ],
+    "policyActionMapping": "action[i] maps positionally to policyJointOrder[i]; mouth is not policy-controlled",
+    "sourcePaths": [
+      "duck-ipc-proto/src/lib.rs",
+      "duck-control/src/model.rs",
+      "kinematics/assets/alpha/robot_walk.xml"
+    ]
+  },
+  "bodies": [
+    {
+      "name": "trunk_base",
+      "parent": null,
+      "pos": [
+        0,
+        0,
+        0.12
+      ],
+      "quatWxyz": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.0184191,
+          0.00000658793,
+          0.00237545
+        ],
+        "massKg": 0.264385,
+        "fullInertia": [
+          0.00014465,
+          0.000173927,
+          0.000155277,
+          1.1006e-8,
+          -0.0000148335,
+          -7.0102e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "yaw2roll",
+      "parent": "trunk_base",
+      "pos": [
+        0.006,
+        0.0175,
+        -0.005
+      ],
+      "quatWxyz": [
+        0,
+        -0.707107,
+        -0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -8.6e-11,
+          0.00121491,
+          0.0169312
+        ],
+        "massKg": 0.0235131,
+        "fullInertia": [
+          0.000004332,
+          0.00000352213,
+          0.00000240737,
+          0,
+          0,
+          -6.1011e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "hip_l",
+      "parent": "yaw2roll",
+      "pos": [
+        0,
+        0.0165,
+        0.0125
+      ],
+      "quatWxyz": [
+        0.707107,
+        -0.707107,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          0.0152731,
+          1.5269e-8,
+          -0.00887078
+        ],
+        "massKg": 0.00521,
+        "fullInertia": [
+          7.39697e-7,
+          9.80856e-7,
+          5.50165e-7,
+          1e-12,
+          3.32804e-7,
+          -1e-12
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "left_upper_leg",
+      "parent": "hip_l",
+      "pos": [
+        0.025,
+        0,
+        -0.0185
+      ],
+      "quatWxyz": [
+        0.5,
+        -0.5,
+        0.5,
+        -0.5
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          0.00731784,
+          0.0224795,
+          0.0124951
+        ],
+        "massKg": 0.04315,
+        "fullInertia": [
+          0.0000147473,
+          0.00000874297,
+          0.0000174437,
+          -0.00000430685,
+          2.48476e-7,
+          3.43647e-7
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "leg",
+      "parent": "left_upper_leg",
+      "pos": [
+        0.022,
+        0.0357771,
+        -0.004
+      ],
+      "quatWxyz": [
+        0,
+        0.707107,
+        0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -1.52e-10,
+          0.0318937,
+          -0.00953505
+        ],
+        "massKg": 0.0215844,
+        "fullInertia": [
+          0.00000525054,
+          0.00000215507,
+          0.00000433924,
+          -1e-12,
+          0,
+          7.64996e-7
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "ankle_left",
+      "parent": "leg",
+      "pos": [
+        0,
+        0.042,
+        -0.026
+      ],
+      "quatWxyz": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.0064761,
+          -0.0135798,
+          -0.0156785
+        ],
+        "massKg": 0.0264653,
+        "fullInertia": [
+          0.00000554455,
+          0.0000104088,
+          0.00000728364,
+          -1.94121e-7,
+          8.6681e-8,
+          5.8663e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "neck",
+      "parent": "trunk_base",
+      "pos": [
+        0.026,
+        0.0145011,
+        0.0324424
+      ],
+      "quatWxyz": [
+        0,
+        0,
+        -0.707107,
+        0.707107
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          0,
+          -0.025,
+          0.0141665
+        ],
+        "massKg": 0.0368414,
+        "fullInertia": [
+          0.0000172925,
+          0.00000312694,
+          0.0000163707,
+          0,
+          0,
+          0
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "neck_pitch",
+      "parent": "neck",
+      "pos": [
+        0,
+        -0.05,
+        0
+      ],
+      "quatWxyz": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -6.533e-9,
+          0.0116641,
+          -0.0145
+        ],
+        "massKg": 0.00572,
+        "fullInertia": [
+          0.00000109186,
+          9.66855e-7,
+          5.12111e-7,
+          0,
+          0,
+          0
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "yaw_roll_motion",
+      "parent": "neck_pitch",
+      "pos": [
+        0,
+        0.0186931,
+        -0.0145
+      ],
+      "quatWxyz": [
+        0,
+        0,
+        -0.707107,
+        -0.707107
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.00140611,
+          -0.00599577,
+          0.0155412
+        ],
+        "massKg": 0.02492,
+        "fullInertia": [
+          0.00000373979,
+          0.00000314478,
+          0.00000407916,
+          1.87232e-7,
+          4.603e-9,
+          3.1883e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "bottom_head_shell",
+      "parent": "yaw_roll_motion",
+      "pos": [
+        -0.0179,
+        0,
+        0.0145
+      ],
+      "quatWxyz": [
+        0.707107,
+        0,
+        -0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          0.00368889,
+          0.00145319,
+          -0.0329861
+        ],
+        "massKg": 0.172649,
+        "fullInertia": [
+          0.000292186,
+          0.000223546,
+          0.000142648,
+          -0.00000111987,
+          0.00000385879,
+          0.00000378829
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "bearing_roll",
+      "parent": "trunk_base",
+      "pos": [
+        0.006,
+        -0.0175,
+        -0.005
+      ],
+      "quatWxyz": [
+        0,
+        -0.707107,
+        -0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -8.6e-11,
+          0.00121491,
+          0.0169312
+        ],
+        "massKg": 0.0235131,
+        "fullInertia": [
+          0.000004332,
+          0.00000352213,
+          0.00000240737,
+          0,
+          0,
+          -6.1011e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "hip_l_2",
+      "parent": "bearing_roll",
+      "pos": [
+        0,
+        0.0165,
+        0.0125
+      ],
+      "quatWxyz": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          0.0152731,
+          1.5309e-8,
+          -0.00887078
+        ],
+        "massKg": 0.00521,
+        "fullInertia": [
+          7.39697e-7,
+          9.80856e-7,
+          5.50165e-7,
+          1e-12,
+          3.32804e-7,
+          -1e-12
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "right_upper_leg",
+      "parent": "hip_l_2",
+      "pos": [
+        0.025,
+        0,
+        -0.0185
+      ],
+      "quatWxyz": [
+        0.5,
+        -0.5,
+        0.5,
+        -0.5
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.00731784,
+          0.0224795,
+          0.0124951
+        ],
+        "massKg": 0.04315,
+        "fullInertia": [
+          0.0000147473,
+          0.00000874297,
+          0.0000174437,
+          0.00000430685,
+          -2.48476e-7,
+          3.43648e-7
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "leg_2",
+      "parent": "right_upper_leg",
+      "pos": [
+        -0.022,
+        0.0357771,
+        -0.004
+      ],
+      "quatWxyz": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.0318937,
+          -1.52e-10,
+          -0.00953505
+        ],
+        "massKg": 0.0215844,
+        "fullInertia": [
+          0.00000215507,
+          0.00000525054,
+          0.00000433924,
+          1e-12,
+          -7.64996e-7,
+          0
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    },
+    {
+      "name": "ankle_right",
+      "parent": "leg_2",
+      "pos": [
+        -0.042,
+        0,
+        -0.026
+      ],
+      "quatWxyz": [
+        0,
+        -0.707107,
+        0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml",
+      "inertial": {
+        "pos": [
+          -0.00647683,
+          0.0135791,
+          -0.0156784
+        ],
+        "massKg": 0.0264654,
+        "fullInertia": [
+          0.00000554401,
+          0.0000104095,
+          0.00000728472,
+          1.94071e-7,
+          8.5523e-8,
+          -5.871e-8
+        ],
+        "provenance": "extracted_apache_runtime_xml"
+      }
+    }
+  ],
+  "joints": [
+    {
+      "name": "left_hip_yaw",
+      "body": "yaw2roll",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -0.4363323129985824,
+        0.5235987755982988
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "left_hip_roll",
+      "body": "hip_l",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -0.3839724354387516,
+        0.38397243543875337
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "left_hip_pitch",
+      "body": "left_upper_leg",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267949037,
+        1.5707963267948895
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "left_knee",
+      "body": "leg",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.570796326794901,
+        1.5707963267948921
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "left_ankle",
+      "body": "ankle_left",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267949019,
+        1.5707963267948912
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "neck_pitch",
+      "body": "neck",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267948966,
+        1.0471975511965976
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "head_pitch",
+      "body": "neck_pitch",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267948966,
+        1.5707963267948966
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "head_yaw",
+      "body": "yaw_roll_motion",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -2.967059728390364,
+        2.967059728390357
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "head_roll",
+      "body": "bottom_head_shell",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -0.4363323129986037,
+        0.43633231299856107
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_hip_yaw",
+      "body": "bearing_roll",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -0.5235987755982988,
+        0.4363323129985824
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_hip_roll",
+      "body": "hip_l_2",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -0.3839724354387525,
+        0.3839724354387525
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_hip_pitch",
+      "body": "right_upper_leg",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267949,
+        1.570796326794893
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_knee",
+      "body": "leg_2",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.570796326794901,
+        1.5707963267948921
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_ankle",
+      "body": "ankle_right",
+      "type": "hinge",
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "rangeRad": [
+        -1.5707963267949028,
+        1.5707963267948903
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    }
+  ],
+  "sites": [
+    {
+      "name": "imu_bno",
+      "body": "trunk_base",
+      "pos": [
+        -0.032,
+        0.0140011,
+        0.0430618
+      ],
+      "quatWxyz": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "imu",
+      "body": "trunk_base",
+      "pos": [
+        -0.021,
+        0.0000653121,
+        -0.0148911
+      ],
+      "quatWxyz": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "left_foot",
+      "body": "ankle_left",
+      "pos": [
+        0,
+        -0.0237879,
+        -0.0140852
+      ],
+      "quatWxyz": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "head_camera",
+      "body": "bottom_head_shell",
+      "pos": [
+        0.01175,
+        0,
+        -0.0735
+      ],
+      "quatWxyz": [
+        0.707107,
+        0,
+        0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "mouth_tip",
+      "body": "bottom_head_shell",
+      "pos": [
+        -0.00829334,
+        0,
+        -0.0777383
+      ],
+      "quatWxyz": [
+        0.658004,
+        -0.0201775,
+        0.75239,
+        0.0230718
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "tof",
+      "body": "bottom_head_shell",
+      "pos": [
+        0.0143,
+        0.0225,
+        -0.0735
+      ],
+      "quatWxyz": [
+        0.707107,
+        0,
+        0.707107,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "head_imu",
+      "body": "bottom_head_shell",
+      "pos": [
+        0.0114823,
+        0.000202447,
+        -0.05126
+      ],
+      "quatWxyz": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    },
+    {
+      "name": "right_foot",
+      "body": "ankle_right",
+      "pos": [
+        0,
+        0.0237879,
+        -0.0140852
+      ],
+      "quatWxyz": [
+        0,
+        0,
+        0.707107,
+        -0.707107
+      ],
+      "provenance": "extracted_apache_runtime_xml"
+    }
+  ],
+  "primitives": [],
+  "configuredAttachments": {
+    "mouth": {
+      "parentBody": "bottom_head_shell",
+      "officialPartIndices": [
+        40
+      ],
+      "pivotM": [
+        -0.006,
+        0,
+        -0.065
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "closedRad": 0,
+      "openRad": 0.0872664626,
+      "provenance": "exact_official_bill_mesh_with_configured_articulation"
+    },
+    "rollers": [
+      {
+        "parentBody": "ankle_left",
+        "offsetM": [
+          0,
+          -0.027,
+          -0.018
+        ],
+        "radiusM": 0.018,
+        "widthM": 0.014,
+        "provenance": "original_configured_approximation"
+      },
+      {
+        "parentBody": "ankle_right",
+        "offsetM": [
+          0,
+          0.027,
+          -0.018
+        ],
+        "radiusM": 0.018,
+        "widthM": 0.014,
+        "provenance": "original_configured_approximation"
+      }
+    ]
+  }
+}

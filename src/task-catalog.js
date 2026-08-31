@@ -90,10 +90,21 @@ export const UNITREE_G1_RIG_TASKS = Object.freeze([
   }),
 ]);
 
+const MICRODUCK_SCENARIO = Object.freeze({
+  schema: 'robobuddy.microduck-workspace.v1', simulationMode: 'policy_sim', workspaceRevision: 'microduck-cycle04-live-python-v1',
+  id: 'microduck-policy-demonstrator', title: 'MicroDuck Articulated Policy Demonstrator', robotId: 'microduck_runtime_visual', variant: 'walking',
+  brief: 'Run live async Python against the exact pinned policies and approximate browser dynamics while inspecting the official compact runtime visual and modeled state.',
+  canonicalModel: Object.freeze({ repository: 'pollen-robotics/microduck', revision: '590b986bd8c0d50ae02cb3ea2f59c463b6828168', sourcePath: 'robotctl/assets/duck.bin', hierarchySourcePath: 'kinematics/assets/alpha/robot_walk.xml', geometry: 'official compact robotctl monitor mesh' }),
+  frames: Object.freeze({ geometry: 'Source Z-up metres converted to Three.js Y-up and displayed at millimetre scale', hierarchy: 'pinned runtime XML and DUCK v1 body records', mouthRollersContacts: 'original configured approximations' }),
+  portablePython: Object.freeze({ referenceActions: Object.freeze([]) }),
+});
+const MICRODUCK_TASKS = Object.freeze([Object.freeze({ profileId:'microduck', id:MICRODUCK_SCENARIO.id, title:MICRODUCK_SCENARIO.title, robotId:MICRODUCK_SCENARIO.robotId, simulationMode:'policy_sim' })]);
+
 const cache = new Map();
 
 export function tasksForProfile(profileId) {
   if (profileId === 'unitree') return UNITREE_G1_RIG_TASKS;
+  if (profileId === 'microduck') return MICRODUCK_TASKS;
   return PATCH_TASKS[profileId] || [];
 }
 
@@ -109,6 +120,7 @@ export async function loadPatchedScenario(profileId, taskId) {
   const descriptor = taskDescriptor(profileId, taskId);
   if (!descriptor) return null;
   if (descriptor.simulationMode === 'kinematic_pose') return structuredClone(UNITREE_G1_RIG_SCENARIO);
+  if (descriptor.simulationMode === 'policy_sim') return structuredClone(MICRODUCK_SCENARIO);
   if (cache.has(descriptor.id)) return structuredClone(cache.get(descriptor.id));
   const response = await fetch(descriptor.url, { cache: 'force-cache' });
   if (!response.ok) throw new Error(`Pinned task ${descriptor.id} returned HTTP ${response.status}.`);

@@ -69,6 +69,19 @@ def create_robot():
 `;
 }
 
+function microduckConfig() {
+  return `# Browser-only MicroDuck policy-simulation client.\n# connect() acquires a simulator lease; it never opens a socket or discovers hardware.\nfrom microduck import MicroDuck\n\ndef create_robot():\n    return MicroDuck()\n`;
+}
+
+function microduckWorkspace(scenario) {
+  return {
+    'main.py': `# Live browser-only MicroDuck policy simulation.\n# Exact pinned ONNX policies drive original approximate browser dynamics; this is not hardware or RL-environment parity.\nfrom robot_config import create_robot\n\nrobot = create_robot()\nawait robot.connect()\ntry:\n    await robot.enable(True)\n    await robot.move(0.25, 0.0, 0.0)\n    await robot.sleep(2.0)\n    state = await robot.get_state()\n    print("live modeled time", state["time"], "mode", state["mode"], "position", state["simulatedPose"]["position"])\n    await robot.stop()\nfinally:\n    await robot.disconnect()\n`,
+    'trajectories.py': `# Callable examples for the catalog-backed robot methods. They are not run by main.py.\nasync def demonstrate_motion(robot):\n    await robot.head(neck_pitch=0.05, head_pitch=-0.1, head_yaw=0.2, head_roll=0.0)\n    await robot.look(0.35, 0.05, 0.18, neck_pitch=0.0)\n    await robot.pose(z=-0.01, roll=0.04, pitch=-0.04, active=True)\n    await robot.mouth(0.35)\n    await robot.do("kick_left")\n    await robot.init()\n    await robot.relax()\n\nasync def demonstrate_modes_and_audio(robot):\n    current = await robot.mode()\n    await robot.set_mode("roller" if current == "walking" else "walking")\n    # Audio calls require a trusted human unlock in the visible control deck.\n    await robot.sound("chirp")\n    await robot.sound("wheee", hold=True)\n    await robot.sound("wheee", hold=False)\n    await robot.theremin(True)\n    await robot.theremin(False)\n    await robot.chorale(True, piece="wistful", voices=2)\n    await robot.chorale(False)\n`,
+    'robot_config.py': microduckConfig(),
+    'workcell.py': `# Callable examples for browser-model presentation and workcell extensions.\n# Camera, ToF, contacts, geometry, rollers, mouth pivot, and dynamics are modeled approximations.\nWORKCELL = ${py({ scenario_id: scenario.id, simulation_mode: 'policy_sim', fidelity: 'exact pinned ONNX over original approximate browser dynamics; no RL-environment, locomotion, contact, or hardware parity' })}\n\n# API values remain stable; get_state() returns each view's visible identity and truthful frame.\nCAMERA_VIEWS = {\n    "orbit": "Overview: world-frame robot + ball context",\n    "chase": "Follow: stable robot-root third-person view",\n    "head": "Head POV: modeled head_camera render, not hardware video",\n}\n\nasync def configure_modeled_workcell(robot):\n    await robot.set_color("lavender")\n    await robot.spawn_ball([0.28, 0.0, 0.035])\n    await robot.set_tof_stimulus(0.32)\n    await robot.set_camera("chase")\n    camera = (await robot.get_state())["virtualCamera"]\n    print("camera", camera["name"], camera["frame"], camera["purpose"])\n    # Reset preserves the selected camera mode and restores its deterministic fit.\n    await robot.reset()\n`,
+  };
+}
+
 function mainFile(scenario) {
   const boundary = isKinematicPoseScenario(scenario)
     ? '# This is a browser-only Unitree G1 kinematic-pose workspace. The adapter\n# only displays bounded source-manifest joint angles; it is not a Unitree SDK,\n# contact simulation, gait/balance system, or hardware-control path.'
@@ -95,6 +108,7 @@ function workcellFile(scenario) {
 
 export function buildPatchedWorkspace(profileId, scenario) {
   if (!scenario) throw new Error('A scenario is required to build the workspace.');
+  if (scenario.simulationMode === 'policy_sim') return microduckWorkspace(scenario);
   const configs = { openarm: openArmConfig, so101: so101Config, lekiwi: lekiwiConfig, unitree: unitreeConfig };
   const configFactory = configs[profileId];
   if (!configFactory) throw new Error(`No workspace generator for ${profileId}.`);

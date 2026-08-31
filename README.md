@@ -8,6 +8,7 @@ A standalone, VS Code-inspired browser IDE for learning robot programming throug
 - The editor and 3D simulator are the dominant work areas.
 - SO-101, OpenArm bimanual, and LeKiwi use their public LeRobot import/configuration/action shapes at pinned revision `7e241bd630a3719a56157a497ce5d08f244784f1`.
 - Unitree G1 is a separate browser-only 29-axis kinematic pose workspace. It does not present a Unitree SDK or physical-control API.
+- MicroDuck is a separate `policy_sim` workspace using the exact pinned `1x61 -> 1x14` ONNX policies and the official compact Apache-2.0 `robotctl` monitor visual over configured approximate browser dynamics. The configured five-degree movement of the exact official lower-bill part, roller attachments, visual floor alignment, contacts, and dynamics remain approximations; it is not a physics twin or hardware-control SDK.
 - The displayed robot rigs are the canonical generated RoboBuddy_AI visual meshes and articulated joint hierarchy pinned to RoboBuddy_AI revision `66d18a029a0caeb6a6075e681dbd9ecd6b22affa`; the IDE no longer substitutes schematic box/cylinder robots.
 - Learner-visible atomic joint, gripper, and mobile-base commands live in `trajectories.py` and are passed to ordinary `robot.send_action(...)` calls from `main.py`.
 - No learner-facing fake `grasp()`, `attach()`, `teleport()`, or Cartesian hardware method is introduced.
@@ -41,6 +42,8 @@ The browser regression suite constructs all three canonical rigs and fully repla
 
 The Unitree G1 rig is deliberately outside that source-plant path: the IDE has no reviewed G1 ScenarioV2 collision/contact implementation. It validates source-manifest joint ranges and interpolates the canonical mesh through browser-held pose state only.
 
+MicroDuck is also outside the source-plant path. Its dedicated policy backend uses the Apache-covered fourteen-joint hierarchy, exact pinned ONNX bytes, and exact compact Apache-2.0 runtime-monitor visual. Triangle winding/normals, the configured lower-bill articulation, rollers, floor alignment, collision/contact model, browser dynamics, Overview/Follow projection and framing, modeled `head_camera` projection, IMU/ToF values, and generated audio remain explicit browser approximations. See [the MicroDuck fidelity and control record](docs/microduck-simulator.md).
+
 ## Important fidelity boundary
 
 This IDE is a teaching/reference simulator, **not a hardware-calibrated digital twin**. Canonical visual geometry and source-pinned kinematics improve correspondence, but the application does not claim motor/controller dynamics, force or torque sensing, identified friction, compliance, backlash, payload certification, device-specific calibration transfer, glassware safety certification, wheel slip/odometry accuracy, ZMQ/CAN timing equivalence, or hardware validation.
@@ -57,7 +60,21 @@ Its scope stops at bounded named-joint pose visualization. Dynamic balance, walk
 
 The current standalone IDE prepares the visible synchronous physical-target Python into a deterministic sequence of public API boundaries and then advances that sequence through the pinned source plant. This provides faithful visibility for open-loop joint/gripper/base programming, atomic stepping, collision/contact inspection, and numerical tuning.
 
-It is **not yet a closed-loop Python feedback runtime**: branching Python code does not currently suspend at `get_observation()`, receive the post-physics plant observation, and resume the same Python process. RoboBuddy_AI already contains a JSPI/Python-RPC architecture for that stronger behavior; integrating that bridge is the correct future path before claiming closed-loop simulation fidelity.
+For SO-101, OpenArm, LeKiwi, and Unitree, it is **not yet a closed-loop Python feedback runtime**: branching Python code does not currently suspend at `get_observation()`, receive post-simulation state, and resume the same Python process. MicroDuck is the narrow exception: its dedicated worker uses an incremental async bridge so the browser-only `microduck` module can read and command the live approximate policy simulation with cooperative Pause, Step, Run-to-Cursor, Stop, and cancellation. That worker boundary is not a hostile-code sandbox and exposes no physical transport.
+
+## WebMCP agent collaboration
+
+In a WebMCP-capable browser, a person can turn on the session-only **Agent → Assist** control in the toolbar. This exposes a small, explicit tool surface on the top-level page through `document.modelContext.registerTool(...)`; unsupported browsers continue to run the IDE normally.
+
+- `describe_robobuddy_task` describes the selected task and its fidelity boundary.
+- `read_robobuddy_workspace` returns one bounded, line-numbered page of the current unsaved Python workspace.
+- `inspect_robobuddy_simulation` returns compact modeled state and recent diagnostics.
+- `focus_robobuddy_workspace` moves the visible editor to a requested source line for shared review.
+- `run_robobuddy_program` resets and runs the visible draft, then reports a compact outcome.
+
+Those five tools remain registered whenever a person has enabled Assist, including non-MicroDuck and loading/error workspaces. A sixth tool, `control_microduck_simulation`, is registered only for a ready active MicroDuck `policy_sim` workspace. Its 21 catalog commands use 25 strict disjoint schema branches for conditional duration behavior. Continuous control is limited to 20–5000 ms, one-shots have catalog-owned abort/completion behavior and an eight-second application ceiling, and results contain bounded cloned browser state. Audio still requires a trusted human unlock. The tool has no source-write, save/export/publish, hardware/network/admin/shutdown, real-media, BLE, multiplayer, or hidden-data surface.
+
+The tools are cancelled when Agent Assist is switched off or the browser cancels a call. They never apply edits, save drafts, export files, publish work, or make a hardware-control claim. Source and console-derived outputs are labeled as untrusted content for the agent.
 
 ## Controls
 
@@ -73,7 +90,7 @@ It is **not yet a closed-loop Python feedback runtime**: branching Python code d
 
 ## Validation
 
-CI checks JavaScript syntax, task/source provenance, physical action envelopes, learner-source visibility, canonical robot mesh construction, starter Python syntax/execution shape, HTML parsing, and a headless Chromium runtime suite. The Chromium suite constructs all four canonical rigs, performs a complete source-plant replay of every pinned task, and exercises the IDE `Step Action` path through Pyodide for both a source-plant task and the Unitree pose workspace.
+CI is configured to check JavaScript syntax, task/source provenance, physical action envelopes, learner-source visibility, canonical robot mesh construction, the MicroDuck asset/policy/UI/Python/WebMCP contracts, starter Python syntax/execution shape, HTML parsing, and the discovered headless Chromium suite. Local execution evidence is recorded in [the MicroDuck implementation record](docs/microduck-simulator.md); configured CI lanes are not described as executed until a CI host actually runs them.
 
 ## Source provenance
 
@@ -84,6 +101,7 @@ CI checks JavaScript syntax, task/source provenance, physical action envelopes, 
 - Browser Python runtime: Pyodide `0.29.4`
 - Editor: CodeMirror `5.65.16`
 - 3D rendering: Three.js `0.180.0`
+- MicroDuck runtime, policy, MuJoCo/ONNX Runtime Web, and per-file license/hash provenance: [`assets/microduck/manifest.json`](assets/microduck/manifest.json)
 
 ## License
 
