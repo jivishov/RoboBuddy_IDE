@@ -1,0 +1,111 @@
+# MicroDuck browser policy demonstrator
+
+This workspace is a reference-aligned policy demonstrator, not a validated MicroDuck physics twin.
+
+Exact source-backed facts are limited to the Apache-2.0-covered fourteen-joint body hierarchy, transforms, axes, limits, inertials and named frames in `pollen-robotics/microduck@590b986bd8c0d50ae02cb3ea2f59c463b6828168`, the exact compact `robotctl/assets/duck.bin` monitor visual from that same revision, and the exact nine pinned ONNX policy bytes. The ONNX fixture proves deterministic `1x61 -> 1x14` CPU/browser inference parity only.
+
+Joint positions are metres and joint angles are radians. Positive angles use right-hand rotation about each axis recorded in the pinned XML. Policy action indexes map positionally to `left_hip_yaw`, `left_hip_roll`, `left_hip_pitch`, `left_knee`, `left_ankle`, `neck_pitch`, `head_pitch`, `head_yaw`, `head_roll`, `right_hip_yaw`, `right_hip_roll`, `right_hip_pitch`, `right_knee`, `right_ankle`. The runtime wire order inserts `mouth` at index 9; the fourteen-action policies deliberately skip it. The generated rig and manifest retain both orders explicitly.
+
+The 28 compact meshes, 15 bodies, 58 part instances, baked colors, and articulated body transforms are decoded from the exact official `DUCK v1` monitor byte. Its upstream bake sorts each triangle's indexes, so two-sided centroid winding reconstruction, Three.js normals, the source-Z-up to viewport-Y-up conversion, selective presentation tinting, and visual floor alignment are local rendering choices. The exact official lower-bill part is moved by a locally configured five-degree articulation; roller attachments, collision shapes, contacts, and browser dynamics remain original approximations. No `microduck_rl` STL/MJCF or Hugging Face Space byte is distributed, and the runtime visual does not establish locomotion, contact, RL-environment, MuJoCo-model, or hardware parity.
+
+The visible workcell is a configured 8 m × 8 m planar field, doubled from the earlier 4 m × 4 m approximation. The radius-aware duck-root and ball limits stop planar travel at the field edge. A kick transfers one configured, contact-zone-gated planar impulse to the ball after a 160 ms kick delay; configured Coulomb-style rolling resistance removes 0.45 m/s of planar speed per simulated second and sleeps speeds at or below 0.015 m/s. These are deterministic browser boundary/contact rules, not sourced wall, ball-contact, locomotion, or calibration data.
+
+Cycles 01–04 provide the coherent local bundle, deterministic rig, host lifecycle, exact policy inference, approximate dynamics, command arbitration, immutable state, contacts, ball behavior, modeled recovery, human control deck/peripherals, and the live browser-only Python bridge. Cycle 05 adds the conditional bounded WebMCP integration described below and completed its separate `gpt-5.6-sol` / `xhigh` critical review with one in-scope refinement pass.
+
+## Human controls and browser safety
+
+The MicroDuck-only control deck is generated from the frozen `MICRODUCK_COMMANDS` catalog. It exposes enable/hold, stop, the modeled init ramp and relax behavior, walking/roller modes, movement, four-axis head control, trunk-frame look, body pose, mouth, five policy skills, all approved generated sounds, theremin, local chorale, four presentation colors, ball/reset/perturbation, the learner-named Overview, Follow, and Head POV main views, ToF stimulus, and bounded state telemetry.
+
+Keyboard and gamepad input only act after explicit simulator capture. Focused continuous intent refreshes a 250 ms browser focus-safety lease selected by this app; it is not described as the pinned runtime's deadman. Losing focus/capture, hiding the page, changing profiles/modes, disconnecting the gamepad, or stopping/resetting neutralizes retained human intent. WASD uses Q/E for kicks; ZQSD uses J/K. Both layouts use G for ground-pick or roller-crouch, Y for sit-toggle, R for roulade, M for mode, C to cycle Overview → Follow → Head POV, and Space for reset. The standard-browser gamepad fixture mirrors the pinned `padd` behavior for sticks, layers, skills, triggers, and three-second D-pad mode switching. Select-held shutdown is deliberately absent; there is no browser device-administration or power-off action.
+
+## Modeled peripherals and generated audio
+
+The compatible `set_camera("orbit"|"chase"|"head")` values are presented as three deliberately different main views. **Overview** uses a configured aspect-aware world view that fits the articulated robot and ball together and remains learner-orbitable. **Follow** uses a configured robot-root-relative behind/above view with time-based smoothing and aspect-aware whole-robot framing. **Head POV** takes its position and orientation from the modeled source `head_camera` frame, with a configured 100° vertical projection chosen for the IDE's narrow viewport. It is rendered simulation imagery, not hardware video or a calibrated camera feed. There is no automatic inset and no media/WebRTC transport. Fit reframes the selected mode without switching it; reset and resize preserve that mode and reconstruct its deterministic view. Python `get_state()` and bounded WebMCP results expose `mode`, visible `name`, `purpose`, truthful `frame`, `inset: false`, and the no-hardware-video transport boundary. Trunk and head IMU values are deterministic derivatives at the source-named `imu` and `head_imu` frames, not calibrated measurements. The `tof` frame produces a deterministic 8×8 synthetic hand-distance grid; an optional scene-raycast source writes the same bounded modeled contract.
+
+Audio unlock accepts only a trusted human browser event. Until then, sound, theremin, and active chorale commands return `AUDIO_LOCKED`. The seven voices are original deterministic Web Audio synthesis implemented locally without recordings. Held `wheee` follows its command lease. Theremin pitch and mouth response use the modeled ToF nearest usable range with a short dropout hold. Chorale is single-tab local synthesis with one to four generated voices and only the Apache-covered `wistful` and `duck_strut` score choices. There is no BLE discovery, network conductor, multiplayer, or `outer_wilds`; the excluded upstream test score is not distributed.
+
+Cream preserves the baked runtime colors. Graphite, Lavender, and Sky selectively tint only the light shell-presentation materials; mechanical and accent colors remain source-baked. Color selection does not change policy observations, dynamics, contacts, or fidelity flags.
+
+Third-party notices are in `licenses/`. Every served file below `assets/microduck/`, except the self-describing manifest itself, is size/hash/source/license classified by `assets/microduck/manifest.json`.
+
+## Live Python and WebMCP boundaries
+
+The MicroDuck workspace keeps the four visible files and runs an async `microduck` module in a dedicated Pyodide worker. Commands cross one message-correlated boundary into the same main-thread `MICRODUCK_COMMANDS` bus used by the visible controls. Run resets and starts from the top; Pause freezes the bridge and policy clock; Step advances one bridge boundary or one 20 ms paused sleep tick; Run-to-Cursor stops at the next qualifying boundary; Stop invalidates the run epoch, neutralizes retained intent/audio, and cooperatively or forcibly replaces the worker. This improves responsiveness and later-run recovery, but does not make arbitrary Python trusted or establish process/memory isolation.
+
+Agent Assist is Off by default and can only be enabled by a trusted human click. Assist registers the five existing inspect/focus/run tools for every profile and workspace readiness state. Exactly one additional `control_microduck_simulation` tool is present only when MicroDuck is the active ready `policy_sim` workspace. Its 21 catalog commands are represented by 25 strict `additionalProperties: false` branches because held `wheee`, active theremin, and active chorale have disjoint duration-bearing variants. `move`, `head`, `pose`, `mouth`, and those active/held audio variants require `duration_ms` from 20 through 5000.
+
+The control tool routes through the shared command bus, honors human-over-Python-over-WebMCP authority, rechecks access/registration/profile/workspace/backend epochs and cancellation while awaiting work, and removes its retained intent before returning. One-shots use catalog-owned completion and abort transitions with an eight-second maximum. Results are bounded clones with exactly `{ok, command, requested, applied, limitedBy, completed, state, audio}`. Audio remains unavailable until the visible trusted unlock succeeds. There is no tool for source mutation, apply/staging, save/export/publish, physical hardware/network/device administration, shutdown, media transport, BLE, multiplayer, hidden reference data, or unbounded runtime objects.
+
+The additive capability fields remain truthful and disjoint: MicroDuck reports `policySimulationAvailable: true`, `simulationMode: "policy_sim"`, `stateKind: "browser_policy_sim"`, and `hardwareValidated: false`; the existing source-plant and kinematic-pose workspaces keep their own state kinds and do not acquire the MicroDuck control tool.
+
+## Cycle 05 local evidence record
+
+The Cycle 05 implementation used `gpt-5.6-sol` / `medium`; its separate critical fidelity review and one refinement pass used `gpt-5.6-sol` / `xhigh`.
+
+Executed locally on Windows with Node `v24.18.0` and the `py -3` launcher:
+
+- changed/new JavaScript `node --check` commands passed;
+- `node tests/webmcp-core.mjs` passed with 21 catalog commands and 25 strict disjoint branches, including conditional duration, bounds/cloning, cancellation/error, profile, and timeout checks;
+- `node tests/microduck-policy-core.mjs` passed 8/8; the UI core, Python bridge, asset gate, repository static checks, canonical visual checks, and pinned task-patch checks passed;
+- the asset gate reported 19 classified files, nine policies, fourteen joints, two release-safe scores, and two fixed inference outputs;
+- `py -3 tests/validate_starters.py`, `py -3 tests/execute_starters.py`, and `py -3 tests/validate_openarm_reference.py` passed;
+- `git diff --check` and the explicit owned-text trailing-whitespace scan passed, apart from informational LF/CRLF conversion warnings;
+- `npm run test:browser` was run exactly once. It executed 24 discovered Chromium tests: 23 passed, including the existing five-tool journey, loading/error five-tool lifecycle, partial-registration cleanup, unsupported-browser behavior, policy/asset/Python journeys, and the 1366×768 and 390×740 layout journeys. Its only failure was test-only: a forbidden-substring regex matched the `ble` suffix in the valid command `enable` before the ready-MicroDuck journey reached command calls. The assertion was narrowed to exact forbidden names; the complete suite was not rerun.
+- The xhigh review identified and refined missing simulator-epoch comparison, controller-specific one-shot cancellation/preemption, over-broad held-audio cleanup, optional explicit `hold: false`, and a dispatch/lease duration race. The first corrected focused WebMCP run passed 4/5 and exposed that timer race; after the single refinement pass, `npx playwright test tests/webmcp.spec.mjs` passed 5/5, including manual Stop during `init` and a successful later control call.
+- The final source has composite passing evidence for all discovered browser lanes: the 23 successful tests from the single full invocation plus the final corrected WebMCP 5/5 slice. This is not represented as a second green full-suite invocation. Post-refinement WebMCP core, MicroDuck policy core 8/8, UI core, the 19-file asset gate, and repository static fidelity validation also passed.
+
+The browser lane was local mocked WebMCP discovery/registration in Chromium, not a real WebMCP host implementation. Ubuntu CI, real host discovery, physical hardware, deployment/Pages, accessibility, performance/thermal profiling, broad browser/mobile matrices, penetration, and dependency-security lanes remain unrun. Exact-byte inference and Apache-covered hierarchy evidence does not extend the approximate-dynamics fidelity boundary.
+
+## Post-cycle visual, motion, and material repair evidence
+
+The user-authorized repair after Cycle 05 used `gpt-5.6-sol` / `max`. It does not reopen or replace Cycle 05 and does not revise that cycle's historical 19-file or browser-suite evidence.
+
+Executed locally on Windows with Node `v24.18.0`:
+
+- the deterministic generator wrote a 20-entry manifest; `node tests/validate_microduck_assets.mjs` passed for 20 files, nine policies, fourteen joints, 28 official visual meshes/58 parts, two release-safe scores, and two fixed inference outputs;
+- changed visual, simulator, policy, generator, and focused-browser JavaScript passed `node --check`; `git diff --check` passed apart from informational LF/CRLF conversion warnings;
+- `node tests/microduck-policy-core.mjs` passed 8/8, and the MicroDuck UI/input/peripheral core, Python bridge, WebMCP core, and repository static fidelity checks passed;
+- two focused Chromium journeys passed together. They proved the default/reset/Stop state remains held without time, joint, or root-quaternion drift; official material metalness is zero, roughness is at least 0.8, source colors remain distinct, locally reconstructed winding is consistent, and enabled policy targets change by at most 0.060001 rad per control tick;
+- those journeys also proved 15 bodies, 28 decoded meshes, 58 official part instances, one configured articulation of the exact official lower-bill part, four configured roller meshes, near-zero floor error, camera Fit/head-to-orbit/reset behavior, resize-safe framing at 1180×800 and 1440×900, and at least 4.5:1 computed contrast for the sampled control, selected-state, collapse, and fidelity-boundary surfaces;
+- fresh 1366×768 and 1440×900 screenshots were inspected after the checks. The final source-color render is upright, fully framed, readable, and free of the rejected black/chrome face-patch artifact. The calm-light fidelity warning is separately visible with a solid high-contrast treatment;
+- the required critical self-review found one additional lifecycle issue: configured roller geometries were outside the rig's disposal set. The refinement added them to deterministic cleanup and retained source-only winding assertions.
+
+The complete browser suite, Ubuntu CI, real WebMCP host discovery, physical hardware, deployment/Pages, accessibility tooling beyond the focused computed-contrast assertions, performance/thermal profiling, broad browser/mobile matrices, penetration testing, and dependency-security lanes were not rerun for this post-cycle repair.
+
+## Post-cycle learner-readable camera refinement evidence
+
+The user-authorized camera refinement after the visual repair used `gpt-5.6-sol` / `max`. It is a second post-cycle repair, does not reopen or replace Cycle 05, and preserves the compatible `orbit`, `chase`, and `head` command values.
+
+The unmodified local Chromium reproduction established the failure modes before editing: Overview put the ball at x = 1.839 NDC outside the main viewport; Follow projected robot bounds beyond approximately -2.31..1.89 NDC; Head POV occupied the source site but OrbitControls overwrote its orientation; Fit switched to orbit, reset lost the selected mode, resize only refit orbit, and all modes falsely reported the `head_camera` frame plus an inset.
+
+Executed locally on Windows with Node `v24.18.0`:
+
+- changed camera/UI/state/workspace/test JavaScript passed `node --check`; `node tests/microduck-ui-core.mjs`, the MicroDuck policy core 8/8, Python bridge, WebMCP core (21 commands/25 strict branches), repository static fidelity checks, and `py -3 tests/validate_starters.py` passed;
+- the final focused Chromium slice passed 3/3, covering the existing official-runtime visual/resize journey, the dedicated learner-camera journey, and the complete 1366×768 control-deck journey; the dedicated camera journey then passed once more while emitting the final measurements and replacing the three evidence captures;
+- Overview projected the complete robot to x = -0.536..0.263 and y = -0.188..0.344 NDC, with the ball center at (0.205, -0.317); Follow projected the robot to x = -0.615..0.670 and y = -0.418..0.405, tracked a 160-unit visual displacement, and reduced per-frame camera travel from 24.563 to 0.000009 without losing the robot;
+- Head POV used the `head_camera` frame at configured 100° vertical FOV, with zero measured position/quaternion error and 1.0 forward/up dot products against the source-frame-to-Three-camera transform; the ball center remained visible at y = -0.683 NDC;
+- Fit was deterministic and retained every selected view, reset retained Head POV, 1180×800 and 1440×900 resizes retained their active modes and bounded framing, focused `C` produced Follow → Head POV → Overview from Overview, and switching preserved held time, enabled state, joints, targets, ball/contact state, source colors, metalness, and roughness;
+- the three inspected 1366×768 captures are `microduck-camera-overview-1366x768.png`, `microduck-camera-follow-1366x768.png`, and `microduck-camera-head-pov-1366x768.png`. Each shows the current main-view identity, purpose-rich controls, mode-aware Fit label, and no head-camera inset;
+- the required critical review found that the source site quaternion needed a fixed site-to-Three camera-axis basis, that the narrow viewport required a documented wide projection to retain floor/ball context, and that partially damped OrbitControls could undermine deterministic Overview Fit. One refinement pass corrected those three camera-specific issues and the affected checks passed afterward.
+
+The complete browser suite, Ubuntu CI, real WebMCP host discovery, physical hardware/camera, camera calibration or distortion, deployment/Pages, performance/thermal profiling, broad accessibility/browser/mobile matrices, penetration testing, and dependency-security lanes were not run for this focused camera repair. No stage, commit, push, publish, or deployment action was performed.
+
+## Post-cycle comprehensive control-deck audit evidence
+
+The user-authorized learner-function audit after the camera refinement used `gpt-5.6-sol` / `xhigh`. It is a third post-cycle repair, does not reopen or replace Cycle 05, and preserves the shared Python/WebMCP command vocabulary and the completed learner-camera behavior.
+
+The initial 1366×768 in-app Browser journey exercised the visible control deck before automation. It established the initial released/disabled state, expand/collapse and internal-scroll reachability, capture/release and focus-loss neutralization, the 250 ms lease, walking movement and camera cycling, global Run/Pause/Resume, locked-audio behavior, and visible requested/applied/state feedback. It also reproduced a real safety defect: deck STOP and Reset used a different human subcontroller while retained keyboard intent still owned the lease, so STOP could report a conflict and movement could continue. The audit additionally found that visible range labels did not produce accessible names and that the compact simulator grid overflowed its 390 px viewport by about 4.97 px.
+
+The narrow repair releases the control deck's captured keys, human lease, and held audio before STOP or Reset, adds explicit accessible names to catalog-generated range controls, and gives the compact simulator/deck grid an explicit shrinkable column. No policy, dynamics, camera, Python bridge, WebMCP, asset, or hardware-fidelity behavior was changed.
+
+Executed locally on Windows with Node `v24.18.0`:
+
+- the final focused Chromium slice passed 6/6 together: the existing complete 1366×768 deck/trusted-audio journey, the strengthened 390×740 reachability journey, and four clean-profile audits for STOP/Reset safety, runtime/movement/pose/skills, generated audio/cleanup, and presentation/peripherals/gamepad/accessibility;
+- STOP while W was retained and Reset while W was retained both released capture and produced exact zero applied movement; STOP preserved the enabled state while Reset restored the initial disabled policy state and initial ball placement;
+- walking and roller limits, WASD/ZQSD, camera cycling, enable/hold/init/relax, all head/look/body/mouth bounds, every skill and roller-crouch mapping, trusted audio gating, all approved one-shots, held `wheee`, theremin response, both chorale pieces and one-to-four voices, all colors, all three camera modes, ball reset, both perturb directions, 8×8 ToF source selection, gamepad drive/head/body layers, focus/gamepad/profile cleanup, collapse/expand, and immutable fourteen-joint state were exercised through the rendered controls;
+- every rendered deck `button`, `input`, and `select` exposed a non-empty accessible name in the focused browser check, the bottom ToF control was reachable through the deck's own scroll container, and the 390×740 deck fit its simulator pane and returned to Code;
+- `node --check` passed for the changed JavaScript tests and control deck; `node tests/microduck-ui-core.mjs`, the MicroDuck policy core 10/10, Python bridge, WebMCP core (21 commands/25 strict branches), the 20-file asset gate, and repository static fidelity checks passed;
+- the required critical self-review retained the narrow release-before-safety-command fix, rejected timing-based product changes, split the long audit into deterministic clean-profile families, and reconciled the compact grid at its actual minimum-content owner;
+- inspected evidence captures are `microduck-deck-initial-1366x768.png`, `microduck-deck-bottom-reachability-1366x768.png`, and `microduck-deck-final-stop-1366x768.png`; they live in the task's Codex visualization folder rather than the repository.
+
+The complete browser suite, Ubuntu CI, a real WebMCP host, physical MicroDuck/gamepad/audio hardware, hardware camera/IMU/ToF validation, audio output quality or loudness measurement, deployment/Pages, screen-reader/manual keyboard certification, performance/thermal profiling, broad browser/mobile matrices, penetration testing, and dependency-security lanes were not run. No stage, commit, push, publish, or deployment action was performed.

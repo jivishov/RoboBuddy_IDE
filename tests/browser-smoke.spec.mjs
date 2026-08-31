@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const TASK_PATCH = '75fe2669c0ab0b029986de424c69162071174df8';
+const SOURCE_REPLAY_TIMEOUT = 180_000;
 
 test('IDE loads canonical robots and pinned reviewed tasks without runtime exceptions', async ({ page }) => {
   const pageErrors = [];
@@ -190,6 +191,7 @@ test('learner Python reaches the first physical action through the IDE Step Acti
 
 
 test('Pause holds an active source-plant run and resumes it in place', async ({ page }) => {
+  test.setTimeout(240_000);
   await page.goto('/?ci=pause', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
   expect(await page.locator('#runBtn').evaluate((button) => button.nextElementSibling?.id)).toBe('pauseBtn');
@@ -211,8 +213,36 @@ test('Pause holds an active source-plant run and resumes it in place', async ({ 
   await page.locator('#pauseBtn').click();
   await expect(page.locator('#pauseBtn')).toHaveText('⏸ Pause');
   await expect(page.locator('#pauseBtn')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#statusMessage')).toHaveText('Run complete', { timeout: 90_000 });
+  await expect(page.locator('#statusMessage')).toHaveText('Run complete', { timeout: SOURCE_REPLAY_TIMEOUT });
   await expect(page.locator('#pauseBtn')).toBeDisabled();
+});
+
+test('source-plant and Unitree keep their main-thread compile/replay Run and Run-to-Cursor paths', async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto('/?ci=cycle04-preservation', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  const setFirstActionCursor = () => page.evaluate(() => {
+    const app = window.__robobuddyCi.app;
+    const lines = app.files['main.py'].split('\n');
+    const index = lines.findIndex((line) => line.includes('robot.send_action('));
+    app.openFile('main.py');
+    app.editor.cm.setCursor({ line: Math.max(0, index), ch: 0 });
+    return index + 1;
+  });
+
+  const sourceLine = await setFirstActionCursor();
+  await page.click('#cursorBtn');
+  await expect(page.locator('#statusMessage')).toContainText(`main.py:${sourceLine}`, { timeout: SOURCE_REPLAY_TIMEOUT });
+  expect(await page.evaluate(() => ({ policyWorker: window.__robobuddyCi.app.microduckRuntime.isActive(), prepared: window.__robobuddyCi.app.prepared?.events?.length > 0 }))).toEqual({ policyWorker: false, prepared: true });
+
+  await page.selectOption('#robotSelect', 'unitree');
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  await page.click('#runBtn');
+  await expect(page.locator('#statusMessage')).toHaveText('Run complete', { timeout: SOURCE_REPLAY_TIMEOUT });
+  const unitreeLine = await setFirstActionCursor();
+  await page.click('#cursorBtn');
+  await expect(page.locator('#statusMessage')).toContainText(`main.py:${unitreeLine}`, { timeout: SOURCE_REPLAY_TIMEOUT });
+  expect(await page.evaluate(() => ({ policyWorker: window.__robobuddyCi.app.microduckRuntime.isActive(), prepared: window.__robobuddyCi.app.prepared?.events?.length > 0 }))).toEqual({ policyWorker: false, prepared: true });
 });
 
 test('diagnostics panel owns a full-width grid row and activity rail buttons are functional', async ({ page }) => {

@@ -30,14 +30,37 @@ jobs:
           node --check src/canonical-rig.js
           node --check src/simulator.js
           node --check src/source-simulator.js
+          node --check src/simulator-host.js
           node --check src/task-catalog.js
           node --check src/task-workspace.js
+          node --check src/microduck/audio-engine.js
+          node --check src/microduck/baked-visual.js
+          node --check src/microduck/command-bus.js
+          node --check src/microduck/command-catalog.js
+          node --check src/microduck/control-deck.js
+          node --check src/microduck/input-controller.js
+          node --check src/microduck/policy-simulator.js
+          node --check src/microduck/python-bridge.js
+          node --check src/microduck/python-worker.js
+          node --check src/microduck/rig-adapter.js
+          node --check src/webmcp/agent-facade.js
+          node --check src/webmcp/microduck-control.js
+          node --check src/webmcp/register-ide-tools.js
       - name: Static fidelity checks
         run: node tests/validate.mjs
       - name: Canonical RoboBuddy visual checks
         run: node tests/validate_canonical_visuals.mjs
       - name: Latest pinned task patch and source-plant checks
         run: node tests/validate_task_patch.mjs
+      - name: MicroDuck asset and policy contracts
+        run: |
+          node tests/validate_microduck_assets.mjs
+          node tests/microduck-policy-core.mjs
+          node tests/microduck-ui-core.mjs
+      - name: MicroDuck Python and WebMCP contracts
+        run: |
+          node tests/microduck-python-bridge.mjs
+          node tests/webmcp-core.mjs
       - name: Starter Python syntax
         run: python tests/validate_starters.py
       - name: Starter physical-API execution shapes

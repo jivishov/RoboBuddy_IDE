@@ -63,6 +63,13 @@ export const PROFILES = Object.freeze({
     source:'RoboBuddy_AI canonical Unitree G1 mesh with 29 source-manifest joint envelopes, generated from unitreerobotics/unitree_ros at dd4fa6866e523ad61324f658d63736e4eda3a6e4. This is a browser-only visual pose workspace, not a Unitree SDK or hardware-control API.',
     task:Object.freeze({title:'29-axis kinematic pose inspection', steps:['Inspect the neutral source-mesh pose','Send a bounded upper-body joint pose','Inspect a lower-body joint pose without moving the root','Return joints to neutral'], limitations:'The canonical G1 visual mesh and source joint ranges are used. Dynamic balance, walking, root translation, foot contact, collision, hand actuation, grasping, force/torque control, Unitree SDK control, and hardware validation are not simulated.'}),
   }),
+  microduck: Object.freeze({
+    id:'microduck', label:'MicroDuck Policy Demonstrator', shortLabel:'MicroDuck', driver:'Main-thread 50 Hz browser policy simulator', transport:'none — local browser assets', simulationMode:'policy_sim',
+    visual:Object.freeze({robotId:'microduck_runtime_visual', repository:'pollen-robotics/microduck', revision:'590b986bd8c0d50ae02cb3ea2f59c463b6828168', sourcePath:'robotctl/assets/duck.bin', model:'official compact Apache-2.0 robotctl monitor visual'}),
+    limits:Object.freeze({}), rest:Object.freeze({}),
+    source:'Exact pinned MicroDuck policy bytes, Apache-2.0 hierarchy metadata, and the official compact Apache-2.0 robotctl monitor visual. Configured lower-bill movement, rollers, visual floor alignment, collisions, contacts and dynamics are approximations; no RL-model, locomotion or hardware parity is claimed.',
+    task:Object.freeze({title:'Approximate browser policy simulation', steps:['Inspect the fourteen policy-controlled joints and separate mouth','Compare walking and roller policy modes','Inspect modeled contact and recovery state','Review the explicit fidelity boundary'], limitations:'Exact pinned ONNX inference drives configured approximate MuJoCo dynamics while the official compact runtime visual follows the same articulated hierarchy. This does not establish RL-environment, locomotion, contact, physical, or hardware parity.'}),
+  }),
 });
 
 export function fidelityNoticeFor(profileId) {
@@ -70,6 +77,7 @@ export function fidelityNoticeFor(profileId) {
   if (profile?.simulationMode === 'kinematic_pose') {
     return 'Reference-sourced Unitree G1 mesh and bounded joint-pose visualization. No fixed-step contact plant, balance, locomotion, collision, or hardware validation is active.';
   }
+  if (profile?.simulationMode === 'policy_sim') return 'Reference-aligned MicroDuck policy demonstrator with the official compact runtime visual. Configured lower-bill movement, rollers, floor alignment and browser dynamics remain approximations; no RL-model, contact, locomotion, or hardware parity is claimed.';
   return FIDELITY_NOTICE;
 }
 

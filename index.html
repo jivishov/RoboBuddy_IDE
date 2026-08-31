@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./toolbar-refinement.css">
   <link rel="stylesheet" href="./theme-system.css">
+  <link rel="stylesheet" href="./microduck-controls.css">
   <script>
     try {
       const savedTheme = localStorage.getItem('rbide.theme');
@@ -43,8 +44,9 @@
 
   <div class="toolbar">
     <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
-    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="unitree">Unitree G1 29-DoF</option></select>
+    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="unitree">Unitree G1 29-DoF</option><option value="microduck">MicroDuck Policy Demonstrator</option></select>
     <select id="taskSelect" aria-label="Robot workspace or reviewed lab task"></select>
+    <div id="agentAccessControl" class="agent-access-control" role="group" aria-label="Agent Assist"><span class="agent-access-label"><span class="agent-access-dot" aria-hidden="true"></span>Agent</span><button type="button" data-agent-access="off" aria-pressed="true">Off</button><button type="button" data-agent-access="assist" aria-pressed="false">Assist</button></div>
     <span class="toolbar-sep"></span>
     <button id="runBtn" class="primary" title="Run (F5)">▶ Run</button><button id="pauseBtn" title="Pause simulation" aria-label="Pause simulation" aria-pressed="false" disabled>⏸ Pause</button><button id="stepBtn" title="Step physical action (F10)">▷ Step Action</button><button id="cursorBtn" title="Run to Cursor (Ctrl+F10)">▶│ Cursor</button><button id="stopBtn" class="danger" title="Simulation STOP (Esc)">■ Stop</button><button id="resetBtn" title="Reset simulation">↻ Reset</button>
     <span class="toolbar-sep"></span><button id="mobileCodeBtn" class="mobile-pane active">Code</button><button id="mobileSimBtn" class="mobile-pane">Simulator</button>
@@ -63,7 +65,7 @@
     <section id="mainPanes" class="main-panes">
       <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
       <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
-      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn">Fit</button><button id="highContrastSceneBtn" class="scene-contrast-toggle" type="button" aria-pressed="true" title="High-contrast scene boundaries are configured presentation aids; they do not alter collision, kinematics, or canonical mesh data.">Contrast</button><button id="panelToggle">Diagnostics</button></div><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div id="simBadge" class="sim-badge" title="Neutral Lab Grey floor and contrast boundaries are configured viewport aids, not real-world calibrated materials.">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION</div></div></section>
+      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn" title="Fit the active robot in the simulator viewport.">Fit</button><button id="highContrastSceneBtn" class="scene-contrast-toggle" type="button" aria-pressed="true" title="High-contrast scene boundaries are configured presentation aids; they do not alter collision, kinematics, or canonical mesh data.">Contrast</button><button id="panelToggle">Diagnostics</button></div><div class="sim-workbench"><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div id="cameraModeLabel" class="camera-mode-label" role="status" aria-live="polite" hidden>OVERVIEW · ORBIT ROBOT + BALL</div><div id="simBadge" class="sim-badge" title="Neutral Lab Grey floor and contrast boundaries are configured viewport aids, not real-world calibrated materials.">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION</div></div><aside id="microduckControlDeck" class="microduck-control-deck" aria-label="MicroDuck simulator controls" hidden></aside></div></section>
     </section>
   </main>
 

@@ -1,0 +1,7 @@
+# MicroDuck third-party notices
+
+- `pollen-robotics/microduck@590b986bd8c0d50ae02cb3ea2f59c463b6828168`: Apache License 2.0. The upstream license text is retained as `microduck-apache-2.0.txt`. Included bytes include the exact compact `robotctl/assets/duck.bin` articulated monitor visual and upstream's explicitly original `sounds/scores/wistful.duckscore` and `sounds/scores/duck_strut.mid`.
+- `@mujoco/mujoco@3.11.0`: Apache License 2.0. See the Apache License text retained with the MicroDuck notice set and the upstream package metadata.
+- `onnxruntime-web@1.27.0`: MIT License, Copyright (c) Microsoft Corporation. Permission is granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies, subject to inclusion of the copyright and permission notice. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+
+No `microduck_rl` STL/MJCF or Hugging Face Space implementation/asset byte is included. The RL repository's unversioned “Creative Commons BY-SA-NC” model notice is not used as a redistribution grant here; the visual comes instead from the separately Apache-2.0-licensed runtime byte above. Upstream's copyrighted, test-only `sounds/scores/outer_wilds.mid` is also excluded.

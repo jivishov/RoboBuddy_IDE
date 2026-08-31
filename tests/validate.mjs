@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 const root=new URL('../',import.meta.url);
-const files=['index.html','styles.css','src/editor.js','src/profiles.js','src/python-runtime.js','src/canonical-rig.js','src/source-simulator.js','src/task-catalog.js','src/task-workspace.js','src/app-v2.js','README.md','LICENSE','docs/unitree-g1-rig.md','licenses/unitree_ros-BSD-3-Clause.txt','.nojekyll'];
+const files=['index.html','styles.css','microduck-controls.css','src/editor.js','src/profiles.js','src/python-runtime.js','src/canonical-rig.js','src/source-simulator.js','src/simulator-host.js','src/task-catalog.js','src/task-workspace.js','src/microduck/baked-visual.js','src/microduck/command-catalog.js','src/microduck/command-bus.js','src/microduck/policy-simulator.js','src/microduck/python-bridge.js','src/microduck/rig-adapter.js','src/webmcp/agent-facade.js','src/webmcp/microduck-control.js','src/webmcp/register-ide-tools.js','src/app-v2.js','README.md','LICENSE','docs/unitree-g1-rig.md','docs/microduck-simulator.md','licenses/unitree_ros-BSD-3-Clause.txt','licenses/microduck-apache-2.0.txt','licenses/microduck-third-party-notices.md','assets/microduck/manifest.json','assets/microduck/visual/duck.bin','.nojekyll'];
 for(const f of files){if(!fs.existsSync(new URL(f,root)))throw new Error(`missing ${f}`)}
 const index=fs.readFileSync(new URL('index.html',root),'utf8');
-for(const token of ['id="editor"','id="simCanvas"','id="taskSelect"','value="unitree"','id="modeChip"','id="simBadge"','src/app-v2.js','pyodide.js'])if(!index.includes(token))throw new Error(`index missing ${token}`);
+for(const token of ['id="editor"','id="simCanvas"','id="taskSelect"','value="unitree"','value="microduck"','id="microduckControlDeck"','id="modeChip"','id="simBadge"','src/app-v2.js','pyodide.js'])if(!index.includes(token))throw new Error(`index missing ${token}`);
+for(const token of ['id="agentAccessControl"','data-agent-access="assist"'])if(!index.includes(token))throw new Error(`index missing WebMCP access control: ${token}`);
 if(/blockly/i.test(index))throw new Error('Blockly dependency found');
 for(const token of ['data-action="about"','id="aboutDialog"','Dr. Emil Jivishov','© 2026','PolyForm Noncommercial 1.0.0'])if(!index.includes(token))throw new Error('index missing About dialog content');
 const all=files.filter(f=>f.endsWith('.js')||f.endsWith('.html')).map(f=>fs.readFileSync(new URL(f,root),'utf8')).join('\n');
@@ -22,4 +23,8 @@ for(const token of ['BSD 3-Clause License','HangZhou YuShu TECHNOLOGY','THIS SOF
 const license=fs.readFileSync(new URL('LICENSE',root),'utf8');
 for(const token of ['PolyForm Noncommercial License 1.0.0','Required Notice: Copyright © 2026 Dr. Emil Jivishov.','Required Notice: Commercial use requires prior written permission from Dr. Emil Jivishov.','## Noncommercial Purposes'])if(!license.includes(token))throw new Error('license missing required non-commercial terms');
 if(license.includes('MIT License'))throw new Error('obsolete MIT license remains');
+const webmcp=fs.readFileSync(new URL('src/webmcp/register-ide-tools.js',root),'utf8');
+for(const token of ['document.modelContext.registerTool','describe_robobuddy_task','read_robobuddy_workspace','inspect_robobuddy_simulation','focus_robobuddy_workspace','run_robobuddy_program','control_microduck_simulation'])if(!webmcp.includes(token))throw new Error(`WebMCP registration missing ${token}`);
+const webmcpControl=fs.readFileSync(new URL('src/webmcp/microduck-control.js',root),'utf8');
+for(const token of ['MICRODUCK_COMMANDS','oneOf','additionalProperties: false','duration_ms','boundedMicroDuckResult'])if(!webmcpControl.includes(token))throw new Error(`MicroDuck WebMCP control contract missing ${token}`);
 console.log('static fidelity checks: OK');
