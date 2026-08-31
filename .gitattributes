@@ -1,0 +1,2 @@
+# Preserve the pinned source asset byte-for-byte across Windows and Linux checkouts.
+assets/microduck/kinematics/robot_walk.xml -text

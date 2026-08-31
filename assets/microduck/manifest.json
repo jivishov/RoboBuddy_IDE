@@ -117,8 +117,8 @@
     },
     {
       "path": "kinematics/robot_walk.xml",
-      "bytes": 6990,
-      "sha256": "e41f0619795a62a6f99a39c33230a7552064938ebe7b0a181368fdb5aaaef7a6",
+      "bytes": 6881,
+      "sha256": "078693dff3bcd5e69eb6cc483974178e1511a11f762b1a4dd00370bc5d58b8a8",
       "license": "Apache-2.0",
       "repository": "pollen-robotics/microduck",
       "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",
