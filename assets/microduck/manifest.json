@@ -293,8 +293,8 @@
     },
     {
       "path": "scores/wistful.duckscore",
-      "bytes": 4255,
-      "sha256": "f277c7355e34f3ac36047ba14668ac3355d56c123aaaaaacb0c8ef9c2dc7334d",
+      "bytes": 4171,
+      "sha256": "4baa780c5a90ca6bf92b1a0f20a0ef17dbaa826cbe20ed715484d5a9889d051a",
       "license": "Apache-2.0",
       "repository": "pollen-robotics/microduck",
       "revision": "590b986bd8c0d50ae02cb3ea2f59c463b6828168",

@@ -1,2 +1,3 @@
 # Preserve the pinned source asset as canonical LF bytes across Windows and Linux checkouts.
 assets/microduck/kinematics/robot_walk.xml text eol=lf
+assets/microduck/scores/wistful.duckscore text eol=lf
