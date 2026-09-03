@@ -972,6 +972,19 @@ class App {
     return true;
   }
 
+  applyTemporaryAgentWorkspaceEdit({ file, startLine, endLine, replacement, workingStartLine }) {
+    if (this.workspaceStatus !== 'ready' || !Object.hasOwn(this.files, file)) return null;
+    this.openFile(file);
+    this.editor.replaceLineRange(startLine, endLine, replacement);
+    this.editor.highlightLine(workingStartLine);
+    this.setStatus(`Agent drafted a temporary cooperative edit in ${file}; refresh reloads the saved workspace.`);
+    return {
+      file,
+      workspaceGeneration: this.workspaceGeneration,
+      workingStartLine,
+    };
+  }
+
   closeMenus() {
     document.querySelectorAll('.menu-popover').forEach((menu) => { menu.hidden = true; });
     document.querySelectorAll('.menu-button').forEach((button) => button.setAttribute('aria-expanded', 'false'));

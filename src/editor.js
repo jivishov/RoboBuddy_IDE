@@ -30,6 +30,22 @@ export class IdeEditor {
     this.cm.focus();
   }
   getValue() { return this.cm.getValue(); }
+  replaceLineRange(startLine, endLine, replacement) {
+    const fromLine = Number(startLine) - 1;
+    const toLine = Number(endLine) - 1;
+    if (!Number.isInteger(fromLine) || !Number.isInteger(toLine)
+      || fromLine < 0 || toLine < fromLine || toLine >= this.cm.lineCount()) {
+      throw new RangeError('Editor replacement range is outside the current document.');
+    }
+    this.cm.operation(() => {
+      this.cm.replaceRange(
+        String(replacement),
+        { line: fromLine, ch: 0 },
+        { line: toLine, ch: this.cm.getLine(toLine).length },
+        '+agent-cooperative-edit',
+      );
+    });
+  }
   getCursorLine() { return this.cm.getCursor().line + 1; }
   getCursorColumn() { return this.cm.getCursor().ch + 1; }
   highlightLine(line) {

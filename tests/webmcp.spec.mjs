@@ -68,6 +68,7 @@ test('explicit human Agent Assist registers a bounded, cancellation-aware RoboBu
     'inspect_robobuddy_simulation',
     'focus_robobuddy_workspace',
     'run_robobuddy_program',
+    'draft_robobuddy_cooperative_edit',
   ]);
   expect(registered.every(({ annotations }) => annotations.untrustedContentHint)).toBe(true);
   expect(registered.slice(0, 3).every(({ annotations }) => annotations.readOnlyHint)).toBe(true);
@@ -104,6 +105,44 @@ test('explicit human Agent Assist registers a bounded, cancellation-aware RoboBu
   expect(focus).toMatchObject({ focused: true, file: 'main.py', line: 1, sourceChanged: false });
   await expect(page.locator('#statusMessage')).toContainText('Agent focused main.py:1');
 
+  await page.evaluate(() => window.__robobuddyCi.app.editor.cm.setValue('async def demo_move():\n    await robot.move(3.0, 0.0, 0.0)\n'));
+  const temporaryEdit = await callTool(page, 'draft_robobuddy_cooperative_edit', {
+    file: 'main.py',
+    start_line: 2,
+    end_line: 2,
+    expected_source: '    await robot.move(3.0, 0.0, 0.0)',
+    replacement_code: '    await robot.move(0.30, 0.0, 0.0)',
+    explanation: 'Use the bounded teaching speed for a visible, controlled move.',
+  });
+  expect(temporaryEdit).toMatchObject({
+    sourceChanged: true,
+    temporary: true,
+    persistence: 'not_saved_refresh_reloads_workspace',
+    file: 'main.py',
+    disabledOriginal: true,
+    startLine: 2,
+    endLine: 2,
+    workingStartLine: 7,
+  });
+  const draftedSource = await page.evaluate(() => window.__robobuddyCi.app.editor.cm.getValue());
+  expect(draftedSource).toContain('    # Agent-disabled: await robot.move(3.0, 0.0, 0.0)');
+  expect(draftedSource).toContain('    # Explanation: Use the bounded teaching speed for a visible, controlled move.');
+  expect(draftedSource).toContain('\n    await robot.move(0.30, 0.0, 0.0)');
+  expect(draftedSource).not.toContain('\n        await robot.move(0.30, 0.0, 0.0)');
+  await expect(page.locator('#statusMessage')).toContainText('temporary cooperative edit');
+  expect(await page.locator('#dirtyDot').isHidden()).toBe(false);
+
+  const staleEdit = await callTool(page, 'draft_robobuddy_cooperative_edit', {
+    file: 'main.py',
+    start_line: 2,
+    end_line: 2,
+    expected_source: '    await robot.move(3.0, 0.0, 0.0)',
+    replacement_code: '    await robot.move(0.20, 0.0, 0.0)',
+    explanation: 'This must not overwrite a changed draft.',
+  });
+  expect(staleEdit).toMatchObject({ ok: false, error: { code: 'SOURCE_MISMATCH', retryable: true } });
+  expect(await page.evaluate(() => window.__robobuddyCi.app.editor.cm.getValue())).toBe(draftedSource);
+
   await page.evaluate(() => window.__robobuddyCi.app.editor.cm.setValue('print("webmcp run smoke")\n'));
   const run = await callTool(page, 'run_robobuddy_program');
   expect(run).toMatchObject({ completed: true, simulation: { executionState: 'idle', status: 'Run complete' } });
@@ -115,6 +154,11 @@ test('explicit human Agent Assist registers a bounded, cancellation-aware RoboBu
   await expect(control).toHaveAttribute('data-access', 'off');
   await expect(control).toHaveAttribute('data-tools', 'disabled');
   expect(await page.evaluate(() => window.__webMcpRegistrations.every(({ signal }) => signal.aborted))).toBe(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 60_000 });
+  const reloadedSource = await page.evaluate(() => window.__robobuddyCi.app.editor.cm.getValue());
+  expect(reloadedSource).not.toContain('Agent cooperative edit');
+  expect(reloadedSource).not.toContain('Agent-disabled: await robot.move(3.0, 0.0, 0.0)');
   expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
 });
 
@@ -127,6 +171,7 @@ test('ready MicroDuck adds one strict bounded control tool and removes it across
     'inspect_robobuddy_simulation',
     'focus_robobuddy_workspace',
     'run_robobuddy_program',
+    'draft_robobuddy_cooperative_edit',
   ]);
 
   await page.locator('#robotSelect').selectOption('microduck');
@@ -137,6 +182,7 @@ test('ready MicroDuck adds one strict bounded control tool and removes it across
     'inspect_robobuddy_simulation',
     'focus_robobuddy_workspace',
     'run_robobuddy_program',
+    'draft_robobuddy_cooperative_edit',
     'control_microduck_simulation',
   ]);
 
@@ -182,23 +228,23 @@ test('ready MicroDuck adds one strict bounded control tool and removes it across
 
   await page.locator('#robotSelect').selectOption('openarm');
   await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 60_000 });
-  await expect.poll(() => activeTools(page)).toHaveLength(5);
+  await expect.poll(() => activeTools(page)).toHaveLength(6);
   expect(await page.evaluate(() => window.__webMcpRegistrations.filter(({ tool, signal }) => tool.name === 'control_microduck_simulation' && !signal?.aborted).length)).toBe(0);
 });
 
-test('loading and failed MicroDuck workspaces keep only the five base tools', async ({ page }) => {
+test('loading and failed MicroDuck workspaces keep only the six base tools', async ({ page }) => {
   await openReadyApp(page);
   await page.locator('[data-agent-access="assist"]').click();
-  await expect.poll(() => activeTools(page)).toHaveLength(5);
+  await expect.poll(() => activeTools(page)).toHaveLength(6);
   await page.route('**/assets/microduck/generated/procedural-rig.json', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.abort('failed');
   });
   await page.locator('#robotSelect').selectOption('microduck');
   await expect(page.locator('#statusMessage')).toContainText('Loading local MicroDuck');
-  await expect.poll(() => activeTools(page)).toHaveLength(5);
+  await expect.poll(() => activeTools(page)).toHaveLength(6);
   await expect(page.locator('#statusMessage')).toContainText('unavailable', { timeout: 60_000 });
-  await expect.poll(() => activeTools(page)).toHaveLength(5);
+  await expect.poll(() => activeTools(page)).toHaveLength(6);
   expect(await page.evaluate(() => window.__webMcpRegistrations.filter(({ tool, signal }) => tool.name === 'control_microduck_simulation' && !signal?.aborted).length)).toBe(0);
 });
 

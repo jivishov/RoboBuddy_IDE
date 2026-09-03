@@ -42,6 +42,17 @@ function withReadyWorkspace(facade, epoch, operation) {
   });
 }
 
+function withReadyWorkspaceMutation(facade, epoch, operation) {
+  return safeHandler((input, signal) => {
+    const snapshot = facade.captureReadySnapshot(epoch);
+    if (wasAborted(signal)) return cancelledResult();
+    // This synchronous operation intentionally increments workspaceGeneration.
+    // Its expected-source comparison is the stale-write guard, so do not apply
+    // the read-only post-operation snapshot check here.
+    return operation(snapshot, input, signal);
+  });
+}
+
 function createTools(facade, epoch) {
   const tools = [
     {
@@ -111,6 +122,26 @@ function createTools(facade, epoch) {
       },
       annotations: RUN_ANNOTATIONS,
       execute: withReadyWorkspace(facade, epoch, (snapshot, input, signal) => facade.runProgram(snapshot, input, signal)),
+    },
+    {
+      name: 'draft_robobuddy_cooperative_edit',
+      title: 'Draft temporary cooperative editor fix',
+      description: 'Temporarily replace one small, exact-match Python selection in the visible editor. RoboBuddy comments out the selected original code, adds the working replacement and explanation, does not save it, and reloads the workspace on refresh. replacement_code may use relative indentation or preserve the selected indentation. This is an in-memory collaboration draft only: it cannot save, export, publish, or edit outside the active four-file workspace.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          file: { type: 'string', enum: ['main.py', 'trajectories.py', 'robot_config.py', 'workcell.py'] },
+          start_line: { type: 'integer', minimum: 1 },
+          end_line: { type: 'integer', minimum: 1 },
+          expected_source: { type: 'string', minLength: 1, maxLength: 900 },
+          replacement_code: { type: 'string', minLength: 1, maxLength: 1200 },
+          explanation: { type: 'string', minLength: 1, maxLength: 280 },
+        },
+        required: ['file', 'start_line', 'end_line', 'expected_source', 'replacement_code', 'explanation'],
+        additionalProperties: false,
+      },
+      annotations: UI_ONLY_ANNOTATIONS,
+      execute: withReadyWorkspaceMutation(facade, epoch, (snapshot, input) => facade.draftWorkspaceEdit(snapshot, input)),
     },
   ];
   if (facade.shouldRegisterMicroduckControl()) {
