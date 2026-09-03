@@ -8,6 +8,7 @@ import {
   MICRODUCK_WEBMCP_COMMANDS,
   parseMicroDuckControlInput,
 } from '../src/webmcp/microduck-control.js';
+import { createMicroduckVisualCueSchema, parseMicroduckVisualCueInput } from '../src/webmcp/microduck-visual-cues.js';
 
 const schema = createMicroDuckControlSchema();
 assert(Array.isArray(schema.oneOf) && schema.oneOf.length > MICRODUCK_WEBMCP_COMMANDS.length);
@@ -48,6 +49,16 @@ for (const invalid of [
   { command: 'shutdown' },
 ]) assert.throws(() => parseMicroDuckControlInput(invalid), (error) => error.code === 'INVALID_ARGUMENT');
 
+const visualCueSchema = createMicroduckVisualCueSchema();
+assert.equal(visualCueSchema.oneOf.length, 4);
+assert(visualCueSchema.oneOf.every((branch) => branch.type === 'object' && branch.additionalProperties === false));
+const parsedLabel = parseMicroduckVisualCueInput({ operation: 'upsert', cue: { id: 'pose-note', kind: 'label', text: 'modeled pose', anchor: 'duck', offset_m: [0, 0, 0.18], color: '#5ED6BC', metrics: ['covered_m', 'remaining_to_east_edge_m'] } });
+assert.deepEqual(parsedLabel, { operation: 'upsert', cue: { id: 'pose-note', kind: 'label', visible: true, color: '#5ed6bc', anchor: 'duck', position: null, offsetM: [0, 0, 0.18], text: 'modeled pose', metrics: ['covered_m', 'remaining_to_east_edge_m'] } });
+const parsedRuler = parseMicroduckVisualCueInput({ operation: 'upsert', cue: { id: 'span', kind: 'ruler', start: [0, 0, 0.02], end: [1.2, 0, 0.02], title: 'reference' } });
+assert.equal(parsedRuler.cue.kind, 'ruler');
+assert.throws(() => parseMicroduckVisualCueInput({ operation: 'upsert', cue: { id: 'bad', kind: 'line', start: [0, 0, 0], end: [0, 0, 0] } }), (error) => error.code === 'INVALID_ARGUMENT');
+assert.throws(() => parseMicroduckVisualCueInput({ operation: 'clear', extra: true }), (error) => error.code === 'INVALID_ARGUMENT');
+
 const sourceState = { long: 'x'.repeat(400), list: Array.from({ length: 100 }, (_, index) => index), nested: { value: 1 } };
 const bounded = boundedMicroDuckResult('get_state', { state: sourceState, completed: true });
 sourceState.nested.value = 2;
@@ -78,6 +89,7 @@ function makeApp() {
     commandError: null,
     simulatorEpoch: 3,
     aborts: 0,
+    visualCues: [],
   };
   const app = {
     state,
@@ -106,6 +118,16 @@ function makeApp() {
     },
     isAgentMicroduckControllerActive: () => state.controllerActive,
     getAgentMicroduckState: () => ({ simulationMode: 'policy_sim', stateKind: 'browser_policy_sim', hardwareValidated: false, virtualCamera: { mode: 'head', name: 'Head POV', purpose: 'Modeled source-frame render; not hardware video.', frame: 'head_camera', inset: false, transport: 'rendered simulation imagery only; no hardware video or media transport' }, audio: { unlocked: false } }),
+    manageAgentMicroduckVisualCues: (request) => {
+      if (request.operation === 'list') return { cues: state.visualCues, cueCount: state.visualCues.length };
+      if (request.operation === 'clear') { const removed = state.visualCues.length; state.visualCues = []; return { removed, cueCount: 0 }; }
+      if (request.operation === 'remove') { const before = state.visualCues.length; state.visualCues = state.visualCues.filter((cue) => cue.id !== request.id); return { removed: state.visualCues.length !== before, id: request.id, cueCount: state.visualCues.length }; }
+      const index = state.visualCues.findIndex((cue) => cue.id === request.cue.id);
+      const created = index < 0;
+      if (created) state.visualCues.push(request.cue);
+      else state.visualCues[index] = request.cue;
+      return { created, cue: request.cue, cueCount: state.visualCues.length };
+    },
   };
   return app;
 }
@@ -116,6 +138,12 @@ facade.setRegistrationEpoch(9);
 const read = await facade.controlMicroduck({ command: 'get_state' }, new AbortController().signal, 9);
 assert.equal(read.state.stateKind, 'browser_policy_sim');
 assert.deepEqual(read.state.virtualCamera, { mode: 'head', name: 'Head POV', purpose: 'Modeled source-frame render; not hardware video.', frame: 'head_camera', inset: false, transport: 'rendered simulation imagery only; no hardware video or media transport' });
+
+const visualAdded = facade.manageMicroduckVisualCues({ operation: 'upsert', cue: { id: 'state-note', kind: 'label', text: 'ready', anchor: 'ball' } }, new AbortController().signal, 9);
+assert.deepEqual(visualAdded, { ok: true, operation: 'upsert', created: true, cue: { id: 'state-note', kind: 'label', visible: true, color: '#5ed6bc', anchor: 'ball', position: null, offsetM: [0, 0, 0.17], text: 'ready', metrics: [] }, cueCount: 1 });
+const visualList = facade.manageMicroduckVisualCues({ operation: 'list' }, new AbortController().signal, 9);
+assert.equal(visualList.cues.length, 1);
+assert.throws(() => facade.manageMicroduckVisualCues({ operation: 'upsert', cue: { id: 'unsafe', kind: 'shader' } }, new AbortController().signal, 9), (error) => error.code === 'INVALID_ARGUMENT');
 
 app.state.controllerActive = true;
 const leased = await facade.controlMicroduck({ command: 'move', vx: 0.1, duration_ms: 20 }, new AbortController().signal, 9);

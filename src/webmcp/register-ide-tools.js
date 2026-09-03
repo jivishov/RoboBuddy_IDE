@@ -1,5 +1,6 @@
 import { cancelledResult, domainErrorResult } from './agent-facade.js';
 import { createMicroDuckControlSchema } from './microduck-control.js';
+import { createMicroduckVisualCueSchema } from './microduck-visual-cues.js';
 
 const READ_ONLY_ANNOTATIONS = Object.freeze({
   readOnlyHint: true,
@@ -152,6 +153,14 @@ function createTools(facade, epoch) {
       inputSchema: createMicroDuckControlSchema(),
       annotations: RUN_ANNOTATIONS,
       execute: safeHandler((input, signal) => facade.controlMicroduck(input, signal, epoch)),
+    });
+    tools.push({
+      name: 'manage_microduck_visual_cues',
+      title: 'Manage MicroDuck visual cues',
+      description: 'Create, update, remove, clear, or inspect a small bounded set of visible scene cues. Supported declarative cue primitives are labels, markers, lines, and rulers in configured world metres or attached to the modeled duck or ball. This changes only the current browser view; it never executes caller code, edits source, saves, exports, publishes, controls hardware, or changes simulation state.',
+      inputSchema: createMicroduckVisualCueSchema(),
+      annotations: UI_ONLY_ANNOTATIONS,
+      execute: safeHandler((input, signal) => facade.manageMicroduckVisualCues(input, signal, epoch)),
     });
   }
   return tools;

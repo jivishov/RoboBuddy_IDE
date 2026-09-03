@@ -2,6 +2,39 @@ import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+test('MicroDuck starts without permanent tracker labels and renders generic visual cues', async ({ page }) => {
+  await page.goto('/?ci=visual-cues');
+  await page.selectOption('#robotSelect', 'microduck');
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+
+  const initial = await page.evaluate(() => {
+    const backend = window.__robobuddyCi.app.sim.backend;
+    return {
+      canvasCount: backend.canvas.dataset.microduckVisualCueCount,
+      state: backend.getState().visualCues,
+      cues: backend.visualCues.list(),
+    };
+  });
+  expect(initial.canvasCount).toBe('0');
+  expect(initial.state).toEqual({ count: 0 });
+  expect(initial.cues).toEqual([]);
+
+  const managed = await page.evaluate(() => {
+    const backend = window.__robobuddyCi.app.sim.backend;
+    const label = backend.manageVisualCues({ operation: 'upsert', cue: { id: 'follow-note', kind: 'label', text: 'live pose', anchor: 'duck', offsetM: [0, 0, 0.2], color: '#5ed6bc', visible: true } });
+    const ruler = backend.manageVisualCues({ operation: 'upsert', cue: { id: 'reference-span', kind: 'ruler', start: [0, 0, 0.02], end: [1.25, 0, 0.02], title: 'reference', color: '#ff9f7a', visible: true } });
+    return { label, ruler, cues: backend.visualCues.list(), cueCount: backend.visualCues.size };
+  });
+  expect(managed.label).toMatchObject({ created: true, cue: { id: 'follow-note', kind: 'label', anchor: 'duck' }, cueCount: 1 });
+  expect(managed.ruler).toMatchObject({ created: true, cue: { id: 'reference-span', kind: 'ruler' }, cueCount: 2 });
+  expect(managed.cues.map(({ id }) => id)).toEqual(['follow-note', 'reference-span']);
+  await expect(page.locator('#simCanvas')).toHaveAttribute('data-microduck-visual-cue-count', '2');
+
+  const cleared = await page.evaluate(() => window.__robobuddyCi.app.sim.backend.manageVisualCues({ operation: 'clear' }));
+  expect(cleared).toEqual({ removed: 2, cueCount: 0 });
+  await expect(page.locator('#simCanvas')).toHaveAttribute('data-microduck-visual-cue-count', '0');
+});
+
 test('MicroDuck profile uses the shared canvas and survives backend-family switches', async ({ page }) => {
   await page.goto('/?ci=1');
   await page.selectOption('#robotSelect', 'openarm');
@@ -52,9 +85,10 @@ test('MicroDuck Run visibly advances the default starter program across the fiel
   await expect.poll(() => page.evaluate(() => window.__robobuddyCi.app.sim.getState().simulatedPose.position[0]), { timeout: 15_000 }).toBeGreaterThan(initial + 0.5);
   await expect(page.locator('#statusMessage')).toHaveText('MicroDuck Python run complete', { timeout: 90_000 });
 
-  const finalX = await page.evaluate(() => window.__robobuddyCi.app.sim.getState().simulatedPose.position[0]);
-  expect(finalX).toBeGreaterThan(initial + 1.1);
-  expect(finalX).toBeLessThan(3.93);
+  const finalState = await page.evaluate(() => window.__robobuddyCi.app.sim.getState());
+  expect(finalState.simulatedPose.position[0]).toBeGreaterThan(initial + 1.1);
+  expect(finalState.simulatedPose.position[0]).toBeLessThan(3.93);
+  expect(finalState.safety).toMatchObject({ fallen: false, recovery: 'none', resetFallback: false });
 });
 
 test('MicroDuck doubles the configured field and stops both free bodies at its edge', async ({ page }) => {

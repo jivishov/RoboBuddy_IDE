@@ -13,6 +13,7 @@ import { createMicroDuckState } from './state.js';
 import { MicroDuckAudioEngine } from './audio-engine.js';
 import { createModeledTof, deriveFrameAngularVelocity, deriveModeledImu } from './peripherals.js';
 import { MICRODUCK_FIELD_SIZE_M } from './field-bounds.js';
+import { MicroDuckVisualCueLayer } from './visual-cue-layer.js';
 
 const RIG_URL = './assets/microduck/generated/procedural-rig.json';
 const MAX_PHYSICS_STEPS_PER_FRAME = 4;
@@ -100,12 +101,14 @@ export class MicroDuckPolicySimulator {
     this.fieldBoundary.rotation.x = -Math.PI / 2; this.fieldBoundary.position.y = 1; this.scene.add(this.fieldBoundary);
     this.ballMesh = new THREE.Mesh(new THREE.SphereGeometry(35, 24, 16), new THREE.MeshStandardMaterial({ color: 0xe34d2f, roughness: 0.72 }));
     this.ballMesh.castShadow = true; this.scene.add(this.ballMesh);
+    this.visualCues = new MicroDuckVisualCueLayer(this.scene);
     this.tofRaycaster = new THREE.Raycaster();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas.parentElement || canvas);
     this.canvas.dataset.simulatorBackend = 'microduck-policy-sim';
     this.canvas.dataset.simulationClockS = '0';
     this.canvas.dataset.cameraView = this.cameraMode;
+    this.canvas.dataset.microduckVisualCueCount = '0';
     this.resize();
     if (!externalClock) this.animate();
   }
@@ -168,6 +171,18 @@ export class MicroDuckPolicySimulator {
 
   setHighContrastScene(enabled) { this.canvas.dataset.highContrastScene = String(Boolean(enabled)); return Boolean(enabled); }
   isHighContrastSceneEnabled() { return this.canvas.dataset.highContrastScene !== 'false'; }
+  manageVisualCues(request) {
+    if (!this.visualCues) return null;
+    const physics = this.dynamics.snapshot();
+    let result;
+    if (request.operation === 'upsert') result = this.visualCues.upsert(request.cue, physics);
+    else if (request.operation === 'remove') result = { removed: this.visualCues.remove(request.id), id: request.id };
+    else if (request.operation === 'clear') result = { removed: this.visualCues.clear() };
+    else result = { cues: this.visualCues.list() };
+    this.canvas.dataset.microduckVisualCueCount = String(this.visualCues.size);
+    this.syncVisuals(physics);
+    return { ...result, cueCount: this.visualCues.size };
+  }
   async setVariant(variant) { return (await this.executeCommand('set_mode', { mode: variant }, { source: 'human' })).applied.mode; }
 
   rememberWebmcpOutcome(controllerId, status) {
@@ -302,7 +317,8 @@ export class MicroDuckPolicySimulator {
     else if (name === 'set_color') { this.color = result.applied.value; this.rig.setColor(this.color); }
     else if (name === 'spawn_ball') {
       this.dynamics.spawnBall(result.applied.position);
-      this.syncVisuals(this.dynamics.snapshot());
+      const physics = this.dynamics.snapshot();
+      this.syncVisuals(physics);
       if (this.cameraMode === 'orbit') this.fit('orbit');
     }
     else if (name === 'set_camera') {
@@ -444,6 +460,7 @@ export class MicroDuckPolicySimulator {
     this.rig.applyState({ ...Object.fromEntries(this.rig.data.jointContract.wireJointOrder.map((name, index) => [name, wire[index]])), mouth: this.mouth });
     this.rig.applyRootPose(physics.position, physics.quaternion);
     this.ballMesh.position.set(physics.ball.position[0] * 1000, physics.ball.position[2] * 1000, -physics.ball.position[1] * 1000);
+    this.visualCues?.sync(physics);
   }
 
   updateModeledPeripherals(physics, reset = false) {
@@ -559,7 +576,7 @@ export class MicroDuckPolicySimulator {
     const head = bus.values.head || {};
     const headValues = [head.neckPitch, head.headPitch, head.headYaw, head.headRoll];
     const camera = this.cameraDefinition();
-    return createMicroDuckState({ time: physics.time, enabled: this.enabled, actuationEnabled: this.actuationEnabled, lifecycle: this.lifecycle, mode: this.mode, movement, head: headValues, body: [0, 0, body.z, body.roll, body.pitch, 0], mouth: this.mouth, activePolicy, phase: this.initRamp ? 'initializing' : this.director?.skill?.name || this.director?.sit || 'idle', safety: { recovery: this.recovery.stage, fallen: this.recovery.tiltedFor >= 0.2, resetFallback: this.recovery.resetFallback }, loop: { rateHz: 50, missedTicks: this.missedTicks, inferenceInFlight: this.inferenceInFlight }, joints: physics.joints, targets: this.targets, simulatedPose: { position: physics.position, quaternion: physics.quaternion }, contacts: physics.contacts, ball: physics.ball, imu: this.imu || deriveModeledImu({ trunkGyro: physics.gyro, projectedGravity: physics.projectedGravity }), tof: this.tof, virtualCamera: { mode: this.cameraMode, name: camera.label, purpose: camera.purpose, frame: camera.frame, inset: false }, audio: this.audioEngine.snapshot(), color: this.color });
+    return createMicroDuckState({ time: physics.time, enabled: this.enabled, actuationEnabled: this.actuationEnabled, lifecycle: this.lifecycle, mode: this.mode, movement, head: headValues, body: [0, 0, body.z, body.roll, body.pitch, 0], mouth: this.mouth, activePolicy, phase: this.initRamp ? 'initializing' : this.director?.skill?.name || this.director?.sit || 'idle', safety: { recovery: this.recovery.stage, fallen: this.recovery.tiltedFor >= 0.2, resetFallback: this.recovery.resetFallback }, loop: { rateHz: 50, missedTicks: this.missedTicks, inferenceInFlight: this.inferenceInFlight }, joints: physics.joints, targets: this.targets, simulatedPose: { position: physics.position, quaternion: physics.quaternion }, contacts: physics.contacts, ball: physics.ball, visualCues: { count: this.visualCues?.size || 0 }, imu: this.imu || deriveModeledImu({ trunkGyro: physics.gyro, projectedGravity: physics.projectedGravity }), tof: this.tof, virtualCamera: { mode: this.cameraMode, name: camera.label, purpose: camera.purpose, frame: camera.frame, inset: false }, audio: this.audioEngine.snapshot(), color: this.color });
   }
 
   getTelemetry() { const state = this.getState(); return { simulation_clock_s: state.time, policy_rate_hz: state.loop.rateHz, missed_policy_ticks: state.loop.missedTicks, joint_count: state.joints.length, mouth_open_ratio: state.mouth, enabled: Number(state.enabled), recovery_active: Number(state.safety.recovery !== 'none'), modeled_tof_minimum_m: state.tof.minimumM, modeled_tof_usable_zones: state.tof.usable, modeled_trunk_gyro_x_rad_s: state.imu.trunk.gyro[0], modeled_head_gyro_z_rad_s: state.imu.head.gyro[2], local_audio_unlocked: Number(state.audio.unlocked), local_chorale_voices: state.audio.voices }; }
@@ -738,7 +755,7 @@ export class MicroDuckPolicySimulator {
     if (this.rig && Math.abs(previousAspect - this.camera.aspect) > 0.01) this.fit(this.cameraMode);
   }
   animate() { if (this.disposed) return; this.animationFrame = requestAnimationFrame((time) => { this.renderFrame(time); this.animate(); }); }
-  dispose() { if (this.disposed) return; this.disposed = true; this.invalidateInference(); if (this.animationFrame) cancelAnimationFrame(this.animationFrame); this.audioEngine.dispose(); this.rig?.dispose(); this.dynamics?.dispose(); void this.policyRuntime?.dispose?.(); this.ballMesh.geometry.dispose(); this.ballMesh.material.dispose(); this.floor.geometry.dispose(); this.floor.material.dispose(); this.fieldBoundary.geometry.dispose(); this.fieldBoundary.material.dispose(); this.controls?.dispose(); this.resizeObserver?.disconnect(); this.renderer?.dispose(); }
+  dispose() { if (this.disposed) return; this.disposed = true; this.invalidateInference(); if (this.animationFrame) cancelAnimationFrame(this.animationFrame); this.audioEngine.dispose(); this.rig?.dispose(); this.dynamics?.dispose(); void this.policyRuntime?.dispose?.(); this.ballMesh.geometry.dispose(); this.ballMesh.material.dispose(); this.floor.geometry.dispose(); this.floor.material.dispose(); this.fieldBoundary.geometry.dispose(); this.fieldBoundary.material.dispose(); this.visualCues?.dispose(); this.controls?.dispose(); this.resizeObserver?.disconnect(); this.renderer?.dispose(); }
 }
 
 async function withTimeout(promise, timeoutMs, message) {

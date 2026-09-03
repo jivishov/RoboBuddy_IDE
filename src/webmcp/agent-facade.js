@@ -1,5 +1,6 @@
 import { MICRODUCK_COMMANDS } from '../microduck/command-catalog.js';
 import { boundedMicroDuckResult, isRetainedMicroDuckCommand, parseMicroDuckControlInput } from './microduck-control.js';
+import { parseMicroduckVisualCueInput } from './microduck-visual-cues.js';
 
 const READABLE_FILES = Object.freeze(['main.py', 'trajectories.py', 'robot_config.py', 'workcell.py']);
 const MAX_SOURCE_CHARACTERS = 1_200;
@@ -629,6 +630,26 @@ export class AgentFacade {
       signal?.removeEventListener('abort', abortListener);
       if (this.activeControlId === controllerId) this.activeControlId = null;
     }
+  }
+
+  manageMicroduckVisualCues(input, signal, expectedEpoch) {
+    let request;
+    try {
+      request = parseMicroduckVisualCueInput(input);
+    } catch (error) {
+      throw this.controlError(error?.code || 'INVALID_ARGUMENT', error?.message || 'The visual cue request is invalid.');
+    }
+    const snapshot = this.captureMicroduckControlSnapshot(expectedEpoch);
+    if (signal?.aborted) throw this.controlError('OPERATION_CANCELLED', 'The WebMCP visual-cue request was cancelled.');
+    let result;
+    try {
+      result = this.app.manageAgentMicroduckVisualCues(request);
+    } catch (error) {
+      throw this.controlError(error?.code || 'SIMULATION_NOT_READY', error?.message || 'The MicroDuck visual-cue layer is not ready.');
+    }
+    this.assertMicroduckControlCurrent(snapshot, expectedEpoch, signal);
+    if (!result) throw this.controlError('SIMULATION_NOT_READY', 'The MicroDuck visual-cue layer is not ready.');
+    return { ok: true, operation: request.operation, ...result };
   }
 }
 

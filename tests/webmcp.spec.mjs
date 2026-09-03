@@ -44,9 +44,12 @@ test('explicit human Agent Assist registers a bounded, cancellation-aware RoboBu
   await openReadyApp(page);
 
   const control = page.locator('#agentAccessControl');
+  const indicator = control.locator('.agent-access-dot');
   await expect(control).toHaveAttribute('data-access', 'off');
   await expect(control).toHaveAttribute('data-available', 'true');
   await expect(control).toHaveAttribute('data-tools', 'disabled');
+  await expect(indicator).toHaveCSS('background-color', 'rgb(220, 90, 100)');
+  await expect(indicator).toHaveCSS('animation-name', 'none');
   expect(await page.evaluate(() => window.__webMcpRegistrations.length)).toBe(0);
 
   await page.locator('[data-agent-access="assist"]').evaluate((button) => button.click());
@@ -56,6 +59,8 @@ test('explicit human Agent Assist registers a bounded, cancellation-aware RoboBu
   await page.locator('[data-agent-access="assist"]').click();
   await expect(control).toHaveAttribute('data-access', 'assist');
   await expect(control).toHaveAttribute('data-tools', 'enabled');
+  await expect(indicator).toHaveCSS('background-color', 'rgb(70, 209, 124)');
+  await expect(indicator).toHaveCSS('animation-name', 'agent-assist-blink');
 
   const registered = await page.evaluate(() => window.__webMcpRegistrations.filter(({ signal }) => !signal?.aborted).map(({ tool }) => ({
     name: tool.name,
@@ -184,6 +189,7 @@ test('ready MicroDuck adds one strict bounded control tool and removes it across
     'run_robobuddy_program',
     'draft_robobuddy_cooperative_edit',
     'control_microduck_simulation',
+    'manage_microduck_visual_cues',
   ]);
 
   const controlSurface = await page.evaluate(() => {
@@ -206,6 +212,27 @@ test('ready MicroDuck adds one strict bounded control tool and removes it across
   expect(state).toMatchObject({ ok: true, command: 'get_state', completed: true, state: { simulationMode: 'policy_sim', stateKind: 'browser_policy_sim', hardwareValidated: false } });
   expect(JSON.stringify(state).length).toBeLessThan(32_000);
   expect(JSON.stringify(state)).not.toMatch(/file_id|sha256|referenceActions|localPath/i);
+
+  const visualCueSurface = await page.evaluate(() => {
+    const entry = window.__webMcpRegistrations.findLast(({ tool, signal }) => tool.name === 'manage_microduck_visual_cues' && !signal?.aborted);
+    return { schema: entry.tool.inputSchema, description: entry.tool.description };
+  });
+  expect(visualCueSurface.schema.oneOf).toHaveLength(4);
+  expect(visualCueSurface.schema.oneOf.every((branch) => branch.additionalProperties === false)).toBe(true);
+  expect(visualCueSurface.description).toContain('never executes caller code');
+  const initialCues = await callTool(page, 'manage_microduck_visual_cues', { operation: 'list' });
+  expect(initialCues).toEqual({ ok: true, operation: 'list', cues: [], cueCount: 0 });
+  const addedLabel = await callTool(page, 'manage_microduck_visual_cues', { operation: 'upsert', cue: { id: 'pose-note', kind: 'label', text: 'modeled pose', anchor: 'duck', offset_m: [0, 0, 0.18], color: '#5ed6bc' } });
+  expect(addedLabel).toMatchObject({ ok: true, operation: 'upsert', created: true, cue: { id: 'pose-note', kind: 'label', anchor: 'duck' }, cueCount: 1 });
+  const addedRuler = await callTool(page, 'manage_microduck_visual_cues', { operation: 'upsert', cue: { id: 'reference-span', kind: 'ruler', start: [0, 0, 0.02], end: [1.2, 0, 0.02], title: 'reference', color: '#ff9f7a' } });
+  expect(addedRuler).toMatchObject({ ok: true, operation: 'upsert', created: true, cue: { id: 'reference-span', kind: 'ruler' }, cueCount: 2 });
+  await expect(page.locator('#simCanvas')).toHaveAttribute('data-microduck-visual-cue-count', '2');
+  const invalidCue = await callTool(page, 'manage_microduck_visual_cues', { operation: 'upsert', cue: { id: 'invalid', kind: 'line', start: [0, 0, 0], end: [0, 0, 0] } });
+  expect(invalidCue).toMatchObject({ ok: false, error: { code: 'INVALID_ARGUMENT' } });
+  const removedCue = await callTool(page, 'manage_microduck_visual_cues', { operation: 'remove', id: 'pose-note' });
+  expect(removedCue).toEqual({ ok: true, operation: 'remove', removed: true, id: 'pose-note', cueCount: 1 });
+  const clearedCues = await callTool(page, 'manage_microduck_visual_cues', { operation: 'clear' });
+  expect(clearedCues).toEqual({ ok: true, operation: 'clear', removed: 1, cueCount: 0 });
 
   const invalidDuration = await callTool(page, 'control_microduck_simulation', { command: 'move', vx: 0.1 });
   expect(invalidDuration).toMatchObject({ ok: false, error: { code: 'INVALID_ARGUMENT' } });

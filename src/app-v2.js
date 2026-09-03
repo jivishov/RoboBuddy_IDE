@@ -964,6 +964,11 @@ class App {
     return this.isAgentMicroduckSimulationReady() ? this.sim.getState() : null;
   }
 
+  manageAgentMicroduckVisualCues(request) {
+    if (!this.isAgentMicroduckSimulationReady()) return null;
+    return this.sim.backend?.manageVisualCues?.(request) || null;
+  }
+
   focusAgentWorkspaceLine(file, line) {
     if (this.workspaceStatus !== 'ready' || !Object.hasOwn(this.files, file)) return false;
     this.openFile(file);

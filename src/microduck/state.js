@@ -37,6 +37,7 @@ export function createMicroDuckState(input = {}) {
     simulatedPose: { position: boundedArray(input.simulatedPose?.position, 3), quaternion: boundedArray(input.simulatedPose?.quaternion || [1, 0, 0, 0], 4) },
     contacts: { count: Math.max(0, Number(input.contacts?.count) || 0), ballContact: Boolean(input.contacts?.ballContact), model: 'MuJoCo contact over original primitive approximations' },
     ball: { position: boundedArray(input.ball?.position, 3), velocity: boundedArray(input.ball?.velocity, 3), attached: false },
+    visualCues: { count: Math.max(0, Math.min(12, Number(input.visualCues?.count) || 0)) },
     virtualCamera: {
       mode: String(input.virtualCamera?.mode || 'orbit'),
       name: String(input.virtualCamera?.name || 'Overview'),
