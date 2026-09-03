@@ -10,6 +10,7 @@ import { MicroDuckPolicyRuntime } from '../src/microduck/policy-runtime.js';
 import { createMicroDuckState } from '../src/microduck/state.js';
 import { MICRODUCK_FIELD_HALF_EXTENT_M, MICRODUCK_FIELD_SIZE_M, stopPlanarBodyAtFieldEdge } from '../src/microduck/field-bounds.js';
 import { applyConfiguredKick, applyRollingResistance, BALL_STOP_SPEED_MPS } from '../src/microduck/ball-motion.js';
+import { buildPatchedWorkspace } from '../src/task-workspace.js';
 
 test('the frozen catalog has the complete shared command vocabulary', () => {
   assert.deepEqual(Object.keys(MICRODUCK_COMMANDS), ['move','head','look','stop','enable','init','relax','do','pose','mouth','sound','theremin','chorale','get_mode','set_mode','get_state','set_color','spawn_ball','reset','set_tof_stimulus','set_camera']);
@@ -20,6 +21,13 @@ test('the frozen catalog has the complete shared command vocabulary', () => {
     assert.deepEqual(definition.authority.python, { priority: 2, defaultDurationMs: 5000, minimumDurationMs: 1, maximumDurationMs: 5000, durationRequired: false });
     assert.deepEqual(definition.authority.webmcp, { priority: 1, defaultDurationMs: null, minimumDurationMs: 20, maximumDurationMs: 5000, durationRequired: true });
   }
+});
+
+test('the MicroDuck starter Run program produces clearly visible bounded forward travel', () => {
+  const workspace = buildPatchedWorkspace('microduck', { id: 'test-microduck', simulationMode: 'policy_sim' });
+  assert.match(workspace['main.py'], /await robot\.move\(0\.30, 0\.0, 0\.0\)/);
+  assert.match(workspace['main.py'], /await robot\.sleep\(4\.0\)/);
+  assert.equal(0.30 * 4.0, 1.2, 'the starter command travels 1.2 m, visibly within the configured 8 m field');
 });
 
 test('observation layout is exact and mouth stays outside policy vectors', () => {

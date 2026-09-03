@@ -40,6 +40,23 @@ test('MicroDuck profile uses the shared canvas and survives backend-family switc
   expect(epoch).toBeGreaterThanOrEqual(3);
 });
 
+test('MicroDuck Run visibly advances the default starter program across the field', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto('/?ci=starter-forward');
+  await page.selectOption('#robotSelect', 'microduck');
+  await expect(page.locator('#statusMessage')).toContainText('Ready', { timeout: 45_000 });
+  const initial = await page.evaluate(() => window.__robobuddyCi.app.sim.getState().simulatedPose.position[0]);
+
+  await page.click('#runBtn');
+  await expect(page.locator('#simActionLabel')).toContainText('sleep()', { timeout: 90_000 });
+  await expect.poll(() => page.evaluate(() => window.__robobuddyCi.app.sim.getState().simulatedPose.position[0]), { timeout: 15_000 }).toBeGreaterThan(initial + 0.5);
+  await expect(page.locator('#statusMessage')).toHaveText('MicroDuck Python run complete', { timeout: 90_000 });
+
+  const finalX = await page.evaluate(() => window.__robobuddyCi.app.sim.getState().simulatedPose.position[0]);
+  expect(finalX).toBeGreaterThan(initial + 1.1);
+  expect(finalX).toBeLessThan(3.93);
+});
+
 test('MicroDuck doubles the configured field and stops both free bodies at its edge', async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto('/?ci=field-edge');
