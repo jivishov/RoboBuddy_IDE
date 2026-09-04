@@ -28,31 +28,31 @@ The agent surface cannot save or publish source, operate physical hardware, admi
 
 ### MicroDuck policy simulator
 
-![MicroDuck policy simulator with Python workspace, live 3D scene, and control deck](screenshot/duck.png)
+![MicroDuck policy simulator with Python workspace, live 3D scene, and control deck](https://jivishov.github.io/RoboBuddy_IDE/screenshot/duck.png)
 
 The MicroDuck workspace pairs an articulated browser simulation with a compact control deck and an editable Python routine.
 
 ### SO-101 follower
 
-![SO-101 measured two-bottle transfer workcell](screenshot/so101.png)
+![SO-101 measured two-bottle transfer workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/so101.png)
 
 The SO-101 workspace shows a measured transfer task beside the learner-facing Python program.
 
 ### OpenArm bimanual workcell
 
-![OpenArm bimanual heater and ring-stand stack workcell](screenshot/openarm.png)
+![OpenArm bimanual heater and ring-stand stack workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/openarm.png)
 
 The OpenArm workspace presents a two-arm workcell for examining coordinated robot actions.
 
 ### LeKiwi mobile manipulator
 
-![LeKiwi beaker courier workcell](screenshot/lekiwi.png)
+![LeKiwi beaker courier workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/lekiwi.png)
 
 The LeKiwi workspace combines mobile manipulation with a visible courier task.
 
 ### Unitree G1 pose inspection
 
-![Unitree G1 29 degree-of-freedom pose inspection workspace](screenshot/unitree.png)
+![Unitree G1 29 degree-of-freedom pose inspection workspace](https://jivishov.github.io/RoboBuddy_IDE/screenshot/unitree.png)
 
 The Unitree G1 workspace is a bounded joint-pose inspection experience within the same IDE.
 
