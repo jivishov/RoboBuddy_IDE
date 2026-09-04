@@ -1,6 +1,7 @@
 import { cancelledResult, domainErrorResult } from './agent-facade.js';
 import { createMicroDuckControlSchema } from './microduck-control.js';
 import { createMicroduckVisualCueSchema } from './microduck-visual-cues.js';
+import { executeProfileControl, getProfileControlDefinition } from './robot-controls.js';
 
 const READ_ONLY_ANNOTATIONS = Object.freeze({
   readOnlyHint: true,
@@ -145,6 +146,17 @@ function createTools(facade, epoch) {
       execute: withReadyWorkspaceMutation(facade, epoch, (snapshot, input) => facade.draftWorkspaceEdit(snapshot, input)),
     },
   ];
+
+  const directControl = getProfileControlDefinition(facade);
+  if (directControl) {
+    const { profileId, ...toolDefinition } = directControl;
+    tools.push({
+      ...toolDefinition,
+      annotations: RUN_ANNOTATIONS,
+      execute: safeHandler((input, signal) => executeProfileControl(facade, profileId, input, signal, epoch)),
+    });
+  }
+
   if (facade.shouldRegisterMicroduckControl()) {
     tools.push({
       name: 'control_microduck_simulation',

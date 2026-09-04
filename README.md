@@ -20,7 +20,9 @@ RoboBuddy IDE makes robot programming concrete: the source editor, diagnostics, 
 
 ## WebMCP collaboration
 
-Agent Assist is off by default and requires a person to enable it for the current browser session. When available, it lets an agent inspect the selected task, read the visible draft, inspect modeled simulation state, focus source lines, run the unsaved program, and propose a small cooperative edit for the person to review. The MicroDuck workspace adds bounded commands for its browser-only simulation.
+Agent Assist is off by default and requires a person to enable it for the current browser session. When available, it lets an agent inspect the selected task, read the visible draft, inspect modeled simulation state, focus source lines, run the unsaved program, and propose a small cooperative edit for the person to review.
+
+Robot-specific controls stay bounded to each browser model. MicroDuck adds its catalog-bounded policy commands and declarative visual cues. SO-101 adds profile-limited joint/gripper actions, LeKiwi adds profile-limited arm/base actions with automatic stopping for bounded base-velocity calls, and Unitree G1 adds profile-limited named-joint pose control. OpenArm intentionally keeps the shared inspect/run/edit workflow because its bimanual workcell is sequence- and collision-state-dependent.
 
 The agent surface cannot save or publish source, operate physical hardware, administer devices or networks, or access hidden application data. Temporary agent edits are discarded on refresh unless the person explicitly saves a local draft.
 
