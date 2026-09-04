@@ -6,6 +6,7 @@ const DIRECT_CONTROL_SET = new Set(DIRECT_CONTROL_PROFILES);
 const LEKIWI_BASE_FIELDS = Object.freeze(['x.vel', 'y.vel', 'theta.vel']);
 const LEKIWI_STOP_ACTION = Object.freeze({ 'x.vel': 0, 'y.vel': 0, 'theta.vel': 0 });
 const MAX_LEKIWI_DURATION_MS = 3000;
+const SOURCE_ACTION_APPLY_MS = 20;
 
 const TOOL_META = Object.freeze({
   so101: Object.freeze({
@@ -244,9 +245,12 @@ export async function executeProfileControl(facade, profileId, input, signal, ex
     lekiwiBaseStarted = profileId === 'lekiwi' && parsed.movingBase;
 
     if (lekiwiBaseStarted) {
-      const advanced = await facade.app.sim.advanceTime(parsed.durationMs / 1000, { realtime: true, beforeTick });
-      if (advanced === false) {
-        throw new WebMcpDomainError('OPERATION_CANCELLED', 'The LeKiwi modeled base motion stopped before its bounded duration completed.', { retryable: true });
+      const remainingSeconds = Math.max(0, parsed.durationMs - SOURCE_ACTION_APPLY_MS) / 1000;
+      if (remainingSeconds > 0) {
+        const advanced = await facade.app.sim.advanceTime(remainingSeconds, { realtime: true, beforeTick });
+        if (advanced === false) {
+          throw new WebMcpDomainError('OPERATION_CANCELLED', 'The LeKiwi modeled base motion stopped before its bounded duration completed.', { retryable: true });
+        }
       }
       await autoStopLeKiwi(facade, baseline, expectedEpoch);
       lekiwiBaseStarted = false;

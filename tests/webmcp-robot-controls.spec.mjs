@@ -144,7 +144,7 @@ test('LeKiwi requires a duration for nonzero base velocity and auto-stops the ba
   }, new AbortController().signal, 7);
   expect(calls).toEqual([
     { kind: 'action', action: { 'x.vel': 0.2, 'theta.vel': 15 } },
-    { kind: 'advance', seconds: 0.04 },
+    { kind: 'advance', seconds: 0.02 },
     { kind: 'action', action: { 'x.vel': 0, 'y.vel': 0, 'theta.vel': 0 } },
   ]);
   expect(result).toMatchObject({ ok: true, profileId: 'lekiwi', durationMs: 40, baseAutoStopped: true });
