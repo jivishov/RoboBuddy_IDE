@@ -21,7 +21,7 @@ test('IDE loads canonical robots and pinned reviewed tasks without runtime excep
   expect(pageErrors, pageErrors.join('\n\n')).toEqual([]);
 });
 
-test('Help opens and closes the accessible About dialog with the non-commercial license notice', async ({ page }) => {
+test('Help opens and closes the accessible About dialog with the MIT license notice', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(String(error?.stack || error)));
 
@@ -36,8 +36,8 @@ test('Help opens and closes the accessible About dialog with the non-commercial 
   await expect(dialog).toHaveAttribute('open', '');
   await expect(dialog).toContainText('RoboBuddy IDE');
   await expect(dialog).toContainText('© 2026 Dr. Emil Jivishov');
-  await expect(dialog).toContainText('PolyForm Noncommercial 1.0.0');
-  await expect(dialog).toContainText('Commercial use requires prior written permission.');
+  await expect(dialog).toContainText('MIT License');
+  await expect(dialog).toContainText('Open source under the MIT License.');
   await expect(page.locator('#aboutCloseBtn')).toBeFocused();
 
   await page.keyboard.press('Escape');
