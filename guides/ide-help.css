@@ -1,0 +1,3 @@
+/* Documentation opens separately: no active workcell reset or navigation. */
+#helpMenu > a { display:flex; align-items:center; justify-content:space-between; gap:22px; padding:9px 12px; color:inherit; text-decoration:none; font:inherit; border-radius:5px; }
+#helpMenu > a:hover, #helpMenu > a:focus-visible { background:var(--surface-hover, #e4ece8); outline:2px solid var(--accent, #247563); outline-offset:-2px; }

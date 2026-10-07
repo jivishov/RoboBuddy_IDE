@@ -1,0 +1,160 @@
+name: Validate MicroDuck Full Plant Fidelity
+
+on:
+  push:
+    branches:
+      - fix/microduck-full-plant-fidelity
+    paths:
+      - 'src/physics/microduck-bam-plant.js'
+      - 'src/physics/microduck-mujoco-worker.js'
+      - 'src/physics/microduck-model-package.js'
+      - 'src/physics/microduck-source-audit.js'
+      - 'src/physics/microduck-capabilities.js'
+      - 'src/physics/microduck-scene.js'
+      - 'src/physics/microduck-physical-simulator.js'
+      - 'models/microduck/**'
+      - 'assets/microduck/**'
+      - 'scripts/generate_microduck_models.py'
+      - 'native/microduck_controller_reference.py'
+      - 'native/microduck_reference.py'
+      - 'native/microduck_bam_reference.py'
+      - 'native/microduck_bam_physical_reference.py'
+      - 'tests/validate_microduck_assets.mjs'
+      - 'tests/validate_microduck_bam_evidence.py'
+      - 'tests/validate.mjs'
+      - 'tests/physics/microduck-bam-plant-core.mjs'
+      - 'tests/physics/microduck-phase5c-core.mjs'
+      - 'tests/physics/microduck-lifecycle-core.mjs'
+      - 'tests/physics/microduck-browser-mesh-vfs-core.mjs'
+      - 'docs/physics/microduck-provenance.md'
+      - 'LICENSE'
+      - 'LICENSES/MIT.txt'
+      - 'THIRD_PARTY_NOTICES.md'
+      - '.github/workflows/microduck-phase5c-validate.yml'
+      - '.github/workflows/microduck-full-plant-fidelity.yml'
+  pull_request:
+    paths:
+      - 'src/physics/microduck-bam-plant.js'
+      - 'src/physics/microduck-mujoco-worker.js'
+      - 'src/physics/microduck-model-package.js'
+      - 'src/physics/microduck-source-audit.js'
+      - 'src/physics/microduck-capabilities.js'
+      - 'src/physics/microduck-scene.js'
+      - 'src/physics/microduck-physical-simulator.js'
+      - 'models/microduck/**'
+      - 'assets/microduck/**'
+      - 'scripts/generate_microduck_models.py'
+      - 'native/microduck_controller_reference.py'
+      - 'native/microduck_reference.py'
+      - 'native/microduck_bam_reference.py'
+      - 'native/microduck_bam_physical_reference.py'
+      - 'tests/validate_microduck_assets.mjs'
+      - 'tests/validate_microduck_bam_evidence.py'
+      - 'tests/validate.mjs'
+      - 'tests/physics/microduck-bam-plant-core.mjs'
+      - 'tests/physics/microduck-phase5c-core.mjs'
+      - 'tests/physics/microduck-lifecycle-core.mjs'
+      - 'tests/physics/microduck-browser-mesh-vfs-core.mjs'
+      - 'docs/physics/microduck-provenance.md'
+      - 'LICENSE'
+      - 'LICENSES/MIT.txt'
+      - 'THIRD_PARTY_NOTICES.md'
+      - '.github/workflows/microduck-phase5c-validate.yml'
+      - '.github/workflows/microduck-full-plant-fidelity.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bam-source-conformance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Syntax, deterministic-model, asset-integrity and license-scope contracts
+        run: |
+          node --check src/physics/microduck-bam-plant.js
+          node --check src/physics/microduck-model-package.js
+          node --check src/physics/microduck-source-audit.js
+          node --check src/physics/microduck-capabilities.js
+          node --check src/physics/microduck-scene.js
+          node --check src/physics/microduck-mujoco-worker.js
+          node --check src/physics/microduck-physical-simulator.js
+          node --check tests/physics/microduck-browser-mesh-vfs-core.mjs
+          python -m py_compile scripts/generate_microduck_models.py native/microduck_controller_reference.py native/microduck_reference.py native/microduck_bam_reference.py native/microduck_bam_physical_reference.py tests/validate_microduck_bam_evidence.py
+          node tests/physics/microduck-bam-plant-core.mjs
+          node tests/physics/microduck-phase5c-core.mjs
+          node tests/physics/microduck-lifecycle-core.mjs
+          node tests/physics/microduck-browser-mesh-vfs-core.mjs
+          python scripts/generate_microduck_models.py --check
+          node tests/validate_microduck_assets.mjs
+          node tests/validate.mjs
+
+      - name: Verify pinned source XML and STL byte identity
+        run: |
+          rm -rf /tmp/microduck_rl
+          git clone --filter=blob:none https://github.com/pollen-robotics/microduck_rl.git /tmp/microduck_rl
+          git -C /tmp/microduck_rl checkout --detach 519142b1f5bf59fdfd44d06c205119e7fff8e3cb
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pin = Path('/tmp/microduck_rl/src/mjlab_microduck/robot/microduck')
+          source = Path('models/microduck/source')
+          meshes = Path('models/microduck/assets')
+          assert Path('/tmp/microduck_rl/.git').exists()
+          for name in ('robot_walk.xml', 'robot_allcollisions.xml', 'ball.xml', 'config_mjcf_walk.json'):
+              upstream = pin / name
+              if upstream.exists():
+                  assert (source / name).read_bytes() == upstream.read_bytes(), name
+          upstream_meshes = sorted((pin / 'assets').glob('*.stl'))
+          assert {p.name for p in upstream_meshes} == {p.name for p in meshes.glob('*.stl')}
+          sums = (source / 'GIT_BLOB_SHA1SUMS').read_text()
+          for upstream in upstream_meshes:
+              data = (meshes / upstream.name).read_bytes()
+              assert data == upstream.read_bytes(), upstream.name
+              blob = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              assert f'{blob}  assets/{upstream.name}' in sums, upstream.name
+          print('pinned source collision XML/STL byte identity: OK')
+          PY
+
+      - name: Install pinned BAM reference package
+        run: python -m pip install --disable-pip-version-check --no-cache-dir 'better-actuator-models==1.0.1' numpy
+
+      - name: Cross-check browser equations against BAM v1.0.1 itself
+        run: |
+          python native/microduck_bam_reference.py --json /tmp/microduck-bam-library.json
+          node tests/physics/microduck-bam-plant-core.mjs /tmp/microduck-bam-library.json
+
+      - name: Install native physical and controller reference runtime
+        run: python -m pip install --disable-pip-version-check --no-cache-dir 'mujoco==3.11.0' onnxruntime
+
+      - name: Validate controller fixture without plant dynamics
+        run: python native/microduck_controller_reference.py --json /tmp/microduck-controller-conformance.json
+
+      - name: Run independent BAM full-robot physical evidence
+        run: |
+          python native/microduck_bam_physical_reference.py --trial all --json /tmp/microduck-all.json
+          python native/microduck_bam_physical_reference.py --trial walk --timestep 0.001 --json /tmp/microduck-walk-tight.json
+          python native/microduck_bam_physical_reference.py --trial stand --timestep 0.001 --json /tmp/microduck-stand-tight.json
+          python tests/validate_microduck_bam_evidence.py /tmp/microduck-all.json /tmp/microduck-walk-tight.json /tmp/microduck-stand-tight.json
+
+      - name: Retain BAM source and full-plant evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microduck-bam-full-plant-${{ github.sha }}
+          path: |
+            /tmp/microduck-bam-library.json
+            /tmp/microduck-controller-conformance.json
+            /tmp/microduck-all.json
+            /tmp/microduck-walk-tight.json
+            /tmp/microduck-stand-tight.json
+          if-no-files-found: ignore
+          retention-days: 14

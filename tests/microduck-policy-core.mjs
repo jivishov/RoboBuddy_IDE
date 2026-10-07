@@ -26,7 +26,9 @@ test('the frozen catalog has the complete shared command vocabulary', () => {
 test('the MicroDuck starter Run program produces clearly visible bounded forward travel', () => {
   const workspace = buildPatchedWorkspace('microduck', { id: 'test-microduck', simulationMode: 'policy_sim' });
   assert.match(workspace['main.py'], /await robot\.move\(0\.30, 0\.0, 0\.0\)/);
-  assert.match(workspace['main.py'], /await robot\.sleep\(4\.0\)/);
+  assert.match(workspace['main.py'], /for _ in range\(16\):/);
+  assert.match(workspace['main.py'], /await robot\.sleep\(0\.25\)/);
+  assert.doesNotMatch(workspace['main.py'], /await robot\.sleep\(4\.0\)/);
   assert.equal(0.30 * 4.0, 1.2, 'the starter command travels 1.2 m, visibly within the configured 8 m field');
 });
 

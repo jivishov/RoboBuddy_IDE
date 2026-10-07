@@ -1,0 +1,287 @@
+name: Validate LeKiwi Phase 5B
+
+on:
+  push:
+    branches: [main, "fix/**", "claude/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lekiwi-phase5b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: LeKiwi Phase 5B syntax contracts
+        run: |
+          node --check src/physics/backend-contract.js
+          node --check src/physics/session.js
+          node --check src/physics/browser-mujoco-backend.js
+          node --check src/physics/model-registry.js
+          node --check src/physics/lekiwi-source-audit.js
+          node --check src/physics/lekiwi-kinematics.js
+          node --check src/physics/lekiwi-model-package.js
+          node --check src/physics/lekiwi-scene.js
+          node --check src/physics/lekiwi-mujoco-worker.js
+          node --check src/physics/lekiwi-task-evaluator.js
+          node --check src/physics/lekiwi-physical-simulator.js
+          node --check src/webmcp/lekiwi-physical-control.js
+          node --check src/runtime/live-python-bridge.js
+          node --check tests/physics/lekiwi-phase5b-core.mjs
+          node --check tests/lekiwi-phase5b-browser.spec.mjs
+          node --check tests/lekiwi-conformance-browser.spec.mjs
+          node --check tests/lekiwi-presentation-browser.spec.mjs
+          python -m py_compile scripts/generate_lekiwi_models.py
+          python -m py_compile scripts/lekiwi_courier_scene.py
+          python -m py_compile native/lekiwi_reference.py
+
+      - name: Committed MJCF assets match the deterministic generator
+        run: python scripts/generate_lekiwi_models.py --check
+
+      - name: Shared physics session, backend and sampled-observation contracts
+        run: node tests/physics/vertical-slice-core.mjs
+
+      - name: LeKiwi source audit, kinematic mapping, evaluator and WebMCP contracts
+        run: node tests/physics/lekiwi-phase5b-core.mjs
+
+      - name: LeKiwi physical task catalog and starter contracts
+        run: node tests/validate_task_patch.mjs
+
+      - name: Generate native MuJoCo wheel, base, manipulation, courier and negative evidence
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir "mujoco==3.11.0"
+          python native/lekiwi_reference.py --trial wheel-reference > /tmp/lekiwi-wheel-reference.json
+          python native/lekiwi_reference.py --trial base-motion > /tmp/lekiwi-base-motion.json
+          python native/lekiwi_reference.py --trial lifted-base > /tmp/lekiwi-lifted-base.json
+          python native/lekiwi_reference.py --trial traction-reduced > /tmp/lekiwi-traction-reduced.json
+          python native/lekiwi_reference.py --trial motor-disabled > /tmp/lekiwi-motor-disabled.json
+          python native/lekiwi_reference.py --trial known-poses > /tmp/lekiwi-known-poses.json
+          python native/lekiwi_reference.py --trial manipulation > /tmp/lekiwi-manipulation.json
+          python native/lekiwi_reference.py --trial lateral-carry > /tmp/lekiwi-lateral-carry.json
+          python native/lekiwi_reference.py --trial courier > /tmp/lekiwi-courier.json
+          python native/lekiwi_reference.py --trial missed-grasp > /tmp/lekiwi-missed-grasp.json
+          python native/lekiwi_reference.py --trial weak-grip > /tmp/lekiwi-weak-grip.json
+          python native/lekiwi_reference.py --trial dropped-payload > /tmp/lekiwi-dropped-payload.json
+          python native/lekiwi_reference.py --trial insufficient-budget > /tmp/lekiwi-insufficient-budget.json
+          python native/lekiwi_reference.py --trial restricted-route > /tmp/lekiwi-restricted-route.json
+          python native/lekiwi_reference.py --trial base-motion --timestep 0.001 > /tmp/lekiwi-base-motion-tight.json
+          python native/lekiwi_reference.py --trial courier --timestep 0.001 > /tmp/lekiwi-courier-tight.json
+          python native/lekiwi_reference.py --trial wheel-reference --timestep 0.001 > /tmp/lekiwi-wheel-reference-tight.json
+          python native/lekiwi_reference.py --trial traction-reduced --timestep 0.001 > /tmp/lekiwi-traction-reduced-tight.json
+
+      - name: Retain native LeKiwi evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lekiwi-phase5b-native-evidence-${{ github.sha }}
+          path: /tmp/lekiwi-*.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Validate native LeKiwi wheel, base, manipulation, courier, negative and sensitivity gates
+        run: |
+          python - <<'PY'
+          import json, math
+          from pathlib import Path
+
+          def load(name):
+              return json.loads(Path(f'/tmp/lekiwi-{name}.json').read_text())
+
+          wheel = load('wheel-reference')
+          base = load('base-motion')
+          lifted = load('lifted-base')
+          traction = load('traction-reduced')
+          motors = load('motor-disabled')
+          poses = load('known-poses')
+          manip = load('manipulation')
+          lateral = load('lateral-carry')
+          courier = load('courier')
+          tight_base = load('base-motion-tight')
+          tight_courier = load('courier-tight')
+          tight_wheel = load('wheel-reference-tight')
+          tight_traction = load('traction-reduced-tight')
+          negatives = {n: load(n) for n in
+                       ('missed-grasp', 'weak-grip', 'dropped-payload', 'insufficient-budget', 'restricted-route')}
+
+          # --- provenance and engine ---------------------------------------------------
+          for report in (wheel, base, lifted, traction, motors, poses, manip, lateral, courier):
+              assert report['schema'] == 'robobuddy.lekiwi.native-reference.v1', report['schema']
+              assert 'not hardware validation' in report['classification'], report['classification']
+              assert report['engine']['version'] == '3.11.0', report['engine']
+              assert report['engine']['integrator'] == 3, report['engine']
+              assert report['engine']['cone'] == 1, report['engine']
+              assert len(report['model']['sha256']) == 64, report['model']
+              assert len(report['controller']['sha256']) == 64, report['controller']
+              assert report['source']['lekiwi'].endswith('@efa608d7ee5a495a4803b1d28cd0c955b4f1e033'), report['source']
+              assert report['source']['lerobot'].endswith('@7e241bd630a3719a56157a497ce5d08f244784f1'), report['source']
+          assert abs(courier['engine']['timestepSeconds'] - 0.002) < 1e-12, courier['engine']
+          assert abs(tight_courier['engine']['timestepSeconds'] - 0.001) < 1e-12, tight_courier['engine']
+          assert abs(tight_wheel['engine']['timestepSeconds'] - 0.001) < 1e-12, tight_wheel['engine']
+          assert abs(tight_traction['engine']['timestepSeconds'] - 0.001) < 1e-12, tight_traction['engine']
+
+          # --- single-wheel reference gate ---------------------------------------------
+          w = wheel['metrics']
+          assert w['suspended']['contacts'] == 0, w['suspended']
+          assert w['suspended']['horizontalTravelM'] < 1e-6, w['suspended']
+          assert w['suspended']['wheelRadS'] > 1.0, w['suspended']
+          assert w['grounded']['contacts'] > 0, w['grounded']
+          assert w['grounded']['driveDirectionM'] > 0.2, w['grounded']
+          assert abs(w['grounded']['crossTrackM']) < 0.2 * w['grounded']['driveDirectionM'], w['grounded']
+          assert w['passiveDirection']['travelM'] > 2.0 * w['drivenDirection']['travelM'], w
+          assert w['anisotropyRatio'] > 2.0, w['anisotropyRatio']
+          assert w['reducedTraction']['travelM'] < 0.75 * w['nominalTractionSameWindow']['travelM'], w
+          assert w['freeWheelCoast']['coastTravelM'] > 1.4 * w['servoBrakedStop']['coastTravelM'], w
+          print('LeKiwi single-wheel reference gate: OK')
+
+          # --- base-only motion gate ---------------------------------------------------
+          b = base['metrics']
+          assert b['forward']['forwardM'] > 0.35 and abs(b['forward']['lateralM']) < 0.02, b['forward']
+          assert b['reverse']['forwardM'] < -0.35 and abs(b['reverse']['lateralM']) < 0.02, b['reverse']
+          assert b['lateralLeft']['lateralM'] > 0.35 and abs(b['lateralLeft']['forwardM']) < 0.02, b['lateralLeft']
+          assert b['lateralRight']['lateralM'] < -0.35 and abs(b['lateralRight']['forwardM']) < 0.02, b['lateralRight']
+          assert b['yawPositive']['yawRad'] > 2.0, b['yawPositive']
+          assert b['yawNegative']['yawRad'] < -2.0, b['yawNegative']
+          assert b['mixed']['forwardM'] > 0.05 and b['mixed']['lateralM'] > 0.2 and b['mixed']['yawRad'] > 0.5, b['mixed']
+          assert abs(b['zeroCommand']['forwardM']) < 1e-4 and abs(b['zeroCommand']['lateralM']) < 1e-4, b['zeroCommand']
+          assert b['servoBrakedStop']['travelM'] < 0.2 * b['freeWheelCoast']['travelM'], b
+          for name in ('forward', 'reverse', 'lateralLeft', 'lateralRight', 'yawPositive', 'yawNegative', 'mixed'):
+              assert abs(b[name]['baseHeightM']) < 0.005, (name, b[name]['baseHeightM'])
+          print('LeKiwi base motion gate: OK')
+
+          # --- anti-shortcut gates ------------------------------------------------------
+          lf = lifted['metrics']
+          assert lf['lifted']['floorRollerContacts'] == [], lf['lifted']
+          assert lf['lifted']['standContacts'], lf['lifted']
+          assert abs(lf['lifted']['actualWheelRadS'][0]) > 1.0, lf['lifted']
+          assert abs(lf['lifted']['forwardM']) < 0.001, lf['lifted']
+          assert lf['propulsionRatio'] < 0.001, lf['propulsionRatio']
+
+          tr = traction['metrics']
+          assert tr['travelRatio_0.5s'] < 0.3, tr['travelRatio_0.5s']
+          assert tr['reduced_0.5s']['slipRatio'] > 0.5, tr['reduced_0.5s']
+          assert abs(tr['nominal_0.5s']['slipRatio']) < 0.05, tr['nominal_0.5s']
+
+          mt = motors['metrics']
+          assert abs(mt['allWheelsDisabled']['forwardM']) < 0.001, mt['allWheelsDisabled']
+          assert mt['nominal']['forwardM'] > 0.35, mt['nominal']
+          assert abs(mt['oneWheelDisabled']['yawRad']) > 0.3, mt['oneWheelDisabled']
+          print('LeKiwi lifted-base, traction and motor anti-shortcut gates: OK')
+
+          # --- known-pose and manipulation gates ----------------------------------------
+          check = poses['metrics']['referenceCheck']
+          assert check['gripToRimDistanceM'] < 0.05, check
+          assert check['placeToDeliveryDistanceM'] < 0.10, check
+          for pose in ('pick_approach', 'pick_grip', 'pick_lift', 'carry', 'drop_over', 'drop_place', 'drop_retreat'):
+              assert pose in poses['metrics'], sorted(poses['metrics'])
+              assert len(poses['metrics'][pose]['toolSiteM']) == 3
+
+          mm = manip['metrics']
+          assert mm['manipulationSuccess'] is True, mm
+          assert mm['graspSeen'] and mm['liftSeen'] and mm['carrySeen'], mm
+          assert mm['supportWhileHeldSeen'] is True, mm
+          assert mm['liftHeightM'] > 0.05, mm
+          assert mm['settled'] is True and mm['settleDriftM'] <= 0.005, mm
+
+          lc = lateral['metrics']
+          assert lc['lateralCarrySuccess'] is True, lc
+          assert lc['heldBeforeLateral'] is True, lc
+          strafe = max(seg['lateralM'] for seg in lc['lateralSegments'])
+          assert strafe > 0.10, lc['lateralSegments']
+          assert all(seg['stillGrasped'] for seg in lc['lateralSegments']), lc['lateralSegments']
+          assert lc['beakerTravelWithBaseM'] < 0.01, lc
+          print('LeKiwi known-pose, manipulation and lateral-carry gates: OK',
+                {'strafeM': round(strafe, 4)})
+
+          # --- courier task gate ---------------------------------------------------------
+          c = courier['metrics']
+          assert c['success'] is True, c
+          assert c['causalOrder'] is True, c
+          assert c['serviceStopReached'] and c['graspSeen'] and c['liftSeen'] and c['carrySeen'], c
+          assert c['supportWhileHeldSeen'] and c['releaseSeen'] and c['settled'] and c['homeReturned'], c
+          assert (c['serviceStopTimeSeconds'] < c['graspTimeSeconds'] < c['liftTimeSeconds']
+                  < c['supportWhileHeldTimeSeconds'] < c['releaseTimeSeconds']
+                  < c['settleTimeSeconds'] < c['homeTimeSeconds']), c
+          assert c['liftHeightM'] > 0.05, c
+          assert c['basePathLengthM'] > 0.2, c
+          assert c['restXYErrorM'] < 0.03, c
+          assert c['payloadLost'] is False and c['restrictedViolation'] is False, c
+          assert c['observationCount'] > 500, c
+          assert abs(courier['observationPeriodSeconds'] - 0.01) < 1e-12, courier['observationPeriodSeconds']
+          assert courier['commandCount'] > 0 and courier['boundedWheelCommands'], courier['commandCount']
+          for entry in courier['boundedWheelCommands']:
+              for target in entry['wheelTargetsRadS']:
+                  assert abs(target) <= 4.60061 + 1e-9, entry
+          assert any(entry['saturated'] for entry in courier['boundedWheelCommands']), 'expected bounded saturation evidence'
+          assert courier['trajectory'], 'courier must report an actual chassis trajectory'
+          print('LeKiwi courier task gate: OK')
+
+          # --- negative trials -----------------------------------------------------------
+          for name, report in negatives.items():
+              assert report['metrics']['success'] is False, (name, report['metrics'])
+          assert negatives['restricted-route']['metrics']['restrictedViolation'] is True
+          assert negatives['insufficient-budget']['metrics']['programCompleted'] is False
+          assert negatives['missed-grasp']['metrics']['carrySeen'] is False
+          assert negatives['weak-grip']['metrics']['liftSeen'] is False
+          assert negatives['dropped-payload']['metrics']['releaseSeen'] is False
+          for name, report in negatives.items():
+              for entry in report['setupInterventions']:
+                  lowered = entry.lower()
+                  for banned in ('evaluator', 'stage', 'verdict', 'success flag'):
+                      assert banned not in lowered, (name, entry)
+          print('LeKiwi negative trials:', {n: r['metrics']['success'] for n, r in negatives.items()})
+
+          # --- numerical sensitivity -----------------------------------------------------
+          tb = tight_base['metrics']
+          for name in ('forward', 'reverse', 'lateralLeft', 'lateralRight', 'yawPositive', 'yawNegative', 'mixed'):
+              assert abs(tb[name]['forwardM'] - b[name]['forwardM']) < 0.01, (name, b[name], tb[name])
+              assert abs(tb[name]['lateralM'] - b[name]['lateralM']) < 0.01, (name, b[name], tb[name])
+              assert abs(tb[name]['yawRad'] - b[name]['yawRad']) < 0.02, (name, b[name], tb[name])
+          tc = tight_courier['metrics']
+          assert tc['success'] is True, tc
+          delta = math.dist(c['finalBeakerM'], tc['finalBeakerM'])
+          assert delta <= 0.01, (c['finalBeakerM'], tc['finalBeakerM'], delta)
+          tw = tight_wheel['metrics']
+          assert abs(tw['grounded']['driveDirectionM'] - w['grounded']['driveDirectionM']) < 0.02, (w['grounded'], tw['grounded'])
+          assert abs(tw['anisotropyRatio'] - w['anisotropyRatio']) < 0.35, (w['anisotropyRatio'], tw['anisotropyRatio'])
+          ttr = tight_traction['metrics']
+          assert abs(ttr['travelRatio_0.5s'] - tr['travelRatio_0.5s']) < 0.08, (tr['travelRatio_0.5s'], ttr['travelRatio_0.5s'])
+          assert ttr['reduced_0.5s']['slipRatio'] > 0.5, ttr['reduced_0.5s']
+          print('LeKiwi timestep sensitivity: OK', {
+              'finalBeakerDeltaM': round(delta, 6),
+              'wheelAnisotropy1ms': round(tw['anisotropyRatio'], 4),
+              'tractionRatio1ms': round(ttr['travelRatio_0.5s'], 4),
+          })
+          PY
+
+      - name: Install browser harness
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: LeKiwi browser/native conformance gates
+        run: npx playwright test tests/lekiwi-conformance-browser.spec.mjs --reporter=line
+
+      - name: LeKiwi IDE physical end-to-end gate
+        run: npx playwright test tests/lekiwi-phase5b-browser.spec.mjs --reporter=line
+
+      - name: LeKiwi canonical presentation alignment and wheel-animation gate
+        run: npx playwright test tests/lekiwi-presentation-browser.spec.mjs --reporter=line
+
+      - name: Retain LeKiwi browser causal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lekiwi-browser-evidence-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14

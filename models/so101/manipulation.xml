@@ -1,0 +1,107 @@
+<mujoco model="robobuddy_so101_manipulation">
+  <compiler angle="radian" autolimits="true"/>
+  <option integrator="implicitfast" timestep="0.005" cone="elliptic" iterations="10" ls_iterations="20" impratio="10" gravity="0 0 -9.81"/>
+  <default>
+    <default class="so101">
+      <joint damping="1" frictionloss="0.1" armature="0.005"/>
+      <geom group="3" condim="3" rgba="0.72 0.60 0.18 1"/>
+    </default>
+    <default class="sts3215">
+      <joint damping="0.60" frictionloss="0.052" armature="0.028"/>
+      <position kp="998.22" kv="2.731" forcerange="-2.94 2.94"/>
+    </default>
+    <default class="gripper_collision">
+      <geom group="3" condim="6" friction="1 5e-3 5e-4" solref="0.01 1" priority="1" rgba="0.78 0.58 0.12 1"/>
+    </default>
+    <default class="benchmark_contact">
+      <geom group="3" condim="6" friction="0.8 0.005 0.0001" solref="0.01 1" rgba="0.18 0.56 0.84 1"/>
+    </default>
+  </default>
+  <worldbody>
+    <light pos="0 0 2" dir="0 0 -1"/>
+    <!-- Synthetic benchmark support pads. The split geometry keeps the source-derived camera collision volume physically active while leaving its swept volume unobstructed. -->
+    <geom name="benchmark_source_support" type="box" size="0.025 0.025 0.02" pos="0.39416 -0.00169 0.207" class="benchmark_contact" rgba="0.50 0.54 0.58 1"/>
+    <geom name="benchmark_target_support" type="box" size="0.025 0.045 0.02" pos="0.358 -0.156 0.207" class="benchmark_contact" rgba="0.50 0.54 0.58 1"/>
+    <!-- Non-colliding target marker; task success is evaluated from the free block body, never from this marker. -->
+    <geom name="benchmark_target_region" type="box" size="0.02 0.03 0.0005" pos="0.358 -0.156 0.2275" contype="0" conaffinity="0" group="2" rgba="0.16 0.72 0.36 0.55"/>
+    <body name="benchmark_block" pos="0.39416 -0.00169 0.234">
+      <freejoint name="benchmark_block_free"/>
+      <inertial pos="0 0 0" mass="0.020" diaginertia="5.6666667e-7 7.5333333e-7 6.6666667e-7"/>
+      <geom name="benchmark_block_geom" type="box" size="0.008 0.006 0.007" class="benchmark_contact"/>
+    </body>
+    <body name="base" pos="0 0 0" quat="1 0 0 0" childclass="so101">
+      <inertial pos="0.0137179 -5.19711e-05 0.0334843" mass="0.147"
+        fullinertia="0.000114686 0.000136117 0.000130364 -4.59787e-07 4.97151e-06 9.75275e-08"/>
+      <geom name="base_proxy" type="box" size="0.045 0.045 0.055" pos="0 0 0.025" contype="0" conaffinity="0" group="2"/>
+      <site group="3" name="baseframe" pos="0 0 0" quat="1 0 0 0"/>
+      <body name="shoulder" pos="0.0388353 0 0.0624" quat="0 0 -1 0">
+        <joint axis="0 0 1" name="shoulder_pan" type="hinge" range="-1.91986 1.91986" class="sts3215"/>
+        <inertial pos="-0.0307604 -1.7e-05 -0.0252713" mass="0.100006"
+          fullinertia="8.3759e-05 8.10403e-05 2.39783e-05 7.55525e-08 -1.16342e-06 1.54663e-07"/>
+        <geom name="shoulder_motor_proxy" type="box" pos="-0.030399 0.000422 -0.0387" quat="1 1 1 -1" size="0.023 0.015 0.01"/>
+        <geom name="shoulder_holder_proxy" type="box" pos="-0.025 0 0" quat="1 1 -1 1" size="0.038 0.025 0.02"/>
+        <body name="upper_arm" pos="-0.0303992 -0.0182778 -0.0542" quat="1 -1 -1 -1">
+          <joint axis="0 0 1" name="shoulder_lift" type="hinge" range="-1.7453293 1.7453293" class="sts3215"/>
+          <inertial pos="-0.089847 -0.008382 0.018409" mass="0.103"
+            fullinertia="4.08002e-05 0.000147318 0.000142487 -1.97819e-05 -4.03016e-08 8.97326e-09"/>
+          <geom name="upper_arm_motor_proxy" type="box" pos="-0.06 0 0.02" quat="0 -1 1 0" size="0.01 0.07 0.03"/>
+          <geom name="upper_arm_link_proxy" type="box" pos="-0.12 -0.014 0.0182" quat="0 1 0 0" size="0.01 0.02 0.015"/>
+          <body name="lower_arm" pos="-0.11257 -0.028 0" quat="1 0 0 1">
+            <joint axis="0 0 1" name="elbow_flex" type="hinge" range="-1.69 1.69" class="sts3215"/>
+            <inertial pos="-0.098070 0.0032438 0.018283" mass="0.104"
+              fullinertia="2.87438e-05 0.000159844 0.00014529 7.41152e-06 1.26409e-06 -4.90188e-08"/>
+            <geom name="lower_arm_link_proxy" type="box" pos="-0.05 0 0.0182" quat="0 1 0 0" size="0.07 0.01 0.03"/>
+            <geom name="lower_arm_motor_proxy" type="box" pos="-0.125 0.005 0.018" quat="0 -1 0 0" size="0.023 0.013 0.018"/>
+            <body name="wrist" pos="-0.1349 0.0052 0" quat="1 0 0 -1">
+              <joint axis="0 0 1" name="wrist_flex" type="hinge" range="-1.658063 1.658063" class="sts3215"/>
+              <inertial pos="-0.000103312 -0.0386143 0.0281156" mass="0.079"
+                fullinertia="3.68263e-05 2.5391e-05 2.1e-05 1.7893e-08 -5.28128e-08 3.6412e-06"/>
+              <geom name="wrist_motor_proxy" type="box" pos="0 -0.0424 0.0256" quat="1 1 1 -1" size="0.029 0.015 0.018"/>
+              <geom name="wrist_link_proxy" type="box" pos="0 -0.02 0.0191" quat="1 -1 -1 -1" size="0.027 0.01 0.03"/>
+              <body name="gripper" pos="5.55112e-17 -0.0611 0.0181" quat="0.0172091 -0.0172091 0.706897 0.706897">
+                <joint axis="0 0 1" name="wrist_roll" type="hinge" range="-2.7438473 2.7438473" class="sts3215"/>
+                <inertial pos="0.000214 0.000245 -0.025187" mass="0.087"
+                  fullinertia="2.75087e-05 4.33657e-05 3.45059e-05 -3.35241e-07 -5.7352e-06 -5.17847e-08"/>
+                <geom name="fixed_jaw_box1" class="gripper_collision" type="box" size="0.0325 0.015 0.015" pos="-0.0025 0 -0.022"/>
+                <geom name="fixed_jaw_box2" class="gripper_collision" type="box" size="0.01 0.015 0.005" pos="-0.024 0 -0.04"/>
+                <geom name="fixed_jaw_sph_tip1" class="gripper_collision" type="sphere" size="0.00075" pos="-0.0081 0 -0.101"/>
+                <geom name="fixed_jaw_sph_tip2" class="gripper_collision" type="sphere" size="0.00075" pos="-0.0081 0.0035 -0.0975"/>
+                <geom name="fixed_jaw_sph_tip3" class="gripper_collision" type="sphere" size="0.00075" pos="-0.0081 -0.0035 -0.0975"/>
+                <geom name="fixed_jaw_box3" class="gripper_collision" type="capsule" size="0.0011 0.002" pos="-0.009 0 -0.103" euler="1.57 0 0"/>
+                <geom name="fixed_jaw_box4" class="gripper_collision" type="box" size="0.001 0.004 0.004" pos="-0.009 0 -0.0982"/>
+                <geom name="fixed_jaw_box5" class="gripper_collision" type="box" size="0.001 0.005 0.006" pos="-0.0108 0 -0.0905"/>
+                <geom name="fixed_jaw_box6" class="gripper_collision" type="box" size="0.001 0.009 0.008" pos="-0.0125 0 -0.0727"/>
+                <geom name="fixed_jaw_box7" class="gripper_collision" type="box" size="0.001 0.01 0.008" pos="-0.0143 0 -0.053"/>
+                <site group="3" name="gripperframe" pos="0.012 -0.000218 -0.098127" quat="1 0 1 0"/>
+                <!-- Source camera-mount mass restored using the two source collision boxes as a 0.012 kg inertia surrogate. -->
+                <body name="camera_mount">
+                  <geom name="camera_box1" class="gripper_collision" type="box" size="0.015 0.015 0.003" pos="-0.0025 0.03 -0.03" mass="0.0040540541"/>
+                  <geom name="camera_box2" class="gripper_collision" type="box" size="0.021 0.021 0.003" pos="-0.001 0.06 -0.04" euler="-0.55 0 0" mass="0.0079459459"/>
+                </body>
+                <body name="moving_jaw_so101_v1" pos="0.0202 0.0188 -0.0234" quat="1 1 0 0">
+                  <joint axis="0 0 1" name="gripper" type="hinge" range="-0.174533 1.7453292" class="sts3215"/>
+                  <inertial pos="-0.001575 -0.0300244 0.0192755" mass="0.012"
+                    fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07"/>
+                  <geom name="moving_jaw_box1" class="gripper_collision" type="box" size="0.01 0.01 0.015" pos="0 -0.013 0.019"/>
+                  <geom name="moving_jaw_sph_tip1" class="gripper_collision" type="sphere" size="0.00075" pos="-0.012 -0.078 0.0192"/>
+                  <geom name="moving_jaw_sph_tip2" class="gripper_collision" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0225"/>
+                  <geom name="moving_jaw_sph_tip3" class="gripper_collision" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0155"/>
+                  <geom name="moving_jaw_box2" class="gripper_collision" type="box" size="0.001 0.004 0.004" pos="-0.0113 -0.076 0.01875"/>
+                  <geom name="moving_jaw_box3" class="gripper_collision" type="box" size="0.001 0.005 0.006" pos="-0.0093 -0.067 0.01875"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position class="sts3215" name="shoulder_pan" joint="shoulder_pan" ctrlrange="-1.91986 1.91986"/>
+    <position class="sts3215" name="shoulder_lift" joint="shoulder_lift" ctrlrange="-1.74533 1.74533"/>
+    <position class="sts3215" name="elbow_flex" joint="elbow_flex" ctrlrange="-1.69 1.69"/>
+    <position class="sts3215" name="wrist_flex" joint="wrist_flex" ctrlrange="-1.65806 1.65806"/>
+    <position class="sts3215" name="wrist_roll" joint="wrist_roll" ctrlrange="-2.74385 2.84121"/>
+    <position class="sts3215" name="gripper" joint="gripper" ctrlrange="-0.17453 1.74533"/>
+  </actuator>
+</mujoco>

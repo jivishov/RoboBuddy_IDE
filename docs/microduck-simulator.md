@@ -1,3 +1,5 @@
+> Historical demonstrator documentation. The articulated policy demonstrator is retired from the IDE. Current tasks are physical locomotion, ground contact and ball kick; see `docs/physics/microduck-presentation.md`. Features described below are not advertised physical capabilities.
+
 # MicroDuck browser policy demonstrator
 
 This workspace is a reference-aligned policy demonstrator, not a validated MicroDuck physics twin.

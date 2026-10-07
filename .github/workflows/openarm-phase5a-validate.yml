@@ -1,0 +1,78 @@
+name: Validate OpenArm Phase 5A
+
+on:
+  push:
+    branches: [main, "fix/**", "claude/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openarm-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openarm-phase5a:
+    if: github.repository == 'jivishov/RoboBuddy_IDE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: OpenArm and shared-runtime contracts
+        run: |
+          node tests/physics/openarm-phase5a-core.mjs
+          node tests/physics/vertical-slice-core.mjs
+          node tests/physics/live-python-bridge-core.mjs
+          node tests/physics/physical-python-runtime-core.mjs
+          node tests/physics/model-registry-core.mjs
+          node tests/webmcp-core.mjs
+          node tests/validate_task_patch.mjs
+          python -m py_compile native/openarm_v2_reference.py tests/validate_openarm_evidence.py
+      - name: Install pinned test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'mujoco==3.11.0' 'jsonschema==4.26.0'
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Exported WebMCP JSON Schemas
+        run: python tests/validate_openarm_schemas.py
+      - name: Actual shipped WebAssembly worker and equipment contact tests
+        run: node tests/physics/openarm-worker.mjs
+      - name: Native nominal, five negative controls and half-timestep evidence
+        run: |
+          # Playwright clears test-results at startup. Keep native evidence outside
+          # that directory until the browser run finishes, including failure cases.
+          mkdir -p "$RUNNER_TEMP/openarm-native"
+          for trial in nominal miss-left weak-grip blocked-left outside-left insufficient-budget; do
+            python native/openarm_v2_reference.py --trial "$trial" > "$RUNNER_TEMP/openarm-native/openarm-$trial.json"
+          done
+          python native/openarm_v2_reference.py --trial nominal --timestep 0.0005 > "$RUNNER_TEMP/openarm-native/openarm-tight.json"
+          python tests/validate_openarm_evidence.py "$RUNNER_TEMP/openarm-native"
+      - name: Full IDE Python, registered workcell programs and WebMCP access lifecycle
+        run: npx playwright test tests/openarm-phase5a-browser.spec.mjs tests/openarm-workcell-browser.spec.mjs tests/webmcp.spec.mjs --reporter=line
+      - name: Collect native reports after browser output-directory cleanup
+        if: always()
+        run: |
+          if [ -d "$RUNNER_TEMP/openarm-native" ]; then
+            mkdir -p test-results/native
+            cp -a "$RUNNER_TEMP/openarm-native/." test-results/native/
+          fi
+      - name: Verification never rewrites the checked-out source
+        run: git diff --exit-code
+      - name: Retain OpenArm native and browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openarm-evidence-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14

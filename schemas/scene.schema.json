@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robobuddy.dev/schemas/scene.schema.json",
+  "title": "RoboBuddy physical scene",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "revision", "robotId", "modelPackage", "physics"],
+  "properties": {
+    "schemaVersion": { "const": "0.2.0-alpha.1" },
+    "id": { "type": "string", "minLength": 1 },
+    "revision": { "type": "string", "minLength": 1 },
+    "robotId": { "type": "string", "minLength": 1 },
+    "modelPackage": { "type": "string", "minLength": 1 },
+    "legacyTaskId": { "type": ["string", "null"] },
+    "physics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timestepSeconds", "integrator"],
+      "properties": {
+        "timestepSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "integrator": { "enum": ["Euler", "RK4", "implicit", "implicitfast"] },
+        "iterations": { "type": "integer", "minimum": 1 },
+        "lsIterations": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "fixtures": { "type": "array", "items": { "type": "object" } },
+    "objects": { "type": "array", "items": { "type": "object" } },
+    "controllers": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "taskGoal": { "type": ["object", "null"] }
+  }
+}

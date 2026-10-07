@@ -1,21 +1,18 @@
-MIT License
+RoboBuddy IDE — multi-license repository
 
-Copyright (c) 2026 Dr. Emil Jivishov
+There is no single license that applies to every file in this repository.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Original RoboBuddy IDE source code is licensed under the MIT License unless a file or directory states otherwise. The MIT text is in LICENSES/MIT.txt.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. Third-party software, source-derived parameters, runtime distributions, model files, policies, and generated derivatives retain the licenses and notices stated in their source directories, manifests, or THIRD_PARTY_NOTICES.md.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. MicroDuck 3D model and collision files copied from pollen-robotics/microduck_rl are NOT covered by the RoboBuddy MIT grant. Upstream declares its 3D model files as “Creative Commons BY-SA-NC”. The upstream declaration does not specify a Creative Commons license version, so RoboBuddy does not assign or imply one. See THIRD_PARTY_NOTICES.md and models/microduck/source/.
+
+4. Some existing locally generated MicroDuck artifacts are marked PolyForm-Noncommercial-1.0.0 in assets/microduck/manifest.json. Those file-level declarations remain controlling for those artifacts.
+
+When redistributing a subset of this repository, comply with the license that applies to every included component.
+
+Asimov 1 source-derived model and visual assets under models/asimov/ are separately
+licensed under the upstream CERN-OHL-S-2.0 hardware / GPL-2.0 software notices.
+See models/asimov/source/HARDWARE-LICENSE.txt, SOFTWARE-LICENSE.txt and
+THIRD_PARTY_NOTICES.md. They are not covered by the original-code MIT grant.

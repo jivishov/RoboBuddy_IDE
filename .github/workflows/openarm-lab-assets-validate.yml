@@ -1,0 +1,50 @@
+name: Validate OpenArm Laboratory Assets
+
+on:
+  push:
+    branches: [main, fix/openarm-blank-lab-assets]
+  pull_request:
+    paths:
+      - 'src/physics/openarm-*'
+      - 'src/webmcp/openarm-*'
+      - 'tests/*openarm*'
+      - 'tests/physics/*openarm*'
+      - '.github/workflows/openarm-lab-assets-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openarm-lab-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.repository == 'jivishov/RoboBuddy_IDE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-package-lock
+      - name: Core contracts and real MuJoCo WASM regressions
+        run: |
+          node tests/physics/openarm-phase5a-core.mjs
+          node tests/physics/openarm-worker.mjs
+          node tests/physics/openarm-lab-assets.mjs
+          mkdir -p lab-asset-evidence
+          cp test-results/openarm-lab-assets.json lab-asset-evidence/
+      - run: npx playwright install --with-deps chromium
+      - name: Browser workcell and WebMCP regression tests
+        run: npx playwright test tests/openarm-workcell-browser.spec.mjs tests/webmcp.spec.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openarm-lab-assets-evidence
+          path: |
+            test-results/
+            lab-asset-evidence/
+          retention-days: 7

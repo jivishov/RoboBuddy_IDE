@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robobuddy.dev/schemas/command.schema.json",
+  "title": "RoboBuddy physical command envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessionId", "epoch", "commandId", "sceneRevision", "robotId", "command"],
+  "properties": {
+    "schemaVersion": { "const": "0.2.0-alpha.1" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "epoch": { "type": "integer", "minimum": 1 },
+    "commandId": { "type": "string", "minLength": 1 },
+    "sceneRevision": { "type": "string", "minLength": 1 },
+    "robotId": { "type": "string", "minLength": 1 },
+    "maxSteps": { "type": ["integer", "null"], "minimum": 1 },
+    "command": {
+      "type": "object",
+      "minProperties": 1,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  }
+}

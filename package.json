@@ -1,12 +1,13 @@
 {
-  "name": "robobuddy-ide",
-  "version": "0.1.0",
+  "name": "robobuddy-ide-v020",
+  "version": "0.2.0-alpha.2",
   "private": true,
   "type": "module",
   "scripts": {
     "test:browser": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.0"
+    "@playwright/test": "1.55.0",
+    "three": "0.180.0"
   }
 }

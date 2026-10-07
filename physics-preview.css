@@ -1,0 +1,71 @@
+/* Physics Preview-specific UI layer.
+   Text is kept on one line inside its container and clipped/scrollable rather than wrapping mid-container. */
+.physics-version-chip,
+.physics-backend-badge,
+.mode-chip,
+.robot-title,
+.sim-action-label,
+.sim-badge,
+.statusbar span,
+.task-panel h2,
+.task-panel p,
+.task-panel li,
+.robot-side-card p,
+.about-dialog h2,
+.about-copy,
+.about-license span,
+.about-copyright,
+.panel-view,
+.panel-view p,
+.panel-view td,
+.panel-view th,
+.command-row,
+.problem,
+.file-item,
+.editor-tab,
+.menu-popover button span,
+.toolbar button,
+.toolbar select {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.physics-version-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 4px;
+  padding: 2px 6px;
+  border: 1px solid #4f8fca;
+  border-radius: 999px;
+  color: #2f709c;
+  background: #eef7fb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.physics-backend-badge {
+  flex: 0 0 auto;
+  max-width: 180px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel2) 90%, transparent);
+  color: var(--muted);
+  font: 9px/1.2 Consolas, monospace;
+  text-transform: uppercase;
+}
+
+:root[data-theme="midnight-teal"] .physics-version-chip {
+  border-color: #397c9f;
+  background: #142531;
+  color: #8cd4ff;
+}
+
+/* Do not insert authored line breaks into preview titles or prose. */
+h1, h2, h3, h4, p, li, strong, span {
+  word-break: normal;
+  overflow-wrap: normal;
+}

@@ -1,3 +1,4 @@
+import { ASIMOV_SOURCE } from './physics/asimov-generated.js';
 export const FIDELITY_NOTICE = 'Physical-target Python API with RoboBuddy_AI canonical robot visual meshes and joint hierarchy. Contact/support remain modeled; hardware validation pending.';
 export const LEROBOT_REVISION = '7e241bd630a3719a56157a497ce5d08f244784f1';
 export const ROBOBUDDY_AI_VISUAL_REVISION = '66d18a029a0caeb6a6075e681dbd9ecd6b22affa';
@@ -16,6 +17,13 @@ const unitreeG1JointLimits = Object.freeze({
 const unitreeG1Rest = Object.freeze(Object.fromEntries(Object.keys(unitreeG1JointLimits).map((key) => [key, 0])));
 
 export const PROFILES = Object.freeze({
+  asimov: Object.freeze({id:'asimov', label:'Asimov 1', shortLabel:'Asimov', driver:'MuJoCo simulated joint-space control',transport:'simulation-only',
+    simulationMode:'physical_mujoco', visual:{robotId:'asimov_1_23dof_physical',repository:'menloresearch/asimov-1',revision:ASIMOV_SOURCE.revision},
+    limits:Object.freeze(Object.fromEntries(ASIMOV_SOURCE.joints.map(j=>[j.id,d(j.rangeRad.map(v=>v*180/Math.PI))]))),
+    rest:Object.freeze(Object.fromEntries(ASIMOV_SOURCE.joints.map(j=>[j.id,j.referenceRad*180/Math.PI]))), units:Object.freeze({}),
+    source:'Pinned Menlo Asimov 1: 23 source hinges, fixed neck, source inertias and collision primitives; reference actuation and separately labeled actuator/standing experiments.',
+    task:{title:'Physical joint and gravity laboratory',steps:['Choose mounted or free-base dynamics','Run live Python in the shared physics session','Inspect measured joints and contacts'],limitations:'No verified walking, balance recovery, grasping or hardware calibration.'},
+  }),
   so101: Object.freeze({
     id:'so101', label:'SO-101 Follower', shortLabel:'SO-101', driver:'LeRobot SO101Follower', transport:'serial',
     visual:Object.freeze({robotId:'so101_follower', repository:'jivishov/RoboBuddy_AI', revision:ROBOBUDDY_AI_VISUAL_REVISION, model:'official SO-101 URDF baked by RoboBuddy_AI'}),
@@ -56,28 +64,36 @@ export const PROFILES = Object.freeze({
     task:Object.freeze({title:'Arm positioning and bounded base velocity', steps:['Send a stowed arm pose','Pan the arm left and right on the canonical LeKiwi model','Return the arm to stow','Command a bounded forward base velocity','Stop base velocity explicitly'], limitations:'Canonical RoboBuddy visual geometry is used. No wheel-contact dynamics, odometry, SLAM, network timing, or hardware validation.'}),
   }),
   unitree: Object.freeze({
-    id:'unitree', label:'Unitree G1 29-DoF', shortLabel:'Unitree G1', driver:'RoboBuddy G1 pose rig (kinematic only)', transport:'none — browser-only pose workspace', simulationMode:'kinematic_pose',
+    // driver/transport are the RETAINED POSE workspace's labels. The physical workspace supplies
+    // its own browser-MuJoCo driver label from the selected task, so selecting the pose workspace
+    // can never leave a physical driver claim on screen.
+    id:'unitree', label:'Unitree G1 29-DoF', shortLabel:'Unitree G1', driver:'RoboBuddy G1 pose rig (kinematic only)', transport:'none — browser-only pose workspace', simulationMode:'physical_mujoco',
     visual:Object.freeze({robotId:'unitree_g1_29dof', repository:'jivishov/RoboBuddy_AI', revision:ROBOBUDDY_AI_VISUAL_REVISION, modelRevision:'dd4fa6866e523ad61324f658d63736e4eda3a6e4', modelRepository:'unitreerobotics/unitree_ros', modelPath:'robots/g1_description/g1_29dof.urdf', license:'BSD-3-Clause'}),
     limits:unitreeG1JointLimits,
     rest:unitreeG1Rest,
     source:'RoboBuddy_AI canonical Unitree G1 mesh with 29 source-manifest joint envelopes, generated from unitreerobotics/unitree_ros at dd4fa6866e523ad61324f658d63736e4eda3a6e4. This is a browser-only visual pose workspace, not a Unitree SDK or hardware-control API.',
-    task:Object.freeze({title:'29-axis kinematic pose inspection', steps:['Inspect the neutral source-mesh pose','Send a bounded upper-body joint pose','Inspect a lower-body joint pose without moving the root','Return joints to neutral'], limitations:'The canonical G1 visual mesh and source joint ranges are used. Dynamic balance, walking, root translation, foot contact, collision, hand actuation, grasping, force/torque control, Unitree SDK control, and hardware validation are not simulated.'}),
+    // Two workspaces, two identities. The pose workspace keeps its original text so selecting it
+    // can never surface the physical workspace's claims, and vice versa.
+    kinematicTask:Object.freeze({title:'29-axis kinematic pose inspection', steps:['Inspect the neutral source-mesh pose','Send a bounded upper-body joint pose','Inspect a lower-body joint pose without moving the root','Return joints to neutral'], limitations:'The canonical G1 visual mesh and source joint ranges are used. Dynamic balance, walking, root translation, foot contact, collision, hand actuation, grasping, force/torque control, Unitree SDK control, and hardware validation are not simulated.'}),
+    task:Object.freeze({title:'Free-base dynamics, contact and standing', steps:['Let the free-base robot settle on its feet under gravity','Engage the verified standing posture controller','Read measured joint state, root pose and named foot contacts','Command bounded joint targets and compare requested, accepted and measured'], limitations:'Source-derived Unitree G1 29-DoF fixed-rubber-hand model in one browser MuJoCo authority. Standing is a bounded posture hold, not dynamic balance or perturbation recovery. Walking and dexterous hand control are unsupported and are not exposed. The separate kinematic pose workspace has no contact plant at all. Numerical verification is not hardware calibration.'}),
   }),
   microduck: Object.freeze({
-    id:'microduck', label:'MicroDuck Policy Demonstrator', shortLabel:'MicroDuck', driver:'Main-thread 50 Hz browser policy simulator', transport:'none — local browser assets', simulationMode:'policy_sim',
+    id:'microduck', label:'MicroDuck Physical', shortLabel:'MicroDuck', driver:'50 Hz controller · worker-backed MuJoCo', transport:'none — local browser simulation', simulationMode:'physical_mujoco',
     visual:Object.freeze({robotId:'microduck_runtime_visual', repository:'pollen-robotics/microduck', revision:'590b986bd8c0d50ae02cb3ea2f59c463b6828168', sourcePath:'robotctl/assets/duck.bin', model:'official compact Apache-2.0 robotctl monitor visual'}),
     limits:Object.freeze({}), rest:Object.freeze({}),
-    source:'Exact pinned MicroDuck policy bytes, Apache-2.0 hierarchy metadata, and the official compact Apache-2.0 robotctl monitor visual. Configured lower-bill movement, rollers, visual floor alignment, collisions, contacts and dynamics are approximations; no RL-model, locomotion or hardware parity is claimed.',
-    task:Object.freeze({title:'Approximate browser policy simulation', steps:['Inspect the fourteen policy-controlled joints and separate mouth','Compare walking and roller policy modes','Inspect modeled contact and recovery state','Review the explicit fidelity boundary'], limitations:'Exact pinned ONNX inference drives configured approximate MuJoCo dynamics while the official compact runtime visual follows the same articulated hierarchy. This does not establish RL-environment, locomotion, contact, physical, or hardware parity.'}),
+    source:'Exact pinned MicroDuck policy bytes, Apache-2.0 hierarchy metadata, and the official compact Apache-2.0 robotctl monitor visual. Source-derived contact plants and bounded controllers drive the physical tasks. The renderer consumes observed state; no cosmetic rollers or floor snapping are used. Numerical verification is not hardware calibration.',
+    task:Object.freeze({title:'Physical locomotion, ground contact and ball kick', steps:['Select the task-specific physical plant','Run bounded async Python or WebMCP commands','Inspect actual MuJoCo foot-floor and foot-ball contacts','Compare the requested command with measured motion'], limitations:'Source-derived simulation models, not a calibrated hardware twin. Roller modes have no matched physical plant and are unsupported. A requested skill is not evidence of success.'}),
   }),
 });
 
-export function fidelityNoticeFor(profileId) {
+export function fidelityNoticeFor(profileId, { physical = true } = {}) {
   const profile = PROFILES[profileId];
-  if (profile?.simulationMode === 'kinematic_pose') {
+  if (profile?.simulationMode === 'kinematic_pose' || (profileId === 'unitree' && !physical)) {
     return 'Reference-sourced Unitree G1 mesh and bounded joint-pose visualization. No fixed-step contact plant, balance, locomotion, collision, or hardware validation is active.';
   }
-  if (profile?.simulationMode === 'policy_sim') return 'Reference-aligned MicroDuck policy demonstrator with the official compact runtime visual. Configured lower-bill movement, rollers, floor alignment and browser dynamics remain approximations; no RL-model, contact, locomotion, or hardware parity is claimed.';
+  if (profileId === 'unitree') return 'The Unitree G1 physical workspace uses one browser MuJoCo authority on the pinned 29-DoF fixed-rubber-hand model. Joint commands become bounded actuator torque, never state assignment. Standing is a verified unsupported posture hold; walking, perturbation recovery and dexterous hands are unsupported. Numerical verification is not hardware calibration.';
+  if (profileId === 'microduck') return 'MicroDuck physical tasks use one browser MuJoCo authority, source-derived collision plants and bounded policy control. Rendered body poses follow measured simulation state. Roller modes are unsupported; simulator verification is not hardware calibration.';
+  if (profileId === 'asimov') return 'Asimov 1 uses one browser MuJoCo authority with the pinned Menlo masses, inertias, collision primitives and 23 movable joints; the two source neck bodies remain fixed. Full-resolution source meshes follow observed body poses. Reference ideal motors and spec-informed experimental profiles remain uncalibrated. A separately declared flat-floor standing trial is available. No trained walking, grasping or hardware-calibration claim is made.';
   return FIDELITY_NOTICE;
 }
 

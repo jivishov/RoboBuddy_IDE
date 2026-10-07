@@ -3,8 +3,6 @@
 @media(max-width:420px){.md-button-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.md-deck-head{position:sticky;top:0;z-index:3}.md-capture{grid-template-columns:1fr}.md-capture small{grid-column:1}.md-telemetry{grid-template-columns:96px minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.microduck-control-deck *{scroll-behavior:auto!important;transition:none!important}}
 
-/* Control colors are explicit because the base IDE's dark fallback previously
-   leaked into Calm Light, producing nearly black buttons with dark labels. */
 .microduck-control-deck{--md-control-bg:#202630;--md-control-text:#d8e2e8;--md-control-disabled-bg:#252c35;--md-control-disabled-text:#aeb9c2;--md-control-active-bg:#176f72;--md-control-active-text:#fff}
 :root[data-theme="calm-light"] .microduck-control-deck{--control-bg:#fbfcfc;--md-control-bg:#fbfcfc;--md-control-text:#263737;--md-control-disabled-bg:#edf2f0;--md-control-disabled-text:#5e6e6d;--md-control-active-bg:#2a7975;--md-control-active-text:#fff}
 .microduck-control-deck button,.microduck-control-deck select,.microduck-control-deck input[type="number"]{background:var(--md-control-bg);color:var(--md-control-text)}

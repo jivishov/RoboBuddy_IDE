@@ -1,0 +1,199 @@
+<mujoco model="robobuddy_lekiwi_courier">
+  <compiler angle="radian" autolimits="true"/>
+  <option integrator="implicitfast" timestep="0.002" cone="elliptic" iterations="20" ls_iterations="20" impratio="10" gravity="0 0 -9.81"/>
+  <default>
+    <default class="drive_wheel">
+      <joint type="hinge" armature="0.01" damping="0.004" frictionloss="0.006"/>
+      <velocity kv="2.2" ctrlrange="-4.60061 4.60061" forcerange="-2.94 2.94"/>
+    </default>
+    <default class="passive_roller">
+      <joint type="hinge" armature="2e-06" damping="2e-05" frictionloss="2e-05"/>
+    </default>
+    <default class="roller_contact">
+      <geom group="3" contype="2" conaffinity="1" condim="3" friction="0.85 0.005 0.0001" solref="0.008 1" rgba="0.20 0.22 0.26 1"/>
+    </default>
+    <default class="wheel_hub">
+      <geom group="3" contype="4" conaffinity="0" condim="3" rgba="0.55 0.57 0.60 1"/>
+    </default>
+    <default class="chassis">
+      <geom group="3" contype="4" conaffinity="0" condim="3" rgba="0.36 0.40 0.45 1"/>
+    </default>
+    <default class="lekiwi_floor">
+      <geom type="plane" contype="1" conaffinity="7" condim="3" friction="0.85 0.005 0.0001" rgba="0.42 0.45 0.48 1"/>
+    </default>
+    <default class="so101">
+      <joint damping="1" frictionloss="0.1" armature="0.005"/>
+      <geom group="3" condim="3" contype="1" conaffinity="1" rgba="0.72 0.60 0.18 1"/>
+    </default>
+    <default class="sts3215">
+      <joint damping="0.60" frictionloss="0.052" armature="0.028"/>
+      <position kp="998.22" kv="2.731" forcerange="-2.94 2.94"/>
+    </default>
+    <default class="gripper_collision">
+      <geom group="3" condim="6" contype="1" conaffinity="1" friction="1 5e-3 5e-4" solref="0.01 1" priority="1" rgba="0.78 0.58 0.12 1"/>
+    </default>
+    <default class="workcell">
+      <geom group="3" condim="3" contype="1" conaffinity="7" friction="0.8 0.005 0.0001" solref="0.01 1" rgba="0.52 0.56 0.60 1"/>
+    </default>
+    <default class="beaker">
+      <geom group="3" condim="6" contype="1" conaffinity="1" friction="0.9 0.01 0.0005" solref="0.01 1" rgba="0.62 0.78 0.88 0.85"/>
+    </default>
+    <default class="beaker_grip">
+      <geom group="3" condim="6" contype="1" conaffinity="1" friction="1.1 0.02 0.001" solref="0.008 1" priority="1" rgba="0.55 0.74 0.86 0.95"/>
+    </default>
+  </default>
+  <worldbody>
+    <light pos="0.3 -0.3 2" dir="0 0 -1"/>
+    <geom name="lekiwi_floor" class="lekiwi_floor" size="6 6 0.1" pos="0 0 0"/>
+    <!-- Configured 290 x 290 mm laboratory transfer bench, legacy lekiwi-01-beaker-courier. -->
+    <geom name="lekiwi_transfer_worktop" class="workcell" type="box" size="0.145 0.145 0.012" pos="0.305 -0.39 0.199"/>
+    <geom name="lekiwi_transfer_back_panel" class="workcell" type="box" size="0.016 0.125 0.0995" pos="0.206 -0.39 0.0995" rgba="0.40 0.43 0.47 1"/>
+    <!-- Painted receiving-zone marker. It carries no load and has no collision geometry. -->
+    <geom name="lekiwi_delivery_marker" type="box" size="0.045 0.045 0.0005" pos="0.242928 -0.370144 0.2115" contype="0" conaffinity="0" group="2" rgba="0.16 0.72 0.36 0.55"/>
+    <body name="empty_beaker" pos="0.305 -0.292 0.211">
+      <freejoint name="empty_beaker_free"/>
+      <inertial pos="0 0 0.032" mass="0.06" diaginertia="5.6e-05 5.6e-05 4.2e-05"/>
+      <geom name="beaker_bottom" class="beaker" type="cylinder" size="0.037 0.0015" pos="0 0 0.0015" mass="0"/>
+      <geom name="beaker_wall_0" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="0.0355 0 0.0375" euler="0 0 0" mass="0"/>
+      <geom name="beaker_wall_1" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="0.0251022907 0.0251022907 0.0375" euler="0 0 0.785398163" mass="0"/>
+      <geom name="beaker_wall_2" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="2.17374807e-18 0.0355 0.0375" euler="0 0 1.57079633" mass="0"/>
+      <geom name="beaker_wall_3" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="-0.0251022907 0.0251022907 0.0375" euler="0 0 2.35619449" mass="0"/>
+      <geom name="beaker_wall_4" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="-0.0355 4.34749614e-18 0.0375" euler="0 0 3.14159265" mass="0"/>
+      <geom name="beaker_wall_5" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="-0.0251022907 -0.0251022907 0.0375" euler="0 0 3.92699082" mass="0"/>
+      <geom name="beaker_wall_6" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="-6.52124421e-18 -0.0355 0.0375" euler="0 0 4.71238898" mass="0"/>
+      <geom name="beaker_wall_7" class="beaker" type="box" size="0.0015 0.0138 0.0345" pos="0.0251022907 -0.0251022907 0.0375" euler="0 0 5.49778714" mass="0"/>
+      <geom name="beaker_rim_0" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="0.0355 0 0.073" euler="0 0 0" mass="0"/>
+      <geom name="beaker_rim_1" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="0.0251022907 0.0251022907 0.073" euler="0 0 0.785398163" mass="0"/>
+      <geom name="beaker_rim_2" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="2.17374807e-18 0.0355 0.073" euler="0 0 1.57079633" mass="0"/>
+      <geom name="beaker_rim_3" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="-0.0251022907 0.0251022907 0.073" euler="0 0 2.35619449" mass="0"/>
+      <geom name="beaker_rim_4" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="-0.0355 4.34749614e-18 0.073" euler="0 0 3.14159265" mass="0"/>
+      <geom name="beaker_rim_5" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="-0.0251022907 -0.0251022907 0.073" euler="0 0 3.92699082" mass="0"/>
+      <geom name="beaker_rim_6" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="-6.52124421e-18 -0.0355 0.073" euler="0 0 4.71238898" mass="0"/>
+      <geom name="beaker_rim_7" class="beaker_grip" type="box" size="0.003 0.0138 0.006" pos="0.0251022907 -0.0251022907 0.073" euler="0 0 5.49778714" mass="0"/>
+    </body>
+    <body name="lekiwi_base" pos="0 0 0.0508">
+      <freejoint name="lekiwi_base_free"/>
+      <inertial pos="0.001587 0.011732 0.006636" mass="6.658975" fullinertia="0.023017161 0.023916263 0.038405753 0.001177072 0.000923805 0.000196823"/>
+      <geom name="lekiwi_chassis" class="chassis" type="cylinder" size="0.1075 0.03" pos="0 0 0.02" mass="0"/>
+      <site name="lekiwi_base_origin" pos="0 0 0" size="0.005" group="3"/>
+      <body name="lekiwi_left_wheel" pos="0.059193 0.092659 0" xyaxes="0 0 1 -0.866025 0.5 0">
+        <joint name="base_left_wheel" class="drive_wheel" axis="0 0 1"/>
+        <geom name="lekiwi_left_wheel_hub" class="wheel_hub" type="cylinder" size="0.03 0.019414" mass="0.401661"/>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_left_roller_a" pos="0.041093 0 0.009707">
+            <joint name="lekiwi_left_roller_a" class="passive_roller" axis="0 1 0"/>
+            <geom name="lekiwi_left_roller_a" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="0 1 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_left_roller_b" pos="0.0355875819 0.0205465 -0.009707">
+            <joint name="lekiwi_left_roller_b" class="passive_roller" axis="-0.5 0.866025404 0"/>
+            <geom name="lekiwi_left_roller_b" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="-0.5 0.866025404 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+      </body>
+      <body name="lekiwi_back_wheel" pos="-0.119842 -0.000379 0" xyaxes="0 0 1 0 -1 0">
+        <joint name="base_back_wheel" class="drive_wheel" axis="0 0 1"/>
+        <geom name="lekiwi_back_wheel_hub" class="wheel_hub" type="cylinder" size="0.03 0.019414" mass="0.401661"/>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_back_roller_a" pos="0.041093 0 0.009707">
+            <joint name="lekiwi_back_roller_a" class="passive_roller" axis="0 1 0"/>
+            <geom name="lekiwi_back_roller_a" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="0 1 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_back_roller_b" pos="0.0355875819 0.0205465 -0.009707">
+            <joint name="lekiwi_back_roller_b" class="passive_roller" axis="-0.5 0.866025404 0"/>
+            <geom name="lekiwi_back_roller_b" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="-0.5 0.866025404 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+      </body>
+      <body name="lekiwi_right_wheel" pos="0.060649 -0.09228 0" xyaxes="0 0 1 0.866025 0.5 0">
+        <joint name="base_right_wheel" class="drive_wheel" axis="0 0 1"/>
+        <geom name="lekiwi_right_wheel_hub" class="wheel_hub" type="cylinder" size="0.03 0.019414" mass="0.401661"/>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_right_roller_a" pos="0.041093 0 0.009707">
+            <joint name="lekiwi_right_roller_a" class="passive_roller" axis="0 1 0"/>
+            <geom name="lekiwi_right_roller_a" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="0 1 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_right_roller_b" pos="0.0355875819 0.0205465 -0.009707">
+            <joint name="lekiwi_right_roller_b" class="passive_roller" axis="-0.5 0.866025404 0"/>
+            <geom name="lekiwi_right_roller_b" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="-0.5 0.866025404 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+      </body>
+      <body name="arm_base" pos="0.034846 0.000231 0.03914" childclass="so101">
+        <inertial pos="0.0137179 -5.19711e-05 0.0334843" mass="0.147"
+          fullinertia="0.000114686 0.000136117 0.000130364 -4.59787e-07 4.97151e-06 9.75275e-08"/>
+        <geom name="arm_base_proxy" type="box" size="0.045 0.045 0.03" pos="0 0 0.03" contype="0" conaffinity="0" group="2"/>
+        <body name="arm_shoulder" pos="0.0388353 0 0.0624" quat="0 0 -1 0">
+          <joint axis="0 0 1" name="arm_shoulder_pan" type="hinge" range="-1.91986 1.91986" class="sts3215"/>
+          <inertial pos="-0.0307604 -1.7e-05 -0.0252713" mass="0.100006"
+            fullinertia="8.3759e-05 8.10403e-05 2.39783e-05 7.55525e-08 -1.16342e-06 1.54663e-07"/>
+          <geom name="arm_shoulder_motor_proxy" type="box" pos="-0.030399 0.000422 -0.0387" quat="1 1 1 -1" size="0.023 0.015 0.01"/>
+          <geom name="arm_shoulder_holder_proxy" type="box" pos="-0.025 0 0" quat="1 1 -1 1" size="0.038 0.025 0.02"/>
+          <body name="arm_upper" pos="-0.0303992 -0.0182778 -0.0542" quat="1 -1 -1 -1">
+            <joint axis="0 0 1" name="arm_shoulder_lift" type="hinge" range="-1.7453293 1.7453293" class="sts3215"/>
+            <inertial pos="-0.089847 -0.008382 0.018409" mass="0.103"
+              fullinertia="4.08002e-05 0.000147318 0.000142487 -1.97819e-05 -4.03016e-08 8.97326e-09"/>
+            <geom name="arm_upper_motor_proxy" type="box" pos="-0.06 0 0.02" quat="0 -1 1 0" size="0.01 0.07 0.03"/>
+            <geom name="arm_upper_link_proxy" type="box" pos="-0.12 -0.014 0.0182" quat="0 1 0 0" size="0.01 0.02 0.015"/>
+            <body name="arm_lower" pos="-0.11257 -0.028 0" quat="1 0 0 1">
+              <joint axis="0 0 1" name="arm_elbow_flex" type="hinge" range="-1.69 1.69" class="sts3215"/>
+              <inertial pos="-0.098070 0.0032438 0.018283" mass="0.104"
+                fullinertia="2.87438e-05 0.000159844 0.00014529 7.41152e-06 1.26409e-06 -4.90188e-08"/>
+              <geom name="arm_lower_link_proxy" type="box" pos="-0.05 0 0.0182" quat="0 1 0 0" size="0.07 0.01 0.03"/>
+              <geom name="arm_lower_motor_proxy" type="box" pos="-0.125 0.005 0.018" quat="0 -1 0 0" size="0.023 0.013 0.018"/>
+              <body name="arm_wrist" pos="-0.1349 0.0052 0" quat="1 0 0 -1">
+                <joint axis="0 0 1" name="arm_wrist_flex" type="hinge" range="-1.658063 1.658063" class="sts3215"/>
+                <inertial pos="-0.000103312 -0.0386143 0.0281156" mass="0.079"
+                  fullinertia="3.68263e-05 2.5391e-05 2.1e-05 1.7893e-08 -5.28128e-08 3.6412e-06"/>
+                <geom name="arm_wrist_motor_proxy" type="box" pos="0 -0.0424 0.0256" quat="1 1 1 -1" size="0.029 0.015 0.018"/>
+                <geom name="arm_wrist_link_proxy" type="box" pos="0 -0.02 0.0191" quat="1 -1 -1 -1" size="0.027 0.01 0.03"/>
+                <body name="arm_gripper_body" pos="5.55112e-17 -0.0611 0.0181" quat="0.0172091 -0.0172091 0.706897 0.706897">
+                  <joint axis="0 0 1" name="arm_wrist_roll" type="hinge" range="-2.7438473 2.7438473" class="sts3215"/>
+                  <inertial pos="0.000214 0.000245 -0.025187" mass="0.087"
+                    fullinertia="2.75087e-05 4.33657e-05 3.45059e-05 -3.35241e-07 -5.7352e-06 -5.17847e-08"/>
+                  <geom name="fixed_jaw_box1" class="gripper_collision" type="box" size="0.0325 0.015 0.015" pos="-0.0025 0 -0.022"/>
+                  <geom name="fixed_jaw_box2" class="gripper_collision" type="box" size="0.01 0.015 0.005" pos="-0.024 0 -0.04"/>
+                  <geom name="fixed_jaw_tip" class="gripper_collision" type="capsule" size="0.0011 0.002" pos="-0.009 0 -0.103" euler="1.57 0 0"/>
+                  <geom name="fixed_jaw_pad1" class="gripper_collision" type="box" size="0.001 0.004 0.004" pos="-0.009 0 -0.0982"/>
+                  <geom name="fixed_jaw_pad2" class="gripper_collision" type="box" size="0.001 0.005 0.006" pos="-0.0108 0 -0.0905"/>
+                  <geom name="fixed_jaw_pad3" class="gripper_collision" type="box" size="0.001 0.009 0.008" pos="-0.0125 0 -0.0727"/>
+                  <geom name="fixed_jaw_pad4" class="gripper_collision" type="box" size="0.001 0.01 0.008" pos="-0.0143 0 -0.053"/>
+                  <site group="3" name="arm_tool_site" pos="0.012 -0.000218 -0.098127" quat="1 0 1 0"/>
+                  <body name="arm_wrist_camera">
+                    <geom name="arm_camera_box1" class="gripper_collision" type="box" size="0.015 0.015 0.003" pos="-0.0025 0.03 -0.03" mass="0.0040540541"/>
+                    <geom name="arm_camera_box2" class="gripper_collision" type="box" size="0.021 0.021 0.003" pos="-0.001 0.06 -0.04" euler="-0.55 0 0" mass="0.0079459459"/>
+                  </body>
+                  <body name="arm_moving_jaw" pos="0.0202 0.0188 -0.0234" quat="1 1 0 0">
+                    <joint axis="0 0 1" name="arm_gripper" type="hinge" range="-0.174533 1.7453292" class="sts3215"/>
+                    <inertial pos="-0.001575 -0.0300244 0.0192755" mass="0.012"
+                      fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07"/>
+                    <geom name="moving_jaw_box1" class="gripper_collision" type="box" size="0.01 0.01 0.015" pos="0 -0.013 0.019"/>
+                    <geom name="moving_jaw_tip" class="gripper_collision" type="capsule" size="0.0011 0.002" pos="-0.0118 -0.0765 0.019" euler="0 1.57 0"/>
+                    <geom name="moving_jaw_pad1" class="gripper_collision" type="box" size="0.001 0.004 0.004" pos="-0.0113 -0.076 0.01875"/>
+                    <geom name="moving_jaw_pad2" class="gripper_collision" type="box" size="0.001 0.005 0.006" pos="-0.0093 -0.067 0.01875"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <velocity class="drive_wheel" name="base_left_wheel" joint="base_left_wheel"/>
+    <velocity class="drive_wheel" name="base_back_wheel" joint="base_back_wheel"/>
+    <velocity class="drive_wheel" name="base_right_wheel" joint="base_right_wheel"/>
+    <position class="sts3215" name="arm_shoulder_pan" joint="arm_shoulder_pan" ctrlrange="-1.91986 1.91986"/>
+    <position class="sts3215" name="arm_shoulder_lift" joint="arm_shoulder_lift" ctrlrange="-1.74533 1.74533"/>
+    <position class="sts3215" name="arm_elbow_flex" joint="arm_elbow_flex" ctrlrange="-1.69 1.69"/>
+    <position class="sts3215" name="arm_wrist_flex" joint="arm_wrist_flex" ctrlrange="-1.65806 1.65806"/>
+    <position class="sts3215" name="arm_wrist_roll" joint="arm_wrist_roll" ctrlrange="-2.74385 2.74385"/>
+    <position class="sts3215" name="arm_gripper" joint="arm_gripper" ctrlrange="-0.17453 1.74533"/>
+  </actuator>
+</mujoco>

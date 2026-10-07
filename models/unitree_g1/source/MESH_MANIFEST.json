@@ -1,0 +1,288 @@
+{
+ "schema": "robobuddy.unitree-g1.mesh-manifest.v1",
+ "upstream": {
+  "repository": "unitreerobotics/unitree_ros",
+  "revision": "dd4fa6866e523ad61324f658d63736e4eda3a6e4",
+  "path": "robots/g1_description/meshes",
+  "license": "BSD-3-Clause"
+ },
+ "derivation": "convex hull of each source collision mesh; MuJoCo collides mesh geoms through their convex hull, so this is collision-identical to the source model",
+ "generator": "scripts/prepare_unitree_g1_assets.py",
+ "meshes": [
+  {
+   "mesh": "head_link.STL",
+   "sourceSha256": "d297328b3569fc85074355e76cba6c889d19de5361224bcd3c5b8ce82e13b9b6",
+   "sourceBytes": 337584,
+   "sourceTriangles": 6750,
+   "hullSha256": "b9a1a6d6ca3a5372d2330d9dc4047f040bbe708559510bb5fc7d8e7d76f60ee9",
+   "hullBytes": 85284,
+   "hullVertices": 854,
+   "hullTriangles": 1704,
+   "hullVolumeM3": 0.002666101938
+  },
+  {
+   "mesh": "left_ankle_pitch_link.STL",
+   "sourceSha256": "d49e3abc6f5b12e532062cd575b87b5ef40cd2a3fc18f54a1ca5bba4f773d51d",
+   "sourceBytes": 71184,
+   "sourceTriangles": 1422,
+   "hullSha256": "2f632718c0e79e798ca222ef055d7894ee1ac1720cb2aafbc2c045396e24736a",
+   "hullBytes": 12784,
+   "hullVertices": 129,
+   "hullTriangles": 254,
+   "hullVolumeM3": 1.3139724e-05
+  },
+  {
+   "mesh": "left_elbow_link.STL",
+   "sourceSha256": "fa752198accd104d5c4c3a01382e45165b944fbbc5acce085059223324e5bed3",
+   "sourceBytes": 88784,
+   "sourceTriangles": 1774,
+   "hullSha256": "c18aea1cc5ad3534c00140895e50ff4ddf89b7a59b9a28bb164f44f2472b8e45",
+   "hullBytes": 42184,
+   "hullVertices": 423,
+   "hullTriangles": 842,
+   "hullVolumeM3": 0.000319057104
+  },
+  {
+   "mesh": "left_hip_pitch_link.STL",
+   "sourceSha256": "4725168105ee768ee31638ef22b53f6be2d7641bfd7cfefe803488d884776fa4",
+   "sourceBytes": 181684,
+   "sourceTriangles": 3632,
+   "hullSha256": "9d0e7fc56b3f46bcc20d7a520f55fbe59c40ba96d20c45bc882dbca57f0c766e",
+   "hullBytes": 91084,
+   "hullVertices": 912,
+   "hullTriangles": 1820,
+   "hullVolumeM3": 0.000565274038
+  },
+  {
+   "mesh": "left_hip_roll_link.STL",
+   "sourceSha256": "91f25922ee8a7c3152790051bebad17b4d9cd243569c38fe340285ff93a97acf",
+   "sourceBytes": 192184,
+   "sourceTriangles": 3842,
+   "hullSha256": "34701f4f92f1e62dba3c3698b63a2967e85cbc660f8bffa4a3f8e0f73d9690ce",
+   "hullBytes": 100884,
+   "hullVertices": 1010,
+   "hullTriangles": 2016,
+   "hullVolumeM3": 0.001027737759
+  },
+  {
+   "mesh": "left_hip_yaw_link.STL",
+   "sourceSha256": "a16d88aa6ddac8083aa7ad55ed317bea44b1fa003d314fba88965b7ed0f3b55b",
+   "sourceBytes": 296284,
+   "sourceTriangles": 5924,
+   "hullSha256": "c4735aa1a64f5046b0e1fafd22d7db54bb61b85a0210dcdf1370dd33e526ef13",
+   "hullBytes": 67284,
+   "hullVertices": 674,
+   "hullTriangles": 1344,
+   "hullVolumeM3": 0.001768429602
+  },
+  {
+   "mesh": "left_knee_link.STL",
+   "sourceSha256": "8d92b9e3d3a636761150bb8025e32514c4602b91c7028d523ee42b3e632de477",
+   "sourceBytes": 854884,
+   "sourceTriangles": 17096,
+   "hullSha256": "7e9f538b9f3d5dc1908095751bc617a6338b6a67ee441ff43ea06fdedada9ca9",
+   "hullBytes": 77984,
+   "hullVertices": 781,
+   "hullTriangles": 1558,
+   "hullVolumeM3": 0.001572660411
+  },
+  {
+   "mesh": "left_shoulder_yaw_link.STL",
+   "sourceSha256": "1aa97e9748e924336567992181f78c7cd0652fd52a4afcca3df6b2ef6f9e712e",
+   "sourceBytes": 249184,
+   "sourceTriangles": 4982,
+   "hullSha256": "8b60ec0371f798ca23b02a91383d47c4131cca7e19daa169b62852f43040c266",
+   "hullBytes": 69484,
+   "hullVertices": 696,
+   "hullTriangles": 1388,
+   "hullVolumeM3": 0.000584574949
+  },
+  {
+   "mesh": "left_wrist_pitch_link.STL",
+   "sourceSha256": "b251d8e05047f695d0f536cd78c11973cfa4e78d08cfe82759336cc3471de3a9",
+   "sourceBytes": 85984,
+   "sourceTriangles": 1718,
+   "hullSha256": "da9407faaa81654d10b1aa2fe04ead3423c4d000e7a89db940439f488a4acc26",
+   "hullBytes": 53184,
+   "hullVertices": 533,
+   "hullTriangles": 1062,
+   "hullVolumeM3": 0.000233976239
+  },
+  {
+   "mesh": "left_wrist_roll_link.STL",
+   "sourceSha256": "edc387c9a0ba8c2237e9b296d32531426fabeb6f53e58df45c76106bca74148c",
+   "sourceBytes": 356184,
+   "sourceTriangles": 7122,
+   "hullSha256": "4bfd2a9d7ad6123920806da60c339c2d0f4640da1778dedd695fb41b84e20bcd",
+   "hullBytes": 193484,
+   "hullVertices": 1936,
+   "hullTriangles": 3868,
+   "hullVolumeM3": 0.000127371822
+  },
+  {
+   "mesh": "left_wrist_yaw_link.STL",
+   "sourceSha256": "83f8fb3a726bf9613d65dd14f0f447cb918c3c95b3938042a0c9c09749267d3b",
+   "sourceBytes": 318684,
+   "sourceTriangles": 6372,
+   "hullSha256": "c21a991556b81350b7b7315d846cceee7369af18f24a2ad3f7eab87c4d1ccbc0",
+   "hullBytes": 163584,
+   "hullVertices": 1637,
+   "hullTriangles": 3270,
+   "hullVolumeM3": 0.000128446113
+  },
+  {
+   "mesh": "logo_link.STL",
+   "sourceSha256": "8571a0a19bc4916fa55f91449f51d5fdefd751000054865a842449429d5f155b",
+   "sourceBytes": 243384,
+   "sourceTriangles": 4866,
+   "hullSha256": "eac18128ba81d3324e4904a0f1d527cfd931e71caa9c6dbe61557e44cf8bb6da",
+   "hullBytes": 121284,
+   "hullVertices": 1214,
+   "hullTriangles": 2424,
+   "hullVolumeM3": 0.00046990978
+  },
+  {
+   "mesh": "pelvis_contour_link.STL",
+   "sourceSha256": "5cc5c2c7a312329e3feeb2b03d3fc09fc29705bd01864f6767e51be959662420",
+   "sourceBytes": 1805184,
+   "sourceTriangles": 36102,
+   "hullSha256": "b2783f0fc56d8e493ea0333b2332325f151cedaed7570db2cf517283fbc1ad43",
+   "hullBytes": 558184,
+   "hullVertices": 5583,
+   "hullTriangles": 11162,
+   "hullVolumeM3": 0.001306824773
+  },
+  {
+   "mesh": "right_ankle_pitch_link.STL",
+   "sourceSha256": "15be426539ec1be70246d4d82a168806db64a41301af8b35c197a33348c787a9",
+   "sourceBytes": 71184,
+   "sourceTriangles": 1422,
+   "hullSha256": "04c21d43f47c587207ca0a4f8f1061dd92726b668d0176df655872aa92b40fac",
+   "hullBytes": 12784,
+   "hullVertices": 129,
+   "hullTriangles": 254,
+   "hullVolumeM3": 1.3139724e-05
+  },
+  {
+   "mesh": "right_elbow_link.STL",
+   "sourceSha256": "1be925d7aa268bb8fddf5362b9173066890c7d32092c05638608126e59d1e2ab",
+   "sourceBytes": 88784,
+   "sourceTriangles": 1774,
+   "hullSha256": "cba6919968b902ba613e8b9fa25ab1bad32d64cadd47386dccc07ec126e1820d",
+   "hullBytes": 41684,
+   "hullVertices": 418,
+   "hullTriangles": 832,
+   "hullVolumeM3": 0.000319055886
+  },
+  {
+   "mesh": "right_hip_pitch_link.STL",
+   "sourceSha256": "e4f3c99d7f4a7d34eadbef9461fc66e3486cb5442db1ec50c86317d459f1a9c6",
+   "sourceBytes": 181284,
+   "sourceTriangles": 3624,
+   "hullSha256": "8f1a50aa2944b75c0b0c25c0b2418a31af837387effbfd8a23ce6bc080dc7603",
+   "hullBytes": 90484,
+   "hullVertices": 906,
+   "hullTriangles": 1808,
+   "hullVolumeM3": 0.000565272747
+  },
+  {
+   "mesh": "right_hip_roll_link.STL",
+   "sourceSha256": "4c254ef66a356f492947f360dd931965477b631e3fcc841f91ccc46d945d54f6",
+   "sourceBytes": 192684,
+   "sourceTriangles": 3852,
+   "hullSha256": "24b4923be28b632ad0284dbd5198dfd64359c02ac45862fa6f3091f51a5227b2",
+   "hullBytes": 101484,
+   "hullVertices": 1016,
+   "hullTriangles": 2028,
+   "hullVolumeM3": 0.001027733844
+  },
+  {
+   "mesh": "right_hip_yaw_link.STL",
+   "sourceSha256": "e479c2936ca2057e9eb2f7dff6c189b7419d7b8484dea0b298cbb36a2a6aa668",
+   "sourceBytes": 296284,
+   "sourceTriangles": 5924,
+   "hullSha256": "d9ca9362702ff1b9574103ad62aa86b9716ff2a0bebc1348e5de7456a00621db",
+   "hullBytes": 67184,
+   "hullVertices": 673,
+   "hullTriangles": 1342,
+   "hullVolumeM3": 0.001768422658
+  },
+  {
+   "mesh": "right_knee_link.STL",
+   "sourceSha256": "63c4008449c9bbe701a6e2b557b7a252e90cf3a5abcf54cee46862b9a69f8ec8",
+   "sourceBytes": 852284,
+   "sourceTriangles": 17044,
+   "hullSha256": "a685ec4f649f0a2f6f81e42bb3efe9a75df3418987da376ff71166a0874ea13d",
+   "hullBytes": 78084,
+   "hullVertices": 782,
+   "hullTriangles": 1560,
+   "hullVolumeM3": 0.001572615409
+  },
+  {
+   "mesh": "right_shoulder_yaw_link.STL",
+   "sourceSha256": "a0b76489271da0c72461a344c9ffb0f0c6e64f019ea5014c1624886c442a2fe5",
+   "sourceBytes": 249984,
+   "sourceTriangles": 4998,
+   "hullSha256": "99204380a95f9054ae41efe8c7ba2fef24070c624815555084b8a922734b1d96",
+   "hullBytes": 69584,
+   "hullVertices": 697,
+   "hullTriangles": 1390,
+   "hullVolumeM3": 0.000584578953
+  },
+  {
+   "mesh": "right_wrist_pitch_link.STL",
+   "sourceSha256": "d22f8f3b3127f15a63e5be1ee273cd5075786c3142f1c3d9f76cbf43d2a26477",
+   "sourceBytes": 79584,
+   "sourceTriangles": 1590,
+   "hullSha256": "cc0105e70128791dd829b0d30675975cfba9fc428ca3294a5ab5b7f5ba9eeb30",
+   "hullBytes": 51184,
+   "hullVertices": 513,
+   "hullTriangles": 1022,
+   "hullVolumeM3": 0.000233973786
+  },
+  {
+   "mesh": "right_wrist_roll_link.STL",
+   "sourceSha256": "a7ee9212ff5b94d6cb7f52bb1bbf3f352194d5b598acff74f4c77d340c5b344f",
+   "sourceBytes": 356084,
+   "sourceTriangles": 7120,
+   "hullSha256": "1f5eee241f93268a36370594e8084c5c8b59bbc5139af8a93bf6e1bd73c1573e",
+   "hullBytes": 197184,
+   "hullVertices": 1973,
+   "hullTriangles": 3942,
+   "hullVolumeM3": 0.000127373174
+  },
+  {
+   "mesh": "right_wrist_yaw_link.STL",
+   "sourceSha256": "bc9dece2d12509707e0057ba2e48df8f3d56db0c79410212963a25e8a50f61a6",
+   "sourceBytes": 341484,
+   "sourceTriangles": 6828,
+   "hullSha256": "41c86aa2cc435484eb05f4bf3abc033e8aedf2de629369a631c29cf8337515fc",
+   "hullBytes": 176584,
+   "hullVertices": 1767,
+   "hullTriangles": 3530,
+   "hullVolumeM3": 0.000128456602
+  },
+  {
+   "mesh": "torso_link.STL",
+   "sourceSha256": "e96d023f0368a4e3450b86ca5d4f10227d8141156a373e7da8cb3c93266523e0",
+   "sourceBytes": 2232984,
+   "sourceTriangles": 44658,
+   "hullSha256": "195163b4392dc1b6f5a275c7f58d94f640526baa1c38bfb3522dec999b64f80b",
+   "hullBytes": 126484,
+   "hullVertices": 1266,
+   "hullTriangles": 2528,
+   "hullVolumeM3": 0.006979122287
+  },
+  {
+   "mesh": "waist_support_link.STL",
+   "sourceSha256": "1fae9e1bb609848a1667d32eed8d6083ae443538a306843056a2a660f1b2926a",
+   "sourceBytes": 150484,
+   "sourceTriangles": 3008,
+   "hullSha256": "6be00d90dad39b9b73dda4633f6244021bc4e0b0bd954c09221b16da90e93a41",
+   "hullBytes": 65984,
+   "hullVertices": 661,
+   "hullTriangles": 1318,
+   "hullVolumeM3": 0.000508855174
+  }
+ ]
+}

@@ -1,81 +1,37 @@
-# RoboBuddy IDE
+# RoboBuddy IDE — Physics Preview
 
-[Open the live demo](https://jivishov.github.io/RoboBuddy_IDE/)
+The complete v0.2.0 application is deployed at [RoboBuddy IDE](https://jivishov.github.io/RoboBuddy_IDE/). This repository replaces the original application with the source snapshot from `jivishov/RoboBuddy_IDE_v020` at commit `4ea0655dbc7e58e162f6d847acef595f26a48973`. Historical model and validation provenance remains tied to its recorded source revisions.
 
-RoboBuddy IDE is a browser-based robotics learning environment where people write Python and watch modeled robots carry out the program in a live 3D scene. It brings an IDE-style workspace, visible simulation controls, and optional WebMCP collaboration into one approachable experience.
+## Visitors and help
 
-## About
+The root [visitor overview](index.html) introduces the available workspaces without loading the physics runtime. [Launch the IDE](ide.html) or [open OpenArm directly](ide.html?robot=openarm). The IDE Help menu opens the [OpenArm manual](guides/openarm.html) and [WebMCP manual](guides/webmcp.html) in separate tabs so the active workcell is not replaced. Both manuals support printing and include tested example files. Explicit older root URLs (`?ci=...`, `?view=ide`, `?robot=...` or `#ide`) redirect to the IDE at the same directory depth.
 
-RoboBuddy IDE makes robot programming concrete: the source editor, diagnostics, task controls, and 3D scene remain visible together. Learners can explore robot behavior step by step, while builders can use a focused, opt-in agent workflow without giving the agent hidden access to the application.
+The general OpenArm laboratory builder is **library-optional**: agents can author unfamiliar rigid equipment through rotated primitives, hollow profiles, repetition, convex extrusions and validated numeric convex meshes. The authored bench, inventory, unresolved items, provenance and physical task evidence are kept separate. See [SceneSpec v2 scope and contracts](docs/physics/GENERAL_LAB_SCENE_BUILDER.md). There is no independent arbitrary-photo reconstruction, liquid/chemistry model, general articulated-equipment authoring or hardware validation.
 
-**Repository description:** Browser-based robotics IDE for Python, live 3D simulation, and bounded WebMCP collaboration.
+## Physics workspaces
 
-## What you can explore
+Version `0.2.0-alpha.2` completes the SO-101 physical migration milestone: the normal SO-101 workspace, live Python, renderer, task evaluator, and bounded WebMCP controls share one authoritative browser MuJoCo PhysicsSession.
 
-- Write and inspect Python across a small workspace containing the main program, trajectories, robot configuration, and workcell.
-- Run, pause, step, run to cursor, stop, and reset simulations from the visible control bar.
-- Explore modeled SO-101, OpenArm, LeKiwi, Unitree G1, and MicroDuck workspaces.
-- Watch modeled robot state, diagnostics, contacts, and task progress in the 3D simulator.
-- In a WebMCP-capable browser, turn on **Agent Assist** for a deliberately narrow, session-only collaboration surface.
+OpenArm V2 now uses the same source-matched convex collision components for both physics and rendering, including the palm and each independently observed finger. The workcell has physical table legs, a robot mounting column and a connected ring support. The dry-vessel reference sequence uses bounded quintic targets and an explicitly simulator-designed bias-assisted servo; grasp/placement evaluation requires sustained contacts and stable support. No object attachment or teleportation is used.
 
-## WebMCP collaboration
+With Agent Assist enabled, `inspect_openarm_workcell`, `manage_openarm_workcell`, and `run_openarm_program` support staged creation of trays, compartment racks, platforms, vials, blocks, passive spring buttons and custom primitive assemblies. Applying equipment explicitly resets into a new checked scene revision. Joint or Cartesian tool-reference programs can wait for actual grasp, release, support, placement or equipment-joint observations. A sample robot-driven button press and a vial settling into an agent-created tray are covered by real MuJoCo worker tests. These are rigid-body simulation capabilities, not hardware calibration, automatic collision-free planning, or a simulation of laboratory chemistry. See [OpenArm controls, equipment and evidence](docs/physics/OPENARM_REFINEMENT.md).
 
-Agent Assist is off by default and requires a person to enable it for the current browser session. When available, it lets an agent inspect the selected task, read the visible draft, inspect modeled simulation state, focus source lines, run the unsaved program, and propose a small cooperative edit for the person to review.
+Phase 5C migrates MicroDuck onto the same single-authority backend as a matched-environment integration. The physical workspace pairs the exact deployed policy bytes and the deployed 61-value controller contract with a reconciled physical/RL environment, so locomotion, kicking and fall recovery come out of foot-floor and foot-ball contact. Removing actuation or traction removes the propulsion; a kick miss stays a miss; a failed recovery is reported as a failure; policy/model mismatch is rejected. Roller-mode locomotion and roller crouch have no matched physical plant at the pinned revision and are unsupported in physical mode rather than routed elsewhere. MicroDuck now exposes only three physical tasks: locomotion (default), ground contact, and ball kick. The legacy articulated policy demonstrator is retired. Rendered bodies use one authoritative MuJoCo body-pose snapshot, and no cosmetic roller attachments are created in physical tasks. See `docs/physics/microduck-provenance.md`.
 
-Robot-specific controls stay bounded to each browser model. MicroDuck adds its catalog-bounded policy commands and declarative visual cues. SO-101 adds profile-limited joint/gripper actions, LeKiwi adds profile-limited arm/base actions with automatic stopping for bounded base-velocity calls, and Unitree G1 adds profile-limited named-joint pose control. OpenArm intentionally keeps the shared inspect/run/edit workflow because its bimanual workcell is sequence- and collision-state-dependent.
+Phase 5D migrates the Unitree G1 29-DoF fixed-rubber-hand robot onto the same single-authority backend as a separate physical workspace, beside the retained kinematic pose workspace. The free-base plant has gravity, a floor, named foot contact primitives, self-contact and a declared free object. Actuation follows Unitree's own low-level motor law, bounded by the source joint, velocity and effort limits, and requested, accepted and measured joint values are reported separately. Standing is a bounded posture hold that the free-base gate verifies, and it is measured against its own negative controls: the exact source FixStand gains topple this model, disabling the motors topples it, and a 0.20 m/s forward impulse topples it. Perturbation recovery, walking, dexterous-hand control and hardware calibration are unsupported and are not exposed. See `docs/physics/unitree-g1-provenance.md`.
 
-The agent surface cannot save or publish source, operate physical hardware, administer devices or networks, or access hidden application data. Temporary agent edits are discarded on refresh unless the person explicitly saves a local draft.
+The supported SO-101 task is a synthetic rigid-body block-transfer benchmark. Simulator validation is not hardware calibration. LeKiwi, MicroDuck and Unitree G1 have separate physical workspaces. Panda remains a separate later robot-specific migration work item.
 
-## Screenshots
+### Asimov 1 physical preview
 
-### MicroDuck policy simulator
+Select **Asimov 1 — Physical** to use six user-facing experiment/sensitivity workspaces. **Actuator Lab (experimental)** is the default fixed-pelvis laboratory. **Whole-Body Dynamics (experimental)** is the primary free-base workspace for agent-generated coordinated motion. Standing Trial, Sensor Standing, Delayed Sensor Standing and Ankle Loss Standing provide progressively more specific balance experiments.
 
-![MicroDuck policy simulator with Python workspace, live 3D scene, and control deck](https://jivishov.github.io/RoboBuddy_IDE/screenshot/duck.png)
+The source model has **23 hinges and a fixed neck**. Python and opt-in WebMCP send bounded joint commands; full source STL visuals follow measured body poses. Added ideal/experimental actuator behavior and controller gains remain simulator estimates; balance recovery, grasping and hardware calibration are not supplied. See [Asimov provenance, controls and validation](docs/physics/asimov-provenance.md).
 
-The MicroDuck workspace pairs an articulated browser simulation with a compact control deck and an editable Python routine.
+The original **Mounted Joint Lab**, **Free-base Dynamics** and **Passive Gravity Drop** are no longer normal selectable tasks. Their models and validation paths remain registered internally as source/reference fixtures: mounted isolates joint dynamics, free-base anchors the source-derived floating-base baseline, and passive drop remains a gravity/contact negative control. Experimental actuator models continue to be generated from hash-verified reference model bytes rather than bypassing that provenance layer.
 
-### SO-101 follower
+### Asimov actuator, standing and agent-generated whole-body experiments
 
-![SO-101 measured two-bottle transfer workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/so101.png)
+**Actuator Lab (experimental)** and **Whole-Body Dynamics (experimental)** add continuous motor caps, estimated speed/friction/delay behavior, and a separate synthetic sensor view. **Standing Trial (experimental)** tests a bounded torso-feedback controller with an observation-derived support assessment.
 
-The SO-101 workspace shows a measured transfer task beside the learner-facing Python program.
-
-### OpenArm bimanual workcell
-
-![OpenArm bimanual heater and ring-stand stack workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/openarm.png)
-
-The OpenArm workspace presents a two-arm workcell for examining coordinated robot actions.
-
-### LeKiwi mobile manipulator
-
-![LeKiwi beaker courier workcell](https://jivishov.github.io/RoboBuddy_IDE/screenshot/lekiwi.png)
-
-The LeKiwi workspace combines mobile manipulation with a visible courier task.
-
-### Unitree G1 pose inspection
-
-![Unitree G1 29 degree-of-freedom pose inspection workspace](https://jivishov.github.io/RoboBuddy_IDE/screenshot/unitree.png)
-
-The Unitree G1 workspace is a bounded joint-pose inspection experience within the same IDE.
-
-## Run locally
-
-RoboBuddy IDE is a static browser application and should be served from a local web server.
-
-On Windows, double-click **Launch RoboBuddy IDE.bat**. It starts a local server at http://127.0.0.1:8765/ and opens the app.
-
-Or start a local server yourself:
-
-~~~powershell
-py -3 -m http.server 8765 --bind 127.0.0.1
-~~~
-
-Then open http://127.0.0.1:8765/.
-
-## Simulation boundary
-
-RoboBuddy IDE is an educational, browser-based simulation environment. The displayed motion, telemetry, contact behavior, camera views, and task outcomes are modeled values, not evidence of hardware behavior. It is not a hardware-control application or a hardware-calibrated digital twin.
-
-## License
-
-RoboBuddy IDE is available under the [MIT License](LICENSE). Bundled third-party assets and components retain their own notices; see [licenses](licenses/) and the relevant asset manifests.
+Opt-in WebMCP additionally exposes `run_whole_body_motion` in actuated free-base Asimov scenes. An agent can generate bounded multi-joint keyframes for stepping/walking attempts, turning, squatting, reaching, gestures or other coordinated motion. The trajectory is executed through the same joint actuators and MuJoCo contacts; the tool never writes root pose/velocity or applies a hidden external force. Results report measured displacement, support transitions, tilt and fall-like conditions so the agent can revise its next trajectory. An optional bounded ground-truth ankle-target stabilizer is explicitly simulator-only. This capability is **not** a trained walking policy, a validated stable gait, hardware calibration, or a completed ankle transmission model. See [WebMCP programming and whole-body motion](docs/physics/ASIMOV_WEBMCP_PROGRAMMING.md) and [scope, source reconciliation and validation](docs/physics/asimov-actuator-fidelity.md).

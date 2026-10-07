@@ -1,0 +1,17 @@
+/* Shared, locally hosted typography. No third-party font requests. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url("./assets/fonts/ibm-plex-sans-latin-variable.woff2") format("woff2");
+}
+
+:root {
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-code: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --copper: #ad4627;
+  --copper-hover: #8e371d;
+  --paper: #f5f2eb;
+  --graphite: #292b28;
+}

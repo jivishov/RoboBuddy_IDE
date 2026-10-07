@@ -1,0 +1,123 @@
+{
+  "schema_version": "robobuddy.openarm.program.v1",
+  "expected_scene_revision": "REPLACE_WITH_CURRENT_SCENE_REVISION",
+  "segments": [
+    {
+      "label": "Observe initial support",
+      "duration_seconds": 0.2
+    },
+    {
+      "label": "Approach",
+      "duration_seconds": 4,
+      "tool": {
+        "side": "left",
+        "position_m": [
+          0.554,
+          0.1535,
+          1.068
+        ],
+        "quaternion_wxyz": [
+          0.7071067811865476,
+          0,
+          -0.7071067811865476,
+          0
+        ]
+      }
+    },
+    {
+      "label": "Close",
+      "duration_seconds": 3,
+      "targets_rad": {
+        "openarm_left_finger_joint1": 0.08
+      }
+    },
+    {
+      "label": "Lift",
+      "duration_seconds": 4,
+      "tool": {
+        "side": "left",
+        "position_m": [
+          0.554,
+          0.1535,
+          1.25
+        ],
+        "quaternion_wxyz": [
+          0.7071067811865476,
+          0,
+          -0.7071067811865476,
+          0
+        ]
+      }
+    },
+    {
+      "label": "Carry",
+      "duration_seconds": 4,
+      "tool": {
+        "side": "left",
+        "position_m": [
+          0.67,
+          0.1535,
+          1.25
+        ],
+        "quaternion_wxyz": [
+          0.7071067811865476,
+          0,
+          -0.7071067811865476,
+          0
+        ]
+      }
+    },
+    {
+      "label": "Lower",
+      "duration_seconds": 4,
+      "tool": {
+        "side": "left",
+        "position_m": [
+          0.67,
+          0.1535,
+          1.093
+        ],
+        "quaternion_wxyz": [
+          0.7071067811865476,
+          0,
+          -0.7071067811865476,
+          0
+        ]
+      }
+    },
+    {
+      "label": "Release",
+      "duration_seconds": 3,
+      "targets_rad": {
+        "openarm_left_finger_joint1": 0.65
+      }
+    },
+    {
+      "label": "Retreat",
+      "duration_seconds": 4,
+      "tool": {
+        "side": "left",
+        "position_m": [
+          0.67,
+          0.1535,
+          1.27
+        ],
+        "quaternion_wxyz": [
+          0.7071067811865476,
+          0,
+          -0.7071067811865476,
+          0
+        ]
+      }
+    },
+    {
+      "label": "Verify observed transfer",
+      "duration_seconds": 0.5,
+      "wait_for": {
+        "type": "authored_task_complete",
+        "timeout_seconds": 1,
+        "dwell_seconds": 0.2
+      }
+    }
+  ]
+}

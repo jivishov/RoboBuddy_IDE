@@ -1,0 +1,26 @@
+{
+  "pass": true,
+  "runtime": "3.11.0",
+  "metrics": {
+    "mounted": {
+      "maxJointErrorRad": 1.785016057220031e-18,
+      "maxBodyErrorM": 1.3877787807814457e-17,
+      "maxContactNormalForceErrorN": 0,
+      "samples": 100
+    },
+    "freebase": {
+      "maxJointErrorRad": 5.134781488891349e-16,
+      "maxBodyErrorM": 2.220446049250313e-16,
+      "maxContactNormalForceErrorN": 4.455102953215828e-12,
+      "samples": 100
+    },
+    "drop": {
+      "maxJointErrorRad": 0,
+      "maxBodyErrorM": 0,
+      "maxContactNormalForceErrorN": 0,
+      "samples": 8,
+      "passiveFallContacts": 4
+    },
+    "fullSourceCompiledPhysics": "identical body inertias/transforms/joints/armature/damping to 1e-12"
+  }
+}

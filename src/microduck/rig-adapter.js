@@ -58,7 +58,7 @@ function quaternionFromWxyz(values = [1, 0, 0, 0]) {
 }
 
 export class MicroDuckRigAdapter {
-  static async load() {
+  static async load(options = {}) {
     const [rigResponse, visualResponse] = await Promise.all([
       fetch(RIG_URL, { cache: 'force-cache' }),
       fetch(VISUAL_URL, { cache: 'force-cache' }),
@@ -73,12 +73,13 @@ export class MicroDuckRigAdapter {
       throw new Error('MicroDuck rig contract is invalid.');
     }
     if (visual.bodies.length !== data.bodies.length) throw new Error('MicroDuck official visual hierarchy does not match the pinned runtime hierarchy.');
-    return new MicroDuckRigAdapter(data, visual);
+    return new MicroDuckRigAdapter(data, visual, options);
   }
 
-  constructor(data, visual) {
+  constructor(data, visual, { includeConfiguredRollers = true } = {}) {
     this.data = data;
     this.visual = visual;
+    this.includeConfiguredRollers = includeConfiguredRollers;
     this.root = new THREE.Group();
     this.root.name = 'microduck-official-runtime-visual-rig';
     this.root.scale.setScalar(1000);
@@ -100,6 +101,7 @@ export class MicroDuckRigAdapter {
     this.buildHierarchy();
     this.buildOfficialVisual();
     this.buildConfiguredAttachments();
+    this.setVariant('walking');
     this.applyState({});
   }
 
@@ -197,7 +199,7 @@ export class MicroDuckRigAdapter {
       }
     }
     this.rollers = [];
-    for (const roller of this.data.configuredAttachments?.rollers || []) {
+    for (const roller of (this.includeConfiguredRollers ? this.data.configuredAttachments?.rollers || [] : [])) {
       const body = this.bodies.get(roller.parentBody);
       if (!body) continue;
       const assembly = new THREE.Group();
@@ -264,6 +266,11 @@ export class MicroDuckRigAdapter {
   }
 
   applyRootPose(position = [0, 0, 0], quaternionWxyz = [1, 0, 0, 0]) {
+    this.visual.bodies.forEach((body, index) => {
+      if (body.parentIndex >= 0) return;
+      this.bodyList[index].position.fromArray(body.positionM);
+      this.bodyList[index].quaternion.copy(quaternionFromWxyz(body.quaternionWxyz));
+    });
     this.root.position.set((Number(position[0]) || 0) * 1000, (Number(position[2]) || 0) * 1000, -(Number(position[1]) || 0) * 1000);
     this.root.quaternion.set(Number(quaternionWxyz[1]) || 0, Number(quaternionWxyz[3]) || 0, -(Number(quaternionWxyz[2]) || 0), Number(quaternionWxyz[0]) || 1).normalize();
     const bounds = this.visibleBounds(this.groundBoundsScratch);
@@ -271,6 +278,67 @@ export class MicroDuckRigAdapter {
       this.root.position.y -= bounds.min.y;
       this.root.updateWorldMatrix(true, true);
     }
+  }
+
+  // The physical workspace's root pose. Unlike applyRootPose above, it does NOT re-seat the
+  // visual on the floor: trunk height is a physical result in the Phase 5C workspace, so a
+  // crouch, a fall, or the airborne phase of a roulade has to be visible. Snapping the mesh
+  // to the ground here would hide exactly the outcomes the physical evidence turns on.
+  applyPhysicalRootPose(position = [0, 0, 0], quaternionWxyz = [1, 0, 0, 0]) {
+    // DUCK stores the trunk's initial WORLD transform (including its 120 mm height).
+    // MuJoCo now supplies that world transform. Keep only the descendant local frames;
+    // composing both world placements would lift every rendered contact by another 120 mm.
+    const trunk = this.bodies.get('trunk_base');
+    if (!trunk || trunk.parent !== this.modelRoot) throw new Error('MicroDuck physical visual requires a trunk_base root.');
+    trunk.position.set(0, 0, 0);
+    trunk.quaternion.identity();
+    this.root.position.set((Number(position[0]) || 0) * 1000, (Number(position[2]) || 0) * 1000, -(Number(position[1]) || 0) * 1000);
+    const q = quaternionFromWxyz(quaternionWxyz);
+    // Basis change R_view = C R_model C^-1, C: (x,y,z) -> (x,z,-y).
+    // A valid half-turn has w=0; do not replace that zero with the identity's w=1.
+    this.root.quaternion.set(q.x, q.z, -q.y, q.w);
+    this.root.updateWorldMatrix(true, true);
+  }
+
+  /**
+   * Render a single authoritative body-pose snapshot. Do not reconstruct joint FK here:
+   * after mj_step the solved xpos/xquat/contact fields and integrated qpos belong to
+   * different pipeline stages. Mixing them shifted moving feet relative to contacts.
+   * All transforms below are presentation-only; the source meshes remain unmodified.
+   */
+  applyPhysicalBodyPoses(bodyPoses) {
+    // Validate the complete snapshot BEFORE mutating any rendered node. Missing bodies
+    // must fail visibly, never fall back to stale transforms or separately sampled joints.
+    const poses = new Map(this.data.bodies.map(({ name }) => {
+      const pose = bodyPoses?.[name];
+      const p = pose?.positionM;
+      const q = pose?.quaternionWxyz;
+      if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite)
+        || !Array.isArray(q) || q.length !== 4 || !q.every(Number.isFinite)
+        || Math.hypot(...q) < 1e-8) {
+        throw new Error(`Missing or invalid authoritative MicroDuck body pose: ${name}`);
+      }
+      return [name, { position: new THREE.Vector3().fromArray(p), quaternion: quaternionFromWxyz(q) }];
+    }));
+    const local = this.data.bodies.map(({ name, parent }) => {
+      const pose = poses.get(name);
+      if (parent === null) return { name, position: new THREE.Vector3(), quaternion: new THREE.Quaternion() };
+      const parentPose = poses.get(parent);
+      if (!parentPose) throw new Error(`Missing authoritative MicroDuck parent pose: ${parent}`);
+      const inverse = parentPose.quaternion.clone().invert();
+      return { name,
+        position: pose.position.clone().sub(parentPose.position).applyQuaternion(inverse),
+        quaternion: inverse.multiply(pose.quaternion),
+      };
+    });
+    const trunk = bodyPoses.trunk_base;
+    this.applyPhysicalRootPose(trunk.positionM, trunk.quaternionWxyz);
+    for (const { name, position, quaternion } of local) {
+      const body = this.bodies.get(name);
+      body.position.copy(position);
+      body.quaternion.copy(quaternion);
+    }
+    this.root.updateWorldMatrix(true, true);
   }
 
   getBounds(target = new THREE.Box3()) { return this.visibleBounds(target); }

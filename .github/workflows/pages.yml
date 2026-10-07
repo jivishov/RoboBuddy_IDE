@@ -1,0 +1,87 @@
+name: Deploy Physics Preview to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.repository == 'jivishov/RoboBuddy_IDE'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Record deployed source identity
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('physics-build.json', JSON.stringify({repository: process.env.GITHUB_REPOSITORY, commit: process.env.GITHUB_SHA, runId: process.env.GITHUB_RUN_ID}, null, 2) + '\n')"
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify published front page, IDE and manuals
+        timeout-minutes: 3
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, time, urllib.request
+          base = os.environ['PAGES_URL'].rstrip('/') + '/'
+          cname = pathlib.Path('CNAME')
+          domain = cname.read_text().strip() if cname.exists() else ''
+          expected_base = f'https://{domain}/' if domain else 'https://jivishov.github.io/RoboBuddy_IDE/'
+          assert base == expected_base, (base, expected_base)
+          commit = os.environ['GITHUB_SHA']
+          pages = {
+              '': ('<title>RoboBuddy IDE', 'ide.html'),
+              'ide.html': ('./src/app-v2.js', './guides/openarm.html', './guides/webmcp.html'),
+              'guides/openarm.html': ('<h1>OpenArm manual</h1>', 'adapter-scene.json'),
+              'guides/webmcp.html': ('<h1>WebMCP manual</h1>', 'manage_openarm_scene', 'adapter-program.json'),
+          }
+          for attempt in range(6):
+              try:
+                  def fetch(path):
+                      request = urllib.request.Request(base + path + f'?verify={commit}&attempt={attempt}', headers={'User-Agent': 'RoboBuddy-Pages-Smoke-Check'})
+                      with urllib.request.urlopen(request, timeout=15) as response:
+                          assert response.status == 200, (path, response.status)
+                          return response.read().decode('utf-8')
+                  build = json.loads(fetch('physics-build.json'))
+                  assert build['commit'] == commit, build
+                  results = []
+                  for path, expected in pages.items():
+                      body = fetch(path)
+                      assert all(marker in body for marker in expected), f'Missing expected page content: {path}'
+                      results.append({'path': path or '/', 'status': 200, 'contentMarkersPassed': True})
+                  report = {'repository': os.environ['GITHUB_REPOSITORY'], 'commit': commit, 'url': base, 'build': build, 'checks': results}
+                  pathlib.Path('/tmp/published-visitor-pages.json').write_text(json.dumps(report, indent=2) + '\n')
+                  print(json.dumps(report, indent=2))
+                  break
+              except Exception as error:
+                  print(f'Published-page check attempt {attempt+1}/6: {error}', flush=True)
+                  if attempt == 5:
+                      raise
+                  time.sleep(10)
+          PY
+      - name: Retain public-page verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-visitor-page-check
+          path: /tmp/published-visitor-pages.json
+          retention-days: 14

@@ -2,7 +2,7 @@ name: Validate RoboBuddy IDE
 
 on:
   push:
-    branches: [main, "fix/**"]
+    branches: [main, "fix/**", "claude/**"]
   pull_request:
 
 permissions:
@@ -11,7 +11,10 @@ permissions:
 jobs:
   fidelity:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The full browser suite consumed 18.7 of the previous 20 minutes before Phase 5D added its
+    # three specs and wired the previously unexecuted webmcp-robot-controls unit spec into the
+    # test match. The margin was under a minute, so this follows the other physical workflows.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,6 +23,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Independent G1 review regressions and shipped WASM worker
+        run: |
+          node tests/physics/session-epoch-publication-core.mjs
+          node tests/physics/unitree-g1-frames-core.mjs
+          node tests/physics/unitree-g1-worker-review.mjs
+
       - name: JavaScript syntax
         run: |
           node --check src/app.js
@@ -33,6 +42,21 @@ jobs:
           node --check src/simulator-host.js
           node --check src/task-catalog.js
           node --check src/task-workspace.js
+          node --check src/physics/backend-contract.js
+          node --check src/physics/browser-mujoco-backend.js
+          node --check src/physics/capabilities.js
+          node --check src/physics/model-registry.js
+          node --check src/physics/model-packages.js
+          node --check src/physics/mujoco-worker.js
+          node --check src/physics/phase1-scene.js
+          node --check src/physics/so101-scene.js
+          node --check src/physics/so101-task-evaluator.js
+          node --check src/physics/so101-physical-simulator.js
+          node --check src/physics/session.js
+          node --check src/physics/ui-status.js
+          node --check src/runtime/live-python-bridge.js
+          node --check src/runtime/live-python-worker.js
+          node --check src/runtime/physical-python-runtime.js
           node --check src/microduck/audio-engine.js
           node --check src/microduck/baked-visual.js
           node --check src/microduck/command-bus.js
@@ -44,22 +68,85 @@ jobs:
           node --check src/microduck/python-worker.js
           node --check src/microduck/rig-adapter.js
           node --check src/webmcp/agent-facade.js
+          node --check src/webmcp/physical-agent-facade.js
           node --check src/webmcp/microduck-control.js
+          node --check src/webmcp/robot-controls.js
           node --check src/webmcp/register-ide-tools.js
+          node --check src/physics/lekiwi-source-audit.js
+          node --check src/physics/lekiwi-kinematics.js
+          node --check src/physics/lekiwi-model-package.js
+          node --check src/physics/lekiwi-scene.js
+          node --check src/physics/lekiwi-mujoco-worker.js
+          node --check src/physics/lekiwi-task-evaluator.js
+          node --check src/physics/lekiwi-physical-simulator.js
+          node --check src/webmcp/lekiwi-physical-control.js
+          node --check tests/physics/model-registry-core.mjs
+          node --check tests/physics/vertical-slice-core.mjs
+          node --check tests/physics/live-python-bridge-core.mjs
+          node --check tests/physics/physical-python-runtime-core.mjs
+          node --check tests/physics/so101-manipulation-core.mjs
+          node --check tests/physics/so101-task-evaluator-core.mjs
+          node --check tests/physics-slice-browser.spec.mjs
+          node --check tests/physics-load-failure-browser.spec.mjs
+          node --check tests/so101-physics-browser.spec.mjs
+          node --check tests/so101-live-python-browser.spec.mjs
+          node --check tests/so101-manipulation-browser.spec.mjs
+          node --check tests/so101-ide-physical-browser.spec.mjs
+          node --check tests/webmcp-robot-controls.spec.mjs
+          node --check tests/microduck-starter-timing.mjs
+          node --check tests/helpers/microduck-timing.mjs
+          node --check tests/microduck-control-timing-core.mjs
+          node --check tests/physics/lekiwi-phase5b-core.mjs
+          node --check tests/lekiwi-phase5b-browser.spec.mjs
+          node --check tests/lekiwi-conformance-browser.spec.mjs
+          node --check src/physics/unitree-g1-source-audit.js
+          node --check src/physics/unitree-g1-controller.js
+          node --check src/physics/unitree-g1-model-package.js
+          node --check src/physics/unitree-g1-capabilities.js
+          node --check src/physics/unitree-g1-scene.js
+          node --check src/physics/unitree-g1-mujoco-worker.js
+          node --check src/physics/unitree-g1-physical-simulator.js
+          node --check src/webmcp/unitree-g1-physical-control.js
+          node --check tests/physics/unitree-g1-phase5d-core.mjs
+          node --check tests/unitree-g1-conformance-browser.spec.mjs
+          node --check tests/unitree-g1-phase5d-browser.spec.mjs
+          node --check tests/unitree-g1-presentation-browser.spec.mjs
+          node --check playwright.config.mjs
       - name: Static fidelity checks
         run: node tests/validate.mjs
       - name: Canonical RoboBuddy visual checks
         run: node tests/validate_canonical_visuals.mjs
       - name: Latest pinned task patch and source-plant checks
         run: node tests/validate_task_patch.mjs
+      - name: Phase 1 physics contract checks
+        run: node tests/physics/vertical-slice-core.mjs
+      - name: Phase 2A model and P3 live timing contract checks
+        run: |
+          node tests/physics/model-registry-core.mjs
+          node tests/physics/live-python-bridge-core.mjs
+          node tests/physics/physical-python-runtime-core.mjs
+      - name: SO-101 manipulation package and evaluator contract checks
+        run: |
+          node tests/physics/so101-manipulation-core.mjs
+          node tests/physics/so101-task-evaluator-core.mjs
+      - name: LeKiwi Phase 5B source-audit, mapping and evaluator contract checks
+        run: node tests/physics/lekiwi-phase5b-core.mjs
+
+      - name: Unitree G1 Phase 5D source-audit, controller, package and capability contract checks
+        run: |
+          node tests/physics/unitree-g1-phase5d-core.mjs
+          python scripts/prepare_unitree_g1_assets.py
+          python scripts/generate_unitree_g1_models.py --check
       - name: MicroDuck asset and policy contracts
         run: |
           node tests/validate_microduck_assets.mjs
           node tests/microduck-policy-core.mjs
           node tests/microduck-ui-core.mjs
+          node tests/microduck-control-timing-core.mjs
       - name: MicroDuck Python and WebMCP contracts
         run: |
           node tests/microduck-python-bridge.mjs
+          node tests/microduck-starter-timing.mjs
           node tests/webmcp-core.mjs
       - name: Starter Python syntax
         run: python tests/validate_starters.py
@@ -67,20 +154,95 @@ jobs:
         run: python tests/execute_starters.py
       - name: OpenArm canonical reference invariants
         run: python tests/validate_openarm_reference.py
+      - name: Native MuJoCo reference runner
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir "mujoco==3.11.0"
+          python -m py_compile native/reference_runner.py
+          python -m py_compile native/so101_transfer_reference.py
+          python native/reference_runner.py --model phase1 --target 0.8 --steps 500 > /tmp/robobuddy-native-reference.json
+          python native/reference_runner.py --model so101 --joint shoulder_pan --target 0.4 --steps 100 > /tmp/robobuddy-native-so101.json
+          python native/so101_transfer_reference.py --trial positive > /tmp/robobuddy-so101-transfer-positive.json
+          python native/so101_transfer_reference.py --trial low-grip > /tmp/robobuddy-so101-transfer-low-grip.json
+          python native/so101_transfer_reference.py --trial heavy > /tmp/robobuddy-so101-transfer-heavy.json
+          python native/so101_transfer_reference.py --trial miss > /tmp/robobuddy-so101-transfer-miss.json
+          python native/so101_transfer_reference.py --trial outside > /tmp/robobuddy-so101-transfer-outside.json
+          python native/so101_transfer_reference.py --trial positive --timestep 0.0025 --iterations 20 > /tmp/robobuddy-so101-transfer-tight.json
+          python - <<'PY'
+          import json
+          import math
+          from pathlib import Path
+          result = json.loads(Path('/tmp/robobuddy-native-reference.json').read_text())
+          assert result['engine']['version'] == '3.11.0'
+          assert abs(result['engine']['timestepSeconds'] - 0.002) < 1e-12
+          assert abs(result['simulationTimeSeconds'] - 1.0) < 1e-9
+          assert len(result['model']['sha256']) == 64
+          assert result['frames']['world']['id'] == 'mujoco_world'
+          assert result['bodies']['free_box']['positionM'][2] < 1.0
+          assert result['contactCount'] > 0
+          print('Native Phase 1 reference: OK')
+
+          so101 = json.loads(Path('/tmp/robobuddy-native-so101.json').read_text())
+          assert so101['model']['id'] == 'robobuddy-so101-phase2a-v1'
+          assert so101['model']['asset'] == 'models/so101/model.xml'
+          assert len(so101['model']['sha256']) == 64
+          assert so101['engine']['version'] == '3.11.0'
+          assert abs(so101['engine']['timestepSeconds'] - 0.005) < 1e-12
+          assert abs(so101['simulationTimeSeconds'] - 0.5) < 1e-9
+          assert so101['finiteState'] is True
+          assert set(so101['joints']) == {'shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll', 'gripper'}
+          assert abs(so101['initialJoints']['shoulder_pan']['positionRad'] - so101['joints']['shoulder_pan']['positionRad']) > 1e-4
+          assert math.isfinite(so101['joints']['shoulder_pan']['velocityRadS'])
+          print('Native SO-101 Phase 2A reference: OK')
+
+          positive = json.loads(Path('/tmp/robobuddy-so101-transfer-positive.json').read_text())
+          low_grip = json.loads(Path('/tmp/robobuddy-so101-transfer-low-grip.json').read_text())
+          heavy = json.loads(Path('/tmp/robobuddy-so101-transfer-heavy.json').read_text())
+          miss = json.loads(Path('/tmp/robobuddy-so101-transfer-miss.json').read_text())
+          outside = json.loads(Path('/tmp/robobuddy-so101-transfer-outside.json').read_text())
+          tight = json.loads(Path('/tmp/robobuddy-so101-transfer-tight.json').read_text())
+          assert positive['metrics']['success'] is True, positive['metrics']
+          assert positive['metrics']['lifted'] is True
+          assert positive['metrics']['physicallyCarried'] is True
+          assert positive['metrics']['inTarget'] is True
+          assert positive['metrics']['released'] is True
+          assert low_grip['metrics']['success'] is False, low_grip['metrics']
+          assert heavy['metrics']['success'] is False, heavy['metrics']
+          assert miss['metrics']['success'] is False, miss['metrics']
+          assert miss['metrics']['physicallyCarried'] is False
+          assert outside['metrics']['success'] is False, outside['metrics']
+          assert outside['metrics']['inTarget'] is False
+          assert tight['metrics']['success'] is True, tight['metrics']
+          base_final = positive['metrics']['finalPositionM']
+          tight_final = tight['metrics']['finalPositionM']
+          final_delta = math.sqrt(sum((a-b)**2 for a,b in zip(base_final, tight_final)))
+          assert final_delta <= 0.02, (base_final, tight_final, final_delta)
+          print('Native SO-101 P4 transfer/negative/sensitivity references: OK', {'finalDeltaM': final_delta})
+          PY
       - name: HTML parse smoke test
         run: |
           python - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
           class P(HTMLParser): pass
-          P().feed(Path('index.html').read_text())
-          assert 'id="taskSelect"' in Path('index.html').read_text()
-          assert './src/app-v2.js' in Path('index.html').read_text()
+          for name in ('index.html', 'ide.html', 'guides/openarm.html', 'guides/webmcp.html', 'physics-slice.html'):
+              P().feed(Path(name).read_text())
+          assert 'id="taskSelect"' in Path('ide.html').read_text()
+          assert './src/app-v2.js' in Path('ide.html').read_text()
+          assert './src/physics/session.js' in Path('physics-slice.html').read_text()
+          assert './src/physics/phase1-scene.js' in Path('physics-slice.html').read_text()
           print('HTML parse: OK')
           PY
       - name: Install browser fidelity harness
         run: |
           npm install --ignore-scripts --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: Chromium runtime and full source-plant replay
-        run: npm run test:browser
+      - name: Chromium runtime, physical MicroDuck presentation and full source-plant replay
+        run: npm run test:browser -- --reporter=line
+      - name: Preserve browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-evidence
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

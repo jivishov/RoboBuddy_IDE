@@ -1,0 +1,95 @@
+name: Validate Asimov physics
+on:
+  push:
+    branches: [main, integration/asimov-physics-20260911, integration/asimov-actuator-fidelity-20260911, integration/asimov-sensor-webmcp-20260912, feat/asimov-whole-body-webmcp]
+    paths:
+      - 'src/**'
+      - 'models/asimov/**'
+      - 'tests/**'
+      - 'scripts/generate_asimov_models.py'
+      - 'scripts/generate_asimov_actuator_models.py'
+      - 'index.html'
+      - 'ide.html'
+      - '.github/workflows/asimov-physics.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'models/asimov/**'
+      - 'tests/**'
+      - 'scripts/generate_asimov_models.py'
+      - 'scripts/generate_asimov_actuator_models.py'
+      - 'index.html'
+      - 'ide.html'
+      - '.github/workflows/asimov-physics.yml'
+permissions:
+  contents: read
+concurrency:
+  group: asimov-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: menloresearch/asimov-1
+          ref: 732cc60dcb8f2b4fd26c3d7346b35f9b89c3cd47
+          path: .asimov-upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned validators
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          python -m pip install mujoco==3.11.0
+          npx playwright install --with-deps chromium
+      - name: Check reproducible source generation
+        run: |
+          python scripts/generate_asimov_models.py --source .asimov-upstream
+          python scripts/generate_asimov_actuator_models.py
+          git diff --exit-code -- models/asimov src/physics/asimov-generated.js src/physics/asimov-actuator-generated.js
+      - name: Static and existing core regressions
+        run: |
+          node tests/validate.mjs
+          python tests/validate_starters.py
+          for file in tests/physics/*core.mjs; do node "$file"; done
+          node tests/webmcp-core.mjs
+      - name: Shipped WASM and compiled source parity
+        run: |
+          ASIMOV_WASM_REPORT=/tmp/asimov-wasm.json node tests/physics/asimov-worker.mjs
+          python tests/validate_asimov_native.py --wasm-report /tmp/asimov-wasm.json --upstream .asimov-upstream --report /tmp/asimov-native.json
+      - name: Actuator, sensor, standing and convergence gates
+        run: |
+          node tests/physics/asimov-actuator-core.mjs
+          ASIMOV_ACTUATOR_REPORT=/tmp/asimov-actuator-wasm.json node tests/physics/asimov-actuator-worker.mjs
+          python tests/validate_asimov_actuators.py --wasm-report /tmp/asimov-actuator-wasm.json --report /tmp/asimov-actuator-validation.json
+      - name: Sensor-driven balance and WebMCP programming
+        run: |
+          node tests/physics/asimov-sensor-core.mjs
+          node tests/physics/asimov-program-core.mjs
+          node tests/physics/asimov-whole-body-core.mjs
+          ASIMOV_SENSOR_REPORT=/tmp/asimov-sensor-wasm.json node tests/physics/asimov-sensor-worker.mjs
+          python tests/validate_asimov_sensors.py --wasm-report /tmp/asimov-sensor-wasm.json --report /tmp/asimov-sensor-validation.json
+      - name: Chromium presentation and full IDE acceptance
+        env:
+          CI: 'true'
+        run: npx playwright test tests/asimov-physical-browser.spec.mjs tests/asimov-whole-body-browser.spec.mjs --workers=1
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p asimov-evidence
+          git rev-parse HEAD > asimov-evidence/tested-commit.txt
+          cp /tmp/asimov-native.json /tmp/asimov-actuator-validation.json /tmp/asimov-sensor-validation.json asimov-evidence/ 2>/dev/null || true
+          cp -r test-results asimov-evidence/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: asimov-physics-evidence
+          path: asimov-evidence
+          retention-days: 90

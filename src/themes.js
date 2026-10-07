@@ -1,20 +1,21 @@
+// Keep the existing storage IDs so saved light/dark preferences survive the visual refresh.
 export const THEME_STORAGE_KEY = 'rbide.theme';
 export const DEFAULT_THEME_ID = 'calm-light';
 
 export const THEMES = Object.freeze({
   'calm-light': Object.freeze({
     id: 'calm-light',
-    label: 'Calm Light',
+    label: 'Paper',
     colorScheme: 'light',
     editorTheme: 'default',
-    themeColor: '#eef4f1',
+    themeColor: '#f5f2eb',
   }),
   'midnight-teal': Object.freeze({
     id: 'midnight-teal',
-    label: 'Midnight Teal',
+    label: 'Graphite',
     colorScheme: 'dark',
     editorTheme: 'material-darker',
-    themeColor: '#101318',
+    themeColor: '#20221f',
   }),
 });
 

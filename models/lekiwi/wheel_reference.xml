@@ -1,0 +1,60 @@
+<mujoco model="robobuddy_lekiwi_wheel_reference">
+  <compiler angle="radian" autolimits="true"/>
+  <option integrator="implicitfast" timestep="0.002" cone="elliptic" iterations="20" ls_iterations="20" impratio="10" gravity="0 0 -9.81"/>
+  <default>
+    <default class="drive_wheel">
+      <joint type="hinge" armature="0.01" damping="0.004" frictionloss="0.006"/>
+      <velocity kv="2.2" ctrlrange="-4.60061 4.60061" forcerange="-2.94 2.94"/>
+    </default>
+    <default class="passive_roller">
+      <joint type="hinge" armature="2e-06" damping="2e-05" frictionloss="2e-05"/>
+    </default>
+    <default class="roller_contact">
+      <geom group="3" contype="2" conaffinity="1" condim="3" friction="0.85 0.005 0.0001" solref="0.008 1" rgba="0.20 0.22 0.26 1"/>
+    </default>
+    <default class="wheel_hub">
+      <geom group="3" contype="4" conaffinity="0" condim="3" rgba="0.55 0.57 0.60 1"/>
+    </default>
+    <default class="chassis">
+      <geom group="3" contype="4" conaffinity="0" condim="3" rgba="0.36 0.40 0.45 1"/>
+    </default>
+    <default class="lekiwi_floor">
+      <geom type="plane" contype="1" conaffinity="7" condim="3" friction="0.85 0.005 0.0001" rgba="0.42 0.45 0.48 1"/>
+    </default>
+  </default>
+  <worldbody>
+    <light pos="0 0 2" dir="0 0 -1"/>
+    <geom name="reference_floor" class="lekiwi_floor" size="4 4 0.1" pos="0 0 -0.0508"/>
+    <!-- Declared single-wheel characterization rig: the carriage runs on frictionless
+         planar bearings (x, y, yaw) and a vertical bearing (z), so the wheel still has to
+         generate every propulsive force through roller/ground contact, but the rig cannot
+         tip. The bearings are reference-fixture geometry, not LeKiwi hardware. -->
+    <body name="wheel_carriage" pos="0 0 0">
+      <joint name="carriage_x" type="slide" axis="1 0 0"/>
+      <joint name="carriage_y" type="slide" axis="0 1 0"/>
+      <joint name="carriage_z" type="slide" axis="0 0 1"/>
+      <joint name="carriage_yaw" type="hinge" axis="0 0 1"/>
+      <inertial pos="0 0 0.02" mass="2.0" diaginertia="0.010 0.010 0.016"/>
+      <geom name="carriage_deck" class="chassis" type="box" size="0.09 0.06 0.008" pos="0 0 0.030" mass="0"/>
+      <body name="lekiwi_back_wheel" pos="0 0 0" xyaxes="0 0 1 0 -1 0">
+        <joint name="base_back_wheel" class="drive_wheel" axis="0 0 1"/>
+        <geom name="lekiwi_back_wheel_hub" class="wheel_hub" type="cylinder" size="0.03 0.019414" mass="0.401661"/>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_back_roller_a" pos="0.041093 0 0.009707">
+            <joint name="lekiwi_back_roller_a" class="passive_roller" axis="0 1 0"/>
+            <geom name="lekiwi_back_roller_a" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="0 1 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+        <replicate count="6" euler="0 0 1.04719755" sep="">
+          <body name="lekiwi_back_roller_b" pos="0.0355875819 0.0205465 -0.009707">
+            <joint name="lekiwi_back_roller_b" class="passive_roller" axis="-0.5 0.866025404 0"/>
+            <geom name="lekiwi_back_roller_b" class="roller_contact" type="ellipsoid" size="0.009707 0.009707 0.0205" zaxis="-0.5 0.866025404 0" mass="0.0793853333"/>
+          </body>
+        </replicate>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <velocity class="drive_wheel" name="base_back_wheel" joint="base_back_wheel"/>
+  </actuator>
+</mujoco>

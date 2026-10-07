@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RoboBuddy Phase 5A self-contained OpenArm V2 physical adaptation.
+  Robot kinematics, joint ranges, inertials, damping, armature, friction loss,
+  actuator gains and force limits are transcribed from enactic/openarm_mujoco
+  revision a8c979629f2591ad035d99d338ce114969e6cddc, v2/openarm_bimanual.xml.
+  Upstream mesh collision geometry is replaced by declared primitive surrogates
+  so the browser model is repository-local. Task fixtures and dry vessels are
+  RoboBuddy synthetic benchmark geometry, not measured hardware.
+-->
+<mujoco model="robobuddy_openarm_v2_phase5a">
+  <compiler angle="radian"/>
+  <option timestep="0.001" integrator="Euler" cone="elliptic" impratio="10" gravity="0 0 -9.81"/>
+
+  <default>
+    <joint stiffness="0" ref="0"/>
+    <default class="motor_DM8009">
+      <joint frictionloss="0.2" damping="1.0" armature="0.0081" limited="true" type="hinge"/>
+    </default>
+    <default class="motor_DM4340">
+      <joint frictionloss="0.1" damping="0.9" armature="0.1600" limited="true" type="hinge"/>
+    </default>
+    <default class="motor_DM4310">
+      <joint frictionloss="0.04" damping="0.9" armature="0.0100" limited="true" type="hinge"/>
+    </default>
+    <default class="motor_DM3507">
+      <joint frictionloss="0.01" damping="0.01" armature="0.0049" limited="true" type="hinge"/>
+    </default>
+    <default class="motor_finger">
+      <joint limited="true" type="hinge" damping="2" armature="0.01"/>
+    </default>
+    <default class="robot_left_collision">
+      <geom contype="1" conaffinity="2" condim="3" friction="1 0.01 0.01" solref="0.005 1" rgba="0.82 0.28 0.22 1"/>
+    </default>
+    <default class="robot_right_collision">
+      <geom contype="2" conaffinity="1" condim="3" friction="1 0.01 0.01" solref="0.005 1" rgba="0.22 0.46 0.82 1"/>
+    </default>
+    <default class="left_fingertip">
+      <geom contype="1" conaffinity="3" condim="4" friction="1.1 0.01 0.001" solref="0.005 1" rgba="0.95 0.55 0.18 1"/>
+    </default>
+    <default class="right_fingertip">
+      <geom contype="2" conaffinity="3" condim="4" friction="1.1 0.01 0.001" solref="0.005 1" rgba="0.18 0.75 0.95 1"/>
+    </default>
+    <default class="fixture">
+      <geom contype="3" conaffinity="3" condim="3" friction="0.9 0.005 0.0005" solref="0.005 1" rgba="0.48 0.52 0.56 1"/>
+    </default>
+    <default class="vessel">
+      <geom contype="3" conaffinity="3" condim="4" friction="1.0 0.01 0.001" solref="0.005 1"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="2 2 0.05" class="fixture" rgba="0.35 0.38 0.40 1"/>
+    <geom name="cell_table" type="box" pos="0.41 0 1.000" size="0.41 0.55 0.005" class="fixture" rgba="0.78 0.77 0.73 1"/>
+
+    <!-- Left pickup pedestal and unpowered hotplate. -->
+    <geom name="left_source_support" type="box" pos="0.509 0.1535 1.020" size="0.045 0.045 0.015" class="fixture" rgba="0.60 0.61 0.63 1"/>
+    <geom name="left_hotplate" type="box" pos="0.608 0.1535 1.020" size="0.058 0.054 0.015" class="fixture" rgba="0.22 0.23 0.25 1"/>
+
+    <!-- Right pickup pedestal and ring-stand/gauze support. -->
+    <geom name="right_source_support" type="box" pos="0.509 -0.1535 1.040" size="0.035 0.035 0.035" class="fixture" rgba="0.60 0.61 0.63 1"/>
+    <geom name="right_ring_post" type="cylinder" pos="0.608 -0.235 1.040" size="0.006 0.035" class="fixture" rgba="0.32 0.33 0.35 1"/>
+    <geom name="right_ring_gauze" type="cylinder" pos="0.608 -0.1535 1.072" size="0.048 0.003" class="fixture" rgba="0.56 0.57 0.58 1"/>
+
+    <!-- Source V2 cell mounting relationship: arm origin at x=.185,z=1.34. -->
+    <body name="openarm_mount" pos="0.185 0 1.34">
+      <geom name="mount_proxy" type="box" pos="-0.015 0 0" size="0.046 0.031 0.061" contype="3" conaffinity="3" rgba="0.18 0.19 0.21 1"/>
+
+      <body name="openarm_left_base_link" pos="0 0.031 0">
+        <inertial pos="-0.00253124 0.0258186 -2.70658e-05" quat="-1.46856942085e-06 0.70739772103 0.706815721259 2.1457591538e-05" mass="1.14323" diaginertia="0.00159935 0.00113608 0.000750542"/>
+        <geom name="left_base_proxy" type="box" pos="0 0.030 0" size="0.030 0.040 0.030" class="robot_left_collision"/>
+        <body name="openarm_left_link1" pos="0 0.0625 0">
+          <inertial pos="0.00090035 0.044466 2.88441e-05" quat="0.999901 -0.000371041 -5.04627e-05 -0.0140338" mass="1.14167" diaginertia="0.00109459 0.000758935 0.000670659"/>
+          <joint name="openarm_left_joint1" axis="0 1 0" range="-3.4907 1.3963" actuatorfrcrange="-40 40" class="motor_DM8009"/>
+          <geom name="left_link1_proxy" type="capsule" fromto="0 0 0 0 0.060 0" size="0.018" class="robot_left_collision"/>
+          <body name="openarm_left_link2" pos="0 0.060 0">
+            <inertial pos="-0.0247185 -7.60578e-08 -0.0312643" quat="0.999342 -6.47495e-06 -0.0362804 3.02331e-06" mass="0.277509" diaginertia="0.000153968 0.000113062 8.19211e-05"/>
+            <joint name="openarm_left_joint2" axis="-1 0 0" range="-3.3161 0.17453" actuatorfrcrange="-40 40" class="motor_DM8009"/>
+            <geom name="left_link2_proxy" type="capsule" fromto="0 0 0 0 0 -0.06625" size="0.016" class="robot_left_collision"/>
+            <body name="openarm_left_link3" pos="0 0 -0.06625">
+              <inertial pos="-0.00300862 -0.000514813 -0.109368" quat="0.998906 -0.00891348 0.0458105 0.00280505" mass="1.07386" diaginertia="0.00129561 0.00114038 0.000553361"/>
+              <joint name="openarm_left_joint3" axis="0 0 -1" range="-1.5708 1.5708" actuatorfrcrange="-27 27" class="motor_DM4340"/>
+              <geom name="left_link3_proxy" type="capsule" fromto="0 0 0 0 0 -0.15375" size="0.020" class="robot_left_collision"/>
+              <body name="openarm_left_link4" pos="0 0 -0.15375">
+                <inertial pos="-0.00310326 -0.00136539 -0.0574601" quat="0.996952 0.00947325 0.00348083 0.0773554" mass="0.634853" diaginertia="0.000469894 0.000433114 0.000245134"/>
+                <joint name="openarm_left_joint4" axis="0 -1 0" range="0 2.4435" actuatorfrcrange="-27 27" class="motor_DM4340"/>
+                <geom name="left_link4_proxy" type="capsule" fromto="0 0 0 0 0 -0.0955" size="0.019" class="robot_left_collision"/>
+                <body name="openarm_left_link5" pos="0 0 -0.0955">
+                  <inertial pos="-0.000737189 0.000412407 -0.0470938" quat="0.685547 -0.0023482 -0.00297125 0.728019" mass="0.615659" diaginertia="0.000334799 0.00027946 0.000176657"/>
+                  <joint name="openarm_left_joint5" axis="0 0 -1" range="-1.5708 1.5708" actuatorfrcrange="-7 7" class="motor_DM4310"/>
+                  <geom name="left_link5_proxy" type="capsule" fromto="0 0 0 0 0 -0.1205" size="0.018" class="robot_left_collision"/>
+                  <body name="openarm_left_link6" pos="0 0 -0.1205">
+                    <inertial pos="2.27438e-05 -0.000686496 5.44e-05" quat="0.999832 -0.0183155 0.000397003 -0.000757974" mass="0.475203" diaginertia="0.000179276 0.000136249 0.000135339"/>
+                    <joint name="openarm_left_joint6" axis="0 -1 0" range="-0.7854 0.7854" actuatorfrcrange="-7 7" class="motor_DM4310"/>
+                    <geom name="left_link6_proxy" type="capsule" fromto="0 0 0 0 0 -0.055" size="0.017" class="robot_left_collision"/>
+                    <body name="openarm_left_ee_base_link">
+                      <inertial pos="0.0137902 -0.0084073 -0.05938" quat="0.760121 0.648846 -0.0304587 -0.0169317" mass="0.52832" diaginertia="0.000219417 0.000166122 0.000155742"/>
+                      <joint name="openarm_left_joint7" axis="1 0 0" range="-1.5708 1.5708" actuatorfrcrange="-7 7" class="motor_DM3507"/>
+                      <geom name="left_ee_proxy" type="box" pos="0.010 0 -0.025" size="0.020 0.025 0.030" class="robot_left_collision"/>
+                      <site name="left_ee_control_point" pos="0 0 0" size="0.006" rgba="0 1 0 1"/>
+                      <body name="openarm_left_ee_inner_finger" pos="-0.00143 -0.018 -0.068">
+                        <inertial pos="-0.0124991 -0.00176593 -0.0241663" quat="0.982638 0.0922084 -0.15927 -0.0235197" mass="0.125979" diaginertia="3.8543e-05 3.6883e-05 1.43942e-05"/>
+                        <joint name="openarm_left_finger_joint1" axis="-1 0 0" range="0 0.7854" actuatorfrcrange="-10 10" class="motor_finger"/>
+                        <geom name="left_inner_fingertip" type="capsule" fromto="0 0 -0.005 0 0 -0.075" size="0.008" class="left_fingertip"/>
+                      </body>
+                      <body name="openarm_left_ee_outer_finger" pos="-0.00143 0.018 -0.068">
+                        <inertial pos="-0.012796 0.0020183 -0.026792" quat="0.982097 -0.0906989 -0.165079 0.00294117" mass="0.11372" diaginertia="3.70662e-05 3.60159e-05 1.33599e-05"/>
+                        <joint name="openarm_left_finger_joint2" axis="1 0 0" range="0 0.7854" actuatorfrcrange="-10 10" class="motor_finger"/>
+                        <geom name="left_outer_fingertip" type="capsule" fromto="0 0 -0.005 0 0 -0.075" size="0.008" class="left_fingertip"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <body name="openarm_right_base_link" pos="0 -0.031 0">
+        <inertial pos="-0.00253124 -0.0258186 -2.70658e-05" quat="2.1457591538e-05 0.706815721259 0.70739772103 -1.46856942085e-06" mass="1.14323" diaginertia="0.00159935 0.00113608 0.000750542"/>
+        <geom name="right_base_proxy" type="box" pos="0 -0.030 0" size="0.030 0.040 0.030" class="robot_right_collision"/>
+        <body name="openarm_right_link1" pos="0 -0.0625 0">
+          <inertial pos="0.00090035 -0.044466 2.88441e-05" quat="0.999901 0.000371041 -5.04627e-05 0.0140338" mass="1.14167" diaginertia="0.00109459 0.000758935 0.000670659"/>
+          <joint name="openarm_right_joint1" axis="0 -1 0" range="-1.3963 3.4907" actuatorfrcrange="-40 40" class="motor_DM8009"/>
+          <geom name="right_link1_proxy" type="capsule" fromto="0 0 0 0 -0.060 0" size="0.018" class="robot_right_collision"/>
+          <body name="openarm_right_link2" pos="0 -0.060 0">
+            <inertial pos="-0.0247185 7.60578e-08 -0.0312643" quat="0.999342 6.47495e-06 -0.0362804 -3.02331e-06" mass="0.277509" diaginertia="0.000153968 0.000113062 8.19211e-05"/>
+            <joint name="openarm_right_joint2" axis="-1 0 0" range="-0.17453 3.3161" actuatorfrcrange="-40 40" class="motor_DM8009"/>
+            <geom name="right_link2_proxy" type="capsule" fromto="0 0 0 0 0 -0.06625" size="0.016" class="robot_right_collision"/>
+            <body name="openarm_right_link3" pos="0 0 -0.06625">
+              <inertial pos="-0.00300862 -0.000514813 -0.109368" quat="0.998906 -0.00891348 0.0458105 0.00280505" mass="1.07386" diaginertia="0.00129561 0.00114038 0.000553361"/>
+              <joint name="openarm_right_joint3" axis="0 0 -1" range="-1.5708 1.5708" actuatorfrcrange="-27 27" class="motor_DM4340"/>
+              <geom name="right_link3_proxy" type="capsule" fromto="0 0 0 0 0 -0.15375" size="0.020" class="robot_right_collision"/>
+              <body name="openarm_right_link4" pos="0 0 -0.15375">
+                <inertial pos="-0.00310326 -0.00136539 -0.0574601" quat="0.996952 0.00947325 0.00348083 0.0773554" mass="0.634853" diaginertia="0.000469894 0.000433114 0.000245134"/>
+                <joint name="openarm_right_joint4" axis="0 -1 0" range="0 2.4435" actuatorfrcrange="-27 27" class="motor_DM4340"/>
+                <geom name="right_link4_proxy" type="capsule" fromto="0 0 0 0 0 -0.0955" size="0.019" class="robot_right_collision"/>
+                <body name="openarm_right_link5" pos="0 0 -0.0955">
+                  <inertial pos="-0.000737189 -0.000412407 -0.0470938" quat="0.728019 -0.00297125 -0.0023482 0.685547" mass="0.615659" diaginertia="0.000334799 0.00027946 0.000176657"/>
+                  <joint name="openarm_right_joint5" axis="0 0 -1" range="-1.5708 1.5708" actuatorfrcrange="-7 7" class="motor_DM4310"/>
+                  <geom name="right_link5_proxy" type="capsule" fromto="0 0 0 0 0 -0.1205" size="0.018" class="robot_right_collision"/>
+                  <body name="openarm_right_link6" pos="0 0 -0.1205">
+                    <inertial pos="2.27438e-05 0.000686496 5.44e-05" quat="0.999832 0.0183155 0.000397003 0.000757974" mass="0.475203" diaginertia="0.000179276 0.000136249 0.000135339"/>
+                    <joint name="openarm_right_joint6" axis="0 1 0" range="-0.7854 0.7854" actuatorfrcrange="-7 7" class="motor_DM4310"/>
+                    <geom name="right_link6_proxy" type="capsule" fromto="0 0 0 0 0 -0.055" size="0.017" class="robot_right_collision"/>
+                    <body name="openarm_right_ee_base_link">
+                      <inertial pos="0.0137902 0.0084073 -0.05938" quat="0.648846 0.760121 0.0169317 0.0304587" mass="0.52832" diaginertia="0.000219417 0.000166122 0.000155742"/>
+                      <joint name="openarm_right_joint7" axis="1 0 0" range="-1.5708 1.5708" actuatorfrcrange="-7 7" class="motor_DM3507"/>
+                      <geom name="right_ee_proxy" type="box" pos="0.010 0 -0.025" size="0.020 0.025 0.030" class="robot_right_collision"/>
+                      <site name="right_ee_control_point" pos="0 0 0" size="0.006" rgba="1 0 0 1"/>
+                      <body name="openarm_right_ee_inner_finger" pos="-0.00143 0.018 -0.068">
+                        <inertial pos="-0.0124991 0.00176593 -0.0241663" quat="0.982638 -0.0922084 -0.15927 0.0235197" mass="0.125979" diaginertia="3.8543e-05 3.6883e-05 1.43942e-05"/>
+                        <joint name="openarm_right_finger_joint1" axis="-1 0 0" range="-0.7854 0" actuatorfrcrange="-10 10" class="motor_finger"/>
+                        <geom name="right_inner_fingertip" type="capsule" fromto="0 0 -0.005 0 0 -0.075" size="0.008" class="right_fingertip"/>
+                      </body>
+                      <body name="openarm_right_ee_outer_finger" pos="-0.00143 -0.018 -0.068">
+                        <inertial pos="-0.012796 -0.0020183 -0.026792" quat="0.982097 0.0906989 -0.165079 -0.00294117" mass="0.11372" diaginertia="3.70662e-05 3.60159e-05 1.33599e-05"/>
+                        <joint name="openarm_right_finger_joint2" axis="1 0 0" range="-0.7854 0" actuatorfrcrange="-10 10" class="motor_finger"/>
+                        <geom name="right_outer_fingertip" type="capsule" fromto="0 0 -0.005 0 0 -0.075" size="0.008" class="right_fingertip"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- Dry free-body vessels. Ordinary task execution never writes their qpos/qvel. -->
+    <body name="flask" pos="0.509 0.1535 1.092">
+      <freejoint name="flask_free"/>
+      <inertial pos="0 0 -0.015" mass="0.060" diaginertia="0.000088 0.000088 0.000046"/>
+      <geom name="flask_body_geom" type="cylinder" pos="0 0 -0.0295" size="0.039 0.0275" class="vessel" rgba="0.38 0.72 0.86 0.85"/>
+      <geom name="flask_shoulder_geom" type="cylinder" pos="0 0 0.012" size="0.031 0.014" class="vessel" rgba="0.44 0.77 0.89 0.88"/>
+      <geom name="flask_grip_geom" type="cylinder" pos="0 0 0.040" size="0.015 0.014" class="vessel" rgba="0.50 0.82 0.92 0.90"/>
+    </body>
+    <body name="beaker" pos="0.509 -0.1535 1.105">
+      <freejoint name="beaker_free"/>
+      <inertial pos="0 0 -0.002" mass="0.050" diaginertia="0.000023 0.000023 0.000016"/>
+      <geom name="beaker_grip_geom" type="cylinder" size="0.025 0.030" class="vessel" rgba="0.58 0.82 0.94 0.82"/>
+    </body>
+  </worldbody>
+
+  <equality>
+    <!-- Legitimate source mechanical couplings only; no vessel/gripper welds. -->
+    <joint name="openarm_left_ee_finger_joint_mimic" joint1="openarm_left_finger_joint1" joint2="openarm_left_finger_joint2" polycoef="0 1 0 0 0" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+    <joint name="openarm_right_ee_finger_joint_mimic" joint1="openarm_right_finger_joint1" joint2="openarm_right_finger_joint2" polycoef="0 1 0 0 0" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+  </equality>
+
+  <actuator>
+    <position name="left_joint1_ctrl" joint="openarm_left_joint1" kp="230" kv="2.7" forcelimited="true" forcerange="-40 40" ctrllimited="true" ctrlrange="-3.49066 1.39626"/>
+    <position name="left_joint2_ctrl" joint="openarm_left_joint2" kp="230" kv="2.7" forcelimited="true" forcerange="-40 40" ctrllimited="true" ctrlrange="-3.31613 0.174533"/>
+    <position name="left_joint3_ctrl" joint="openarm_left_joint3" kp="190" kv="2.2" forcelimited="true" forcerange="-27 27" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="left_joint4_ctrl" joint="openarm_left_joint4" kp="190" kv="2.2" forcelimited="true" forcerange="-27 27" ctrllimited="true" ctrlrange="0 2.44346"/>
+    <position name="left_joint5_ctrl" joint="openarm_left_joint5" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="left_joint6_ctrl" joint="openarm_left_joint6" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-0.785398 0.785398"/>
+    <position name="left_joint7_ctrl" joint="openarm_left_joint7" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="left_finger1_ctrl" joint="openarm_left_finger_joint1" kp="30" kv="0.2" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="0 0.7854"/>
+
+    <position name="right_joint1_ctrl" joint="openarm_right_joint1" kp="230" kv="2.7" forcelimited="true" forcerange="-40 40" ctrllimited="true" ctrlrange="-1.39626 3.49066"/>
+    <position name="right_joint2_ctrl" joint="openarm_right_joint2" kp="230" kv="2.7" forcelimited="true" forcerange="-40 40" ctrllimited="true" ctrlrange="-0.174533 3.31613"/>
+    <position name="right_joint3_ctrl" joint="openarm_right_joint3" kp="190" kv="2.2" forcelimited="true" forcerange="-27 27" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="right_joint4_ctrl" joint="openarm_right_joint4" kp="190" kv="2.2" forcelimited="true" forcerange="-27 27" ctrllimited="true" ctrlrange="0 2.44346"/>
+    <position name="right_joint5_ctrl" joint="openarm_right_joint5" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="right_joint6_ctrl" joint="openarm_right_joint6" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-0.785398 0.785398"/>
+    <position name="right_joint7_ctrl" joint="openarm_right_joint7" kp="30" kv="1.5" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-1.5708 1.5708"/>
+    <position name="right_finger1_ctrl" joint="openarm_right_finger_joint1" kp="30" kv="0.2" forcelimited="true" forcerange="-7 7" ctrllimited="true" ctrlrange="-0.7854 0"/>
+  </actuator>
+</mujoco>

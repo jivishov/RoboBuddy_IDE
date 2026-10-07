@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robobuddy-physics-reference"
+version = "0.2.0a1"
+description = "Local native MuJoCo reference runner for RoboBuddy IDE physics conformance"
+requires-python = ">=3.10"
+dependencies = [
+  "mujoco==3.11.0",
+]
+
+[tool.setuptools]
+py-modules = []

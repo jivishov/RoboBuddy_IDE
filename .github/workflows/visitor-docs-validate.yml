@@ -1,0 +1,64 @@
+name: Validate Visitor Pages and Manuals
+on:
+  push:
+    branches: [main, feat/openarm-general-scene-builder]
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'ide.html'
+      - 'guides/**'
+      - 'assets/site/**'
+      - 'assets/fonts/**'
+      - 'home.css'
+      - 'design-tokens.css'
+      - 'theme-system.css'
+      - 'styles.css'
+      - 'toolbar-refinement.css'
+      - 'physics-preview.css'
+      - 'src/themes.js'
+      - 'src/app-v2.js'
+      - 'src/physics/openarm-*'
+      - 'src/webmcp/**'
+      - 'tests/visitor-*'
+      - 'playwright.config.mjs'
+      - '.github/workflows/visitor-docs-validate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: visitor-docs-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visitor-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source syntax, documentation links and executable example contracts
+        run: |
+          node --check guides/manuals.js
+          node --check guides/legacy-entry.js
+          node --check src/app-v2.js
+          node tests/validate.mjs
+          node tests/visitor-docs.mjs
+      - run: npm install --ignore-scripts --no-package-lock
+      - run: npx playwright install --with-deps chromium
+      - name: Visitor layout, Help routing and published example through the real IDE
+        run: npx playwright test tests/visitor-site-browser.spec.mjs tests/visitor-ide-browser.spec.mjs --workers=1
+      - name: Source identity and non-mutation
+        if: always()
+        run: |
+          mkdir -p visitor-evidence
+          git rev-parse HEAD HEAD^{tree} > visitor-evidence/source-identity.txt
+          git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visitor-manual-evidence
+          path: |
+            test-results/
+            visitor-evidence/
+          retention-days: 14

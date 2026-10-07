@@ -1,0 +1,10 @@
+{
+  "schema_version": "robobuddy.lab.task.v2",
+  "id": "adapter_transfer",
+  "type": "dry_transfer",
+  "object_id": "novel_adapter",
+  "receiver_id": "receiver",
+  "target_port": "receiving_top",
+  "side": "left",
+  "acknowledge_simulation_only": true
+}

@@ -1,0 +1,121 @@
+{
+  "schema_version": "robobuddy.lab.scene.v2",
+  "id": "unseen_adapter_transfer",
+  "objects": [
+    {
+      "id": "bench",
+      "role": "bench",
+      "motion": "fixed",
+      "fixed_reason": "Declared installed work surface, not an inferred attachment",
+      "mass_kg": 15,
+      "position_m": [
+        0.41,
+        0,
+        0.98
+      ],
+      "parts": [
+        {
+          "id": "top",
+          "shape": "box",
+          "dimensions_m": [
+            0.82,
+            1.1,
+            0.05
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "surface",
+          "type": "support",
+          "part_id": "top"
+        }
+      ]
+    },
+    {
+      "id": "novel_adapter",
+      "label": "Previously undefined sample adapter",
+      "position_m": [
+        0.554,
+        0.1535,
+        1.005
+      ],
+      "mass_kg": 0.025,
+      "parts": [
+        {
+          "id": "body",
+          "shape": "box",
+          "position_m": [
+            0,
+            0,
+            0.0425
+          ],
+          "dimensions_m": [
+            0.04,
+            0.04,
+            0.085
+          ]
+        },
+        {
+          "id": "tab",
+          "shape": "box",
+          "position_m": [
+            0.024,
+            0,
+            0.024
+          ],
+          "dimensions_m": [
+            0.012,
+            0.012,
+            0.006
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "grip",
+          "type": "grasp",
+          "position_m": [
+            0,
+            0,
+            0.065
+          ]
+        }
+      ]
+    },
+    {
+      "id": "receiver",
+      "role": "fixture",
+      "position_m": [
+        0.67,
+        0.1535,
+        1.005
+      ],
+      "motion": "fixed",
+      "fixed_reason": "Explicit fixture assumption",
+      "parts": [
+        {
+          "id": "top",
+          "shape": "box",
+          "position_m": [
+            0,
+            0,
+            0.0125
+          ],
+          "dimensions_m": [
+            0.12,
+            0.12,
+            0.025
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "receiving_top",
+          "type": "support",
+          "part_id": "top"
+        }
+      ]
+    }
+  ]
+}

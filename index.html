@@ -1,124 +1,27 @@
 <!doctype html>
-<html lang="en" data-theme="calm-light">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="RoboBuddy Robot IDE — source-pinned robot programming with immediate articulated 3D simulation.">
-  <meta name="theme-color" content="#eef4f1">
-  <title>RoboBuddy Robot IDE</title>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-653L3T7BJ7"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-653L3T7BJ7');
-  </script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.css">
-  <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./toolbar-refinement.css">
-  <link rel="stylesheet" href="./theme-system.css">
-  <link rel="stylesheet" href="./microduck-controls.css">
-  <script>
-    try {
-      const savedTheme = localStorage.getItem('rbide.theme');
-      if (savedTheme === 'calm-light' || savedTheme === 'midnight-teal') document.documentElement.dataset.theme = savedTheme;
-    } catch { /* Theme persistence is optional. */ }
-  </script>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
-  }
-  </script>
-</head>
-<body>
-<div class="app" id="app">
-  <header class="menubar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>RoboBuddy IDE</span></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="file">File</button><div id="fileMenu" class="menu-popover" hidden><button data-action="import"><span>Open Python…</span></button><button data-action="save"><span>Save Draft</span><span class="shortcut">Ctrl+S</span></button><button data-action="exportMain"><span>Export main.py</span></button><button data-action="exportWorkspace"><span>Export Workspace</span></button><div class="menu-sep"></div><button data-action="resetWorkspace"><span>Reset to Starter</span></button></div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="edit">Edit</button><div id="editMenu" class="menu-popover" hidden><button data-action="undo"><span>Undo</span><span class="shortcut">Ctrl+Z</span></button><button data-action="redo"><span>Redo</span><span class="shortcut">Ctrl+Y</span></button><button data-action="find"><span>Find</span><span class="shortcut">Ctrl+F</span></button><button data-action="replace"><span>Replace</span><span class="shortcut">Ctrl+H</span></button><button data-action="toggleComment"><span>Toggle Comment</span><span class="shortcut">Ctrl+/</span></button><div class="menu-sep"></div><button data-action="palette"><span>Command Palette</span><span class="shortcut">Ctrl+Shift+P</span></button></div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="run">Run</button><div id="runMenu" class="menu-popover" hidden><button data-action="run"><span>Run</span><span class="shortcut">F5</span></button><button data-action="step"><span>Step Action</span><span class="shortcut">F10</span></button><button data-action="cursor"><span>Run to Cursor</span><span class="shortcut">Ctrl+F10</span></button><button data-action="stop"><span>Stop</span><span class="shortcut">Shift+F5 / Esc</span></button><button data-action="reset"><span>Reset Simulation</span></button></div></div>
-    <div class="menu-wrap theme-menu-wrap"><button class="menu-button" data-menu="theme" aria-haspopup="menu" aria-expanded="false">Theme</button><div id="themeMenu" class="menu-popover theme-menu" role="menu" aria-label="Color theme" hidden><div class="theme-menu-label">Color Theme</div><button class="theme-option" type="button" data-theme-id="calm-light" role="menuitemradio" aria-checked="false"><span class="theme-swatch calm-light" aria-hidden="true"></span><span>Calm Light</span><span class="theme-option-check" aria-hidden="true">✓</span></button><button class="theme-option" type="button" data-theme-id="midnight-teal" role="menuitemradio" aria-checked="false"><span class="theme-swatch midnight-teal" aria-hidden="true"></span><span>Midnight Teal</span><span class="theme-option-check" aria-hidden="true">✓</span></button></div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="view">View</button><div id="viewMenu" class="menu-popover" hidden><button data-action="sidebar"><span>Toggle Explorer</span><span class="shortcut">Ctrl+B</span></button><button data-action="panel"><span>Toggle Bottom Panel</span><span class="shortcut">Ctrl+J</span></button><button data-action="editorFocus"><span>Focus Editor</span></button><button data-action="simulatorFocus"><span>Focus Simulator</span></button><button data-action="fit"><span>Fit Simulator</span></button></div></div>
-    <div class="menu-wrap"><button class="menu-button" data-menu="robot">Robot</button><div id="robotMenu" class="menu-popover" hidden><button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Python Workspace</span></button></div></div>
-    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help">Help</button><div id="helpMenu" class="menu-popover" hidden><button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button><div class="menu-sep"></div><button data-action="about"><span>About RoboBuddy IDE</span></button></div></div>
-    <div class="menubar-spacer"></div><span id="modeChip" class="mode-chip">SOURCE-PLANT SIMULATION · HW VALIDATION PENDING</span>
-  </header>
-
-  <div class="toolbar">
-    <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
-    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="unitree">Unitree G1 29-DoF</option><option value="microduck">MicroDuck Policy Demonstrator</option></select>
-    <select id="taskSelect" aria-label="Robot workspace or reviewed lab task"></select>
-    <div id="agentAccessControl" class="agent-access-control" role="group" aria-label="Agent Assist"><span class="agent-access-label"><span class="agent-access-dot" aria-hidden="true"></span>Agent</span><button type="button" data-agent-access="off" aria-pressed="true">Off</button><button type="button" data-agent-access="assist" aria-pressed="false">Assist</button></div>
-    <span class="toolbar-sep"></span>
-    <button id="runBtn" class="primary" title="Run (F5)">▶ Run</button><button id="pauseBtn" title="Pause simulation" aria-label="Pause simulation" aria-pressed="false" disabled>⏸ Pause</button><button id="stepBtn" title="Step physical action (F10)">▷ Step Action</button><button id="cursorBtn" title="Run to Cursor (Ctrl+F10)">▶│ Cursor</button><button id="stopBtn" class="danger" title="Simulation STOP (Esc)">■ Stop</button><button id="resetBtn" title="Reset simulation">↻ Reset</button>
-    <span class="toolbar-sep"></span><button id="mobileCodeBtn" class="mobile-pane active">Code</button><button id="mobileSimBtn" class="mobile-pane">Simulator</button>
-    <span class="robot-title"><strong id="robotLabel"></strong> · <span id="driverLabel"></span></span>
-  </div>
-
-  <main id="workspace" class="workspace">
-    <aside id="sidebar" class="sidebar">
-      <nav class="activity" aria-label="IDE views"><button class="active" data-side-view="explorer" title="Explorer — files" aria-label="Explorer — files">▧</button><button data-side-view="task" title="Task — mission instructions" aria-label="Task — mission instructions">✓</button><button data-side-view="robot" title="Robot — view and diagnostics" aria-label="Robot — view and diagnostics">◎</button></nav>
-      <div class="side-content">
-        <section id="explorerSideView" class="side-view"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div></section>
-        <section id="taskSideView" class="side-view" hidden><div class="side-heading">TASK</div><section id="taskPanel" class="task-panel"></section></section>
-        <section id="robotSideView" class="side-view" hidden><div class="side-heading">ROBOT</div><div class="robot-side-card"><p id="sideRobotSummary"></p><button data-side-action="front">Front / Fit View</button><button data-side-action="telemetry">Simulated Telemetry</button><button data-side-action="contacts">Contact Diagnostics</button></div></section>
-      </div>
-    </aside>
-    <section id="mainPanes" class="main-panes">
-      <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
-      <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
-      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><button id="fitBtn" title="Fit the active robot in the simulator viewport.">Fit</button><button id="highContrastSceneBtn" class="scene-contrast-toggle" type="button" aria-pressed="true" title="High-contrast scene boundaries are configured presentation aids; they do not alter collision, kinematics, or canonical mesh data.">Contrast</button><button id="panelToggle">Diagnostics</button></div><div class="sim-workbench"><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div id="cameraModeLabel" class="camera-mode-label" role="status" aria-live="polite" hidden>OVERVIEW · ORBIT ROBOT + BALL</div><div id="simBadge" class="sim-badge" title="Neutral Lab Grey floor and contrast boundaries are configured viewport aids, not real-world calibrated materials.">PINNED ROBOBUDDY KINEMATICS / CONTACT PLANT · CONFIGURED FLOOR · NOT HARDWARE VALIDATION</div></div><aside id="microduckControlDeck" class="microduck-control-deck" aria-label="MicroDuck simulator controls" hidden></aside></div></section>
-    </section>
-  </main>
-
-  <section id="bottomPanel" class="bottom-panel collapsed">
-    <div id="bottomTabs" class="bottom-tabs"><button class="bottom-tab active" data-panel="problems">PROBLEMS</button><button class="bottom-tab" data-panel="telemetry">TELEMETRY</button><button class="bottom-tab" data-panel="commands">COMMANDS</button><button class="bottom-tab" data-panel="contacts">CONTACTS</button><button class="bottom-tab" data-panel="task">TASK</button><button id="bottomClose" class="bottom-close" title="Collapse panel">×</button></div>
-    <div id="problemsPanel" class="panel-view"></div><div id="telemetryPanel" class="panel-view" hidden></div><div id="commandsPanel" class="panel-view" hidden></div><div id="contactsPanel" class="panel-view" hidden></div><div id="taskBottomPanel" class="panel-view" hidden><p id="fidelityText"></p></div>
-  </section>
-
-  <footer class="statusbar"><span id="statusMessage">Starting…</span><span id="statusCursor">main.py</span><span class="right">Python 3 · <span id="driverStatus">physical-target API</span> · Hardware validation: pending</span></footer>
-</div>
-
-<dialog id="aboutDialog" class="about-dialog" aria-labelledby="aboutDialogTitle" aria-describedby="aboutDialogDescription">
-  <div class="about-dialog-shell">
-    <button id="aboutCloseBtn" class="about-close" type="button" aria-label="Close About RoboBuddy IDE dialog">×</button>
-    <div class="about-head">
-      <div class="about-mark" aria-hidden="true">RB</div>
-      <div>
-        <p class="about-eyebrow">Robotics learning environment</p>
-        <h2 id="aboutDialogTitle">RoboBuddy IDE</h2>
-      </div>
-    </div>
-    <p id="aboutDialogDescription" class="about-copy">A browser-based robotics IDE for Python, live 3D simulation, and bounded WebMCP collaboration.</p>
-    <div class="about-rule" aria-hidden="true"></div>
-    <div class="about-license">
-      <span class="about-license-label">License</span>
-      <strong>MIT License</strong>
-      <span>Open source under the MIT License. Bundled third-party assets retain their own notices.</span>
-    </div>
-    <p class="about-copyright">© 2026 Dr. Emil Jivishov</p>
-  </div>
-</dialog>
-<div id="commandPalette" class="command-palette" hidden><div class="command-box"><div class="command-input-row"><input id="commandInput" placeholder="Type a command…" aria-label="Command palette"><button id="commandClose" class="close">×</button></div><div id="commandList" class="command-list"></div></div></div>
-<input id="importFile" type="file" accept=".py,text/x-python" hidden>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/indent-fold.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/searchcursor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/search.min.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
-<script type="module" src="./src/app-v2.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f2eb">
+<title>RoboBuddy IDE — Build, program, observe</title><meta name="description" content="Explore browser robotics with Python, MuJoCo simulation and opt-in WebMCP. Build new laboratory equipment, program OpenArm and inspect physical outcomes.">
+<link rel="preload" href="./assets/fonts/ibm-plex-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./design-tokens.css"><link rel="stylesheet" href="./guides/site.css"><link rel="stylesheet" href="./home.css"><script src="./guides/legacy-entry.js"></script></head><body class="visitor-home"><a class="skip" href="#main">Skip to content</a>
+<header class="site-header"><div class="wrap header-inner"><a class="wordmark" href="index.html" aria-label="RoboBuddy IDE home"><span class="mark" aria-hidden="true">RB</span><span>RoboBuddy <span class="wordmark-suffix">IDE</span></span></a>
+<nav class="header-nav" aria-label="Main navigation"><a class="optional" href="index.html#features">Explore</a><a class="optional" href="index.html#robots">Robots</a><details class="help-nav"><summary>Help</summary><div class="help-links"><a href="guides/openarm.html">OpenArm manual</a><a href="guides/webmcp.html">WebMCP manual</a><a href="index.html#get-started">Getting started</a></div></details><a class="button small" href="ide.html">Launch IDE <span aria-hidden="true">↗</span></a></nav></div></header>
+<main id="main" class="wrap">
+<section class="hero" aria-labelledby="hero-title"><div><div class="hero-kicker"><span class="eyebrow">A workspace for the curious</span><span class="tag">Physics Preview</span></div><h1 id="hero-title">Build a workcell.<br>Program a robot.<br><em>See what happens.</em></h1><p class="hero-copy">Write Python. Build laboratory scenes. Explore robot motion in your browser—with optional help from an AI agent.</p><div class="actions"><a class="button" href="./ide.html?robot=openarm">Launch OpenArm <span aria-hidden="true">↗</span></a><a class="button secondary" href="./guides/openarm.html#quick-start">Quick start <span aria-hidden="true">→</span></a></div><p class="microcopy">No installation. No robot required. <span>Simulation is not hardware validation.</span></p></div>
+<figure class="preview"><div class="preview-top"><span class="preview-label">Inside the workcell</span><span>01 / OPENARM</span></div><div class="preview-image"><img src="./assets/site/openarm-workcell.webp" width="1170" height="714" alt="OpenArm simulation with a custom instrument housing, hollow vessel and repeated rack components on an authored bench." fetchpriority="high"></div><div class="preview-bottom"><span><span class="preview-dot" aria-hidden="true"></span>Actual simulator view</span><span>Build · Program · Observe</span></div><figcaption>OpenArm in an authored laboratory scene. Synthetic test geometry; not a calibrated reconstruction or hardware demonstration.</figcaption></figure></section>
+<div class="trust-strip" aria-label="At a glance"><span><b>Python</b> programming</span><span><b>MuJoCo</b> physics</span><span><b>WebMCP</b> collaboration</span><span>Open source <span aria-hidden="true">↗</span> Free to explore</span></div>
+<section id="features" class="section"><div class="section-heading"><p class="eyebrow">Code meets the physical world</p><h2>One workspace. Room to experiment.</h2><p>Keep your program, scene and observations together. Every robot workspace makes its capabilities and limits visible.</p></div><div class="feature-grid">
+<article class="feature"><span class="number">01 / PROGRAM</span><h3>Write a real program</h3><p>Start with a robot program, edit Python and inspect telemetry. Save a local draft or export your workspace.</p></article>
+<article class="feature"><span class="number">02 / SIMULATE</span><h3>Observe the physics</h3><p>Inspect motion and contacts in MuJoCo. Compare requested targets with observed results; a completed command alone is not proof of task success.</p></article>
+<article class="feature"><span class="number">03 / CONSTRUCT</span><h3>Build your workcell</h3><p>Create OpenArm scenes with rotated parts, hollow profiles and validated convex meshes. Record assumptions and inspect the collision model.</p></article>
+<article class="feature"><span class="number">04 / COLLABORATE</span><h3>Work with an agent</h3><p>Opt in to bounded WebMCP tools in a compatible host. Let an agent inspect, build and program while you retain Stop and access controls.</p></article></div></section>
+</main>
+<section class="workflow section" id="photo-workflow"><div class="wrap workflow-grid"><div><p class="eyebrow">Photo-guided scene authoring</p><h2>From a reference photo<br>to a scene you can inspect.</h2><p>Give a laboratory photo to your multimodal agent. The agent interprets it and describes new equipment through the builder—not just a fixed list of equipment names.</p><div class="callout"><strong>Approximation stays visible.</strong><p>The app validates the submitted geometry. It does not independently recognize image content, recover hidden mechanisms or calibrate dimensions from a photograph.</p></div><a href="./guides/webmcp.html#photo-workflow">Follow the WebMCP workflow <span aria-hidden="true">→</span></a></div><ol class="steps"><li><h3>Describe and account for the scene</h3><p>List visible items, uncertain geometry and unresolved equipment. Keep estimated dimensions and layout adjustments explicit.</p></li><li><h3>Construct, preview, then apply</h3><p>Stage a bounded scene and check a disposable physics candidate. Only explicit application replaces the active workcell.</p></li><li><h3>Program and evaluate separately</h3><p>Define a supported task before grasping. Read contact, lift, carry, release and settled-placement evidence instead of assuming the command worked.</p></li></ol></div></section>
+<div class="wrap"><section class="section" id="robots"><div class="section-heading"><p class="eyebrow">Robot workspaces</p><h2>Choose your next experiment.</h2><p>Six robot workspaces, each with a distinct set of supported experiments.</p></div><div class="robot-grid">
+<article class="robot robot-featured"><p class="kind">Bimanual manipulation <span class="recommended">Start here</span></p><h3>OpenArm</h3><p>Two-arm rigid-body manipulation, contact diagnostics and general laboratory scene authoring. Start here for scene building and the visitor guides.</p><a href="./ide.html?robot=openarm">Open OpenArm →</a></article>
+<article class="robot"><p class="kind">Robot arm</p><h3>SO-101</h3><p>A physical block-transfer benchmark with Python control and observed grasp, transport and release checks.</p><a href="./ide.html?robot=so101">Open SO-101 →</a></article>
+<article class="robot"><p class="kind">Mobile platform</p><h3>LeKiwi</h3><p>A physical mobile-courier workspace. Read the selected task’s controls, source assumptions and evidence limits.</p><a href="./ide.html?robot=lekiwi">Open LeKiwi →</a></article>
+<article class="robot"><p class="kind">Experimental humanoid</p><h3>Asimov 1</h3><p>Actuator, whole-body dynamics and standing experiments. Bounded motion attempts are not a verified general walking or grasping capability.</p><a href="./ide.html?robot=asimov">Open Asimov →</a></article>
+<article class="robot"><p class="kind">Policy-driven contact</p><h3>MicroDuck</h3><p>Physical locomotion, ground-contact and ball-kick tasks with pinned policy/runtime assumptions. No physical roller mode is claimed.</p><a href="./ide.html?robot=microduck">Open MicroDuck →</a></article>
+<article class="robot"><p class="kind">Humanoid dynamics &amp; poses</p><h3>Unitree G1</h3><p>Bounded physical dynamics and standing, plus a separate kinematic pose workspace. Walking and dexterous-hand control are not supplied.</p><a href="./ide.html?robot=unitree">Open Unitree →</a></article></div><p class="boundaries">Simulation parameters and authoring limits are not hardware measurements or payload ratings. No laboratory liquids, chemical processes or automatic collision-free motion planner are included in the general scene builder.</p></section>
+<section class="get-started" id="get-started"><div><p class="eyebrow">Start with an experiment</p><h2>Your next idea starts<br>in the workcell.</h2><p>Choose OpenArm, wait for Ready and explore the starter program. Take it further with your own scene or an agent-assisted experiment.</p><a class="button" href="./ide.html?robot=openarm">Launch the OpenArm workspace ↗</a><p class="microcopy">A desktop browser is recommended for editing. The manuals work on mobile. The IDE needs access to its model and runtime assets.</p></div><div class="guide-links"><a class="guide-link" href="./guides/openarm.html"><strong>OpenArm manual →</strong><span>First run, Lab Builder, physical evidence and troubleshooting.</span></a><a class="guide-link" href="./guides/webmcp.html"><strong>WebMCP manual →</strong><span>Agent access, tool reference, photo workflow and runnable example files.</span></a></div></section></div>
+<footer class="footer"><div class="wrap"><span>© 2026 Dr. Emil Jivishov · RoboBuddy IDE</span><span><a href="LICENSE">MIT License</a><a href="THIRD_PARTY_NOTICES.md">Asset notices</a><a href="https://github.com/jivishov/RoboBuddy_IDE" target="_blank" rel="noopener">Source on GitHub</a></span></div></footer><script src="./guides/manuals.js" defer></script></body></html>

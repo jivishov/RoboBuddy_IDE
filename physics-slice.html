@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RoboBuddy IDE — Phase 1 Physics Slice</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark;background:#0d1117;color:#e6edf3}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:#0d1117;padding:24px;overflow:auto}
+    main{min-width:1180px;max-width:1380px;margin:0 auto}
+    h1,p,.status,.controls button,.metric dt,.metric dd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    h1{margin:0 0 8px;font-size:28px}
+    p{margin:0 0 18px;color:#9da7b3}
+    .status{padding:10px 12px;border:1px solid #30363d;border-radius:8px;background:#161b22;margin-bottom:14px}
+    .controls{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto}
+    button{flex:0 0 auto;border:1px solid #3d4652;border-radius:7px;background:#1b222c;color:#e6edf3;padding:8px 12px;cursor:pointer;white-space:nowrap}
+    button:hover{background:#25303c}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    section{border:1px solid #30363d;border-radius:10px;background:#161b22;padding:14px;min-width:0}
+    h2{margin:0 0 12px;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    dl{display:grid;grid-template-columns:190px minmax(0,1fr);gap:8px 12px;margin:0}
+    dt{color:#8b949e}.metric dd{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    pre{margin:0;max-height:460px;overflow:auto;font-size:12px;line-height:1.45;white-space:pre}
+  </style>
+</head>
+<body>
+<main>
+  <h1>RoboBuddy IDE — Phase 1 Physics Slice</h1>
+  <p>Isolated browser MuJoCo diagnostic harness. It is not hardware validation and is not browser/native conformance evidence by itself.</p>
+  <div id="status" class="status">Not loaded</div>
+  <div class="controls">
+    <button id="load">Load scene</button>
+    <button id="observe">Read observation</button>
+    <button id="pause">Pause</button>
+    <button id="resume">Resume</button>
+    <button id="left">Target -0.8 rad · 500 steps</button>
+    <button id="center">Target 0 rad · 500 steps</button>
+    <button id="right">Target +0.8 rad · 500 steps</button>
+    <button id="step100">Advance 100 steps</button>
+    <button id="step500">Advance 500 steps</button>
+    <button id="reset">Reset</button>
+  </div>
+  <div class="grid">
+    <section>
+      <h2>Live observation</h2>
+      <dl class="metric">
+        <dt>Observation schema</dt><dd id="schemaVersion">—</dd>
+        <dt>Observation view</dt><dd id="view">—</dd>
+        <dt>World frame</dt><dd id="worldFrame">—</dd>
+        <dt>Model SHA-256</dt><dd id="modelSha">—</dd>
+        <dt>MuJoCo version</dt><dd id="engineVersion">—</dd>
+        <dt>Version evidence</dt><dd id="versionEvidence">—</dd>
+        <dt>Physics timestep</dt><dd id="timestep">—</dd>
+        <dt>Simulation time</dt><dd id="time">—</dd>
+        <dt>Hinge position</dt><dd id="position">—</dd>
+        <dt>Hinge velocity</dt><dd id="velocity">—</dd>
+        <dt>Hinge target</dt><dd id="target">—</dd>
+        <dt>Free box position</dt><dd id="box">—</dd>
+        <dt>MuJoCo contact count</dt><dd id="contacts">—</dd>
+        <dt>Contact pairs readable</dt><dd id="contactsReadable">—</dd>
+      </dl>
+    </section>
+    <section>
+      <h2>Diagnostics</h2>
+      <pre id="diagnostics">—</pre>
+    </section>
+  </div>
+</main>
+<script type="module">
+  import { PhysicsSession } from './src/physics/session.js';
+  import { BrowserMuJoCoBackend } from './src/physics/browser-mujoco-backend.js';
+  import { PHASE1_SCENE } from './src/physics/phase1-scene.js';
+
+  const $ = (id) => document.getElementById(id);
+  const backend = new BrowserMuJoCoBackend();
+  const session = new PhysicsSession(backend, { sessionId: 'phase1-browser-slice' });
+  const COMMAND_STEP_BUDGET = 500;
+
+  function renderObservation(obs) {
+    window.__phase1Observation = structuredClone(obs);
+    const hinge = obs?.joints?.hinge || {};
+    const world = obs?.frames?.world || {};
+    $('schemaVersion').textContent = obs?.schemaVersion || '—';
+    $('view').textContent = obs?.view || '—';
+    $('worldFrame').textContent = world.id ? `${world.id} · ${world.handedness} · ${world.upAxis}` : '—';
+    $('modelSha').textContent = obs?.model?.sha256 || '—';
+    $('engineVersion').textContent = obs?.engine?.version || 'unknown';
+    $('versionEvidence').textContent = obs?.engine?.versionEvidence || 'unknown';
+    $('timestep').textContent = obs?.engine?.timestepSeconds == null ? '—' : Number(obs.engine.timestepSeconds).toFixed(6) + ' s';
+    $('time').textContent = Number(obs?.simulationTimeSeconds ?? 0).toFixed(4) + ' s';
+    $('position').textContent = Number(hinge.positionRad ?? 0).toFixed(5) + ' rad';
+    $('velocity').textContent = Number(hinge.velocityRadS ?? 0).toFixed(5) + ' rad/s';
+    $('target').textContent = hinge.targetRad == null ? '—' : Number(hinge.targetRad).toFixed(5) + ' rad';
+    $('box').textContent = Array.isArray(obs?.bodies?.free_box?.positionM) ? obs.bodies.free_box.positionM.map((v) => Number(v).toFixed(4)).join(', ') + ' m' : '—';
+    $('contacts').textContent = String(obs?.contactCount ?? 0);
+    $('contactsReadable').textContent = obs?.contactsReadable === true ? 'yes' : obs?.contactsReadable === false ? 'no' : '—';
+  }
+
+  async function renderDiagnostics() {
+    const diagnostics = await session.getDiagnostics();
+    window.__phase1Diagnostics = structuredClone(diagnostics);
+    $('diagnostics').textContent = JSON.stringify(diagnostics, null, 2);
+  }
+
+  async function run(label, fn) {
+    $('status').textContent = label + '…';
+    try {
+      const result = await fn();
+      const obs = result?.observation || result?.result || result;
+      if (obs?.simulationTimeSeconds != null) renderObservation(obs);
+      await renderDiagnostics();
+      $('status').textContent = label + ' complete';
+    } catch (error) {
+      $('status').textContent = label + ' failed: ' + String(error?.message || error);
+      console.error(error);
+    }
+  }
+
+  const targetCommand = (targetRad) => session.sendCommand(
+    { type: 'set_joint_target', targetRad },
+    { maxSteps: COMMAND_STEP_BUDGET },
+  );
+
+  $('load').onclick = () => run('Load scene', () => session.loadScene(structuredClone(PHASE1_SCENE)));
+  $('observe').onclick = () => run('Read observation', () => session.getObservation({ view: 'ground_truth' }));
+  $('pause').onclick = () => run('Pause', () => session.pause());
+  $('resume').onclick = () => run('Resume', () => session.resume());
+  $('left').onclick = () => run('Set target -0.8 rad', () => targetCommand(-0.8));
+  $('center').onclick = () => run('Set target 0 rad', () => targetCommand(0));
+  $('right').onclick = () => run('Set target +0.8 rad', () => targetCommand(0.8));
+  $('step100').onclick = () => run('Advance 100 steps', () => session.advanceSteps(100));
+  $('step500').onclick = () => run('Advance 500 steps', () => session.advanceSteps(500));
+  $('reset').onclick = () => run('Reset', () => session.reset());
+
+  addEventListener('beforeunload', () => session.dispose(), { once: true });
+</script>
+</body>
+</html>

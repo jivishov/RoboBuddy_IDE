@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>OpenArm contact workcell test</title>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","https://cdn.jsdelivr.net/npm/three@0.180.0/":"/node_modules/three/"}}</script>
+</head><body style="margin:0;background:#d7dfe2">
+<div style="position:relative;width:100vw;height:100vh"><canvas id="simCanvas" style="width:100%;height:100%"></canvas></div>
+<script type="module">
+import { OpenArmPhysicalSimulator } from '/src/physics/openarm-physical-simulator.js';
+window.sim = new OpenArmPhysicalSimulator(document.querySelector('canvas'));
+await sim.setScenario('openarm', { simulationMode: 'physical_mujoco', physicalSceneId: 'phase5a-openarm-v2-bimanual-stack' });
+window.ready = true;
+function frame() { sim.renderFrame(); requestAnimationFrame(frame); }
+frame();
+</script></body></html>

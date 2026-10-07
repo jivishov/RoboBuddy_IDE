@@ -1,0 +1,187 @@
+{
+  "schemaVersion": "robobuddy.openarm.reference.v3",
+  "stages": [
+    {
+      "name": "settle_initial",
+      "targetsRad": {},
+      "durationSeconds": 0.5,
+      "label": "Settle both vessels on their source supports"
+    },
+    {
+      "name": "left_close",
+      "targetsRad": {
+        "openarm_left_finger_joint1": 0.1
+      },
+      "durationSeconds": 2.5,
+      "label": "Close slowly until bilateral contact is established"
+    },
+    {
+      "name": "left_lift",
+      "targetsRad": {
+        "openarm_left_joint1": -0.05253966506920369,
+        "openarm_left_joint2": 0,
+        "openarm_left_joint3": 0,
+        "openarm_left_joint4": 1.8468042348970615,
+        "openarm_left_joint5": 0,
+        "openarm_left_joint6": -0.3285475731713685,
+        "openarm_left_joint7": 0,
+        "openarm_left_finger_joint1": 0.1
+      },
+      "durationSeconds": 1.4,
+      "label": "Lift the contacted dry vessel"
+    },
+    {
+      "name": "left_transfer",
+      "targetsRad": {
+        "openarm_left_joint1": -0.5905285334129174,
+        "openarm_left_joint2": 0,
+        "openarm_left_joint3": 0,
+        "openarm_left_joint4": 1.132438798768539,
+        "openarm_left_joint5": 0,
+        "openarm_left_joint6": -0.1521710053865597,
+        "openarm_left_joint7": 0,
+        "openarm_left_finger_joint1": 0.1
+      },
+      "durationSeconds": 1.8,
+      "label": "Carry above the receiving support"
+    },
+    {
+      "name": "left_lower",
+      "targetsRad": {
+        "openarm_left_joint1": -0.5815591182839464,
+        "openarm_left_joint2": 0,
+        "openarm_left_joint3": 0,
+        "openarm_left_joint4": 0.90038694388924,
+        "openarm_left_joint5": 0,
+        "openarm_left_joint6": 0.0888502646217102,
+        "openarm_left_joint7": 0,
+        "openarm_left_finger_joint1": 0.1
+      },
+      "durationSeconds": 1.4,
+      "label": "Lower onto the support"
+    },
+    {
+      "name": "left_support",
+      "targetsRad": {},
+      "durationSeconds": 0.3,
+      "label": "Hold for support contact before releasing"
+    },
+    {
+      "name": "left_release",
+      "targetsRad": {
+        "openarm_left_finger_joint1": 0.65
+      },
+      "durationSeconds": 2.5,
+      "label": "Open the gripper slowly"
+    },
+    {
+      "name": "left_settle",
+      "targetsRad": {},
+      "durationSeconds": 0.5,
+      "label": "Allow the free vessel to settle"
+    },
+    {
+      "name": "left_retreat",
+      "targetsRad": {
+        "openarm_left_joint1": -0.05253966506920369,
+        "openarm_left_joint2": 0,
+        "openarm_left_joint3": 0,
+        "openarm_left_joint4": 1.8468042348970615,
+        "openarm_left_joint5": 0,
+        "openarm_left_joint6": -0.3285475731713685,
+        "openarm_left_joint7": 0,
+        "openarm_left_finger_joint1": 0.65
+      },
+      "durationSeconds": 2.5,
+      "label": "Retreat clear of the released vessel"
+    },
+    {
+      "name": "right_close",
+      "targetsRad": {
+        "openarm_right_finger_joint1": -0.1
+      },
+      "durationSeconds": 2.5,
+      "label": "Close slowly until bilateral contact is established"
+    },
+    {
+      "name": "right_lift",
+      "targetsRad": {
+        "openarm_right_joint1": 0.05253966506920369,
+        "openarm_right_joint2": 0,
+        "openarm_right_joint3": 0,
+        "openarm_right_joint4": 1.8468042348970615,
+        "openarm_right_joint5": 0,
+        "openarm_right_joint6": 0.3285475731713685,
+        "openarm_right_joint7": 0,
+        "openarm_right_finger_joint1": -0.1
+      },
+      "durationSeconds": 1.4,
+      "label": "Lift the contacted dry vessel"
+    },
+    {
+      "name": "right_transfer",
+      "targetsRad": {
+        "openarm_right_joint1": 0.5905285334129174,
+        "openarm_right_joint2": 0,
+        "openarm_right_joint3": 0,
+        "openarm_right_joint4": 1.132438798768539,
+        "openarm_right_joint5": 0,
+        "openarm_right_joint6": 0.1521710053865597,
+        "openarm_right_joint7": 0,
+        "openarm_right_finger_joint1": -0.1
+      },
+      "durationSeconds": 1.8,
+      "label": "Carry above the receiving support"
+    },
+    {
+      "name": "right_lower",
+      "targetsRad": {
+        "openarm_right_joint1": 0.5815591182839464,
+        "openarm_right_joint2": 0,
+        "openarm_right_joint3": 0,
+        "openarm_right_joint4": 0.90038694388924,
+        "openarm_right_joint5": 0,
+        "openarm_right_joint6": -0.0888502646217102,
+        "openarm_right_joint7": 0,
+        "openarm_right_finger_joint1": -0.1
+      },
+      "durationSeconds": 1.4,
+      "label": "Lower onto the support"
+    },
+    {
+      "name": "right_support",
+      "targetsRad": {},
+      "durationSeconds": 0.3,
+      "label": "Hold for support contact before releasing"
+    },
+    {
+      "name": "right_release",
+      "targetsRad": {
+        "openarm_right_finger_joint1": -0.65
+      },
+      "durationSeconds": 2.5,
+      "label": "Open the gripper slowly"
+    },
+    {
+      "name": "right_settle",
+      "targetsRad": {},
+      "durationSeconds": 0.5,
+      "label": "Allow the free vessel to settle"
+    },
+    {
+      "name": "right_retreat",
+      "targetsRad": {
+        "openarm_right_joint1": 0.05253966506920369,
+        "openarm_right_joint2": 0,
+        "openarm_right_joint3": 0,
+        "openarm_right_joint4": 1.8468042348970615,
+        "openarm_right_joint5": 0,
+        "openarm_right_joint6": 0.3285475731713685,
+        "openarm_right_joint7": 0,
+        "openarm_right_finger_joint1": -0.65
+      },
+      "durationSeconds": 2.5,
+      "label": "Retreat clear of the released vessel"
+    }
+  ]
+}

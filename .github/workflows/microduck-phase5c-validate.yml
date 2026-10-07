@@ -1,0 +1,142 @@
+name: Validate MicroDuck Phase 5C
+
+on:
+  push:
+    branches: [main, "fix/**", "claude/**", "feat/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  microduck-phase5c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: MicroDuck Phase 5C syntax contracts
+        run: |
+          node --check src/physics/backend-contract.js
+          node --check src/physics/session.js
+          node --check src/physics/browser-mujoco-backend.js
+          node --check src/physics/model-registry.js
+          node --check src/physics/capabilities.js
+          node --check src/physics/microduck-source-audit.js
+          node --check src/physics/microduck-controller.js
+          node --check src/physics/microduck-model-package.js
+          node --check src/physics/microduck-capabilities.js
+          node --check src/physics/microduck-scene.js
+          node --check src/physics/microduck-task-evaluator.js
+          node --check src/physics/microduck-mujoco-worker.js
+          node --check src/physics/microduck-physical-simulator.js
+          node --check src/runtime/microduck-physical-bridge.js
+          node --check src/webmcp/microduck-physical-control.js
+          node --check src/webmcp/register-ide-tools.js
+          node --check src/simulator-host.js
+          node --check src/task-catalog.js
+          node --check tests/physics/microduck-phase5c-core.mjs
+          node --check tests/physics/microduck-lifecycle-core.mjs
+          node --check tests/physics/microduck-browser-mesh-vfs-core.mjs
+          node --check tests/microduck-phase5c-browser.spec.mjs
+          python -m py_compile scripts/generate_microduck_models.py
+          python -m py_compile native/microduck_controller_reference.py native/microduck_reference.py native/microduck_bam_reference.py native/microduck_bam_physical_reference.py tests/validate_microduck_bam_evidence.py
+
+      - name: Committed MJCF assets match the deterministic generator
+        run: python scripts/generate_microduck_models.py --check
+
+      - name: Shared physics session, backend and sampled-observation contracts
+        run: node tests/physics/vertical-slice-core.mjs
+
+      - name: MicroDuck source audit, controller contract, capability audit and conformance fixture
+        run: node tests/physics/microduck-phase5c-core.mjs
+
+      - name: MicroDuck session, setup path, cadence, cancellation and lifecycle gates
+        run: node tests/physics/microduck-lifecycle-core.mjs
+
+      - name: MicroDuck exact-mesh browser VFS loading contract
+        run: node tests/physics/microduck-browser-mesh-vfs-core.mjs
+
+      - name: MicroDuck public command, bridge and starter regressions
+        run: |
+          node tests/physics/microduck-interfaces-core.mjs /tmp/microduck-interfaces.json
+          python -m pip install --disable-pip-version-check 'jsonschema==4.23.0'
+          python tests/validate_microduck_interfaces.py /tmp/microduck-interfaces.json
+
+      - name: MicroDuck in-flight cancellation and Agent Access revocation regressions
+        run: |
+          node --check tests/physics/microduck-cancellation-core.mjs
+          node tests/physics/microduck-cancellation-core.mjs
+
+      - name: MicroDuck complete-body presentation contract
+        run: node tests/physics/microduck-presentation-core.mjs
+
+      - name: MicroDuck pinned asset gate
+        run: node tests/validate_microduck_assets.mjs
+
+      - name: Repository static fidelity checks
+        run: node tests/validate.mjs
+
+      - name: Generate native MuJoCo BAM physical, negative and sensitivity evidence
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir "mujoco==3.11.0" numpy onnxruntime 'better-actuator-models==1.0.1'
+          python native/microduck_bam_reference.py --json /tmp/microduck-bam-library.json
+          python native/microduck_bam_physical_reference.py --trial all --json /tmp/microduck-all.json
+          python native/microduck_bam_physical_reference.py --trial walk --timestep 0.001 --json /tmp/microduck-walk-tight.json
+          python native/microduck_bam_physical_reference.py --trial stand --timestep 0.001 --json /tmp/microduck-stand-tight.json
+
+      - name: Validate committed controller fixture independently of plant dynamics
+        run: python native/microduck_controller_reference.py --json /tmp/microduck-controller-conformance.json
+
+      - name: Retain native MicroDuck evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microduck-phase5c-native-evidence-${{ github.sha }}
+          path: /tmp/microduck-*.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Validate native MicroDuck BAM physical, negative and sensitivity gates
+        run: python tests/validate_microduck_bam_evidence.py /tmp/microduck-all.json /tmp/microduck-walk-tight.json /tmp/microduck-stand-tight.json
+
+      - name: Fleet regressions must not be weakened by Phase 5C
+        run: |
+          node tests/physics/model-registry-core.mjs
+          node tests/physics/so101-manipulation-core.mjs
+          node tests/physics/so101-task-evaluator-core.mjs
+          node tests/physics/openarm-phase5a-core.mjs
+          node tests/physics/lekiwi-phase5b-core.mjs
+          node tests/physics/live-python-bridge-core.mjs
+          node tests/physics/physical-python-runtime-core.mjs
+          node tests/webmcp-core.mjs
+          node tests/microduck-policy-core.mjs
+          node tests/microduck-ui-core.mjs
+          node tests/microduck-python-bridge.mjs
+          node tests/validate_canonical_visuals.mjs
+          python tests/validate_starters.py
+          python tests/execute_starters.py
+
+      - name: MicroDuck physical browser journey
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npx playwright test tests/microduck-phase5c-browser.spec.mjs tests/microduck-interfaces-browser.spec.mjs tests/microduck-presentation-browser.spec.mjs tests/microduck-policy-parity.spec.mjs --reporter=line
+
+      - name: Retain browser journey output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microduck-phase5c-browser-${{ github.sha }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 14

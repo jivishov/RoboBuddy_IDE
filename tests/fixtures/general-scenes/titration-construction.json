@@ -1,0 +1,705 @@
+{
+  "schema_version": "robobuddy.lab.scene.v2",
+  "id": "titration_reference",
+  "reference": {
+    "mode": "external_reference",
+    "label": "User-provided titration photograph",
+    "agent_image_access": "declared_by_agent",
+    "notes": "Manually interpreted by the authoring agent from the conversation image, not an automated reconstruction benchmark. Absolute dimensions are assumed."
+  },
+  "objects": [
+    {
+      "id": "bench",
+      "role": "bench",
+      "motion": "fixed",
+      "fixed_reason": "Declared installed work surface, not an inferred attachment",
+      "mass_kg": 15,
+      "position_m": [
+        0.41,
+        0,
+        0.98
+      ],
+      "parts": [
+        {
+          "id": "top",
+          "shape": "box",
+          "dimensions_m": [
+            0.82,
+            1.1,
+            0.05
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "surface",
+          "type": "support",
+          "part_id": "top"
+        }
+      ]
+    },
+    {
+      "id": "stand",
+      "position_m": [
+        0.6,
+        0.32,
+        1.005
+      ],
+      "parts": [
+        {
+          "id": "base",
+          "shape": "box",
+          "position_m": [
+            0,
+            0,
+            0.006
+          ],
+          "dimensions_m": [
+            0.16,
+            0.14,
+            0.012
+          ]
+        },
+        {
+          "id": "rod",
+          "shape": "cylinder",
+          "position_m": [
+            -0.0544,
+            0,
+            0
+          ],
+          "radius_m": 0.005,
+          "height_m": 0.6041666667
+        },
+        {
+          "id": "bracket",
+          "shape": "box",
+          "position_m": [
+            -0.0352,
+            0,
+            0.435
+          ],
+          "dimensions_m": [
+            0.0384,
+            0.01,
+            0.008
+          ]
+        },
+        {
+          "id": "back",
+          "shape": "box",
+          "position_m": [
+            -0.023,
+            0,
+            0.435
+          ],
+          "dimensions_m": [
+            0.006,
+            0.026,
+            0.01
+          ]
+        },
+        {
+          "id": "jaw_a",
+          "shape": "box",
+          "position_m": [
+            -0.006,
+            0.0115,
+            0.435
+          ],
+          "dimensions_m": [
+            0.036,
+            0.003,
+            0.01
+          ]
+        },
+        {
+          "id": "jaw_b",
+          "shape": "box",
+          "position_m": [
+            -0.006,
+            -0.0115,
+            0.435
+          ],
+          "dimensions_m": [
+            0.036,
+            0.003,
+            0.01
+          ]
+        }
+      ],
+      "motion": "fixed",
+      "fixed_reason": "Explicit installed fixture assumption; no tightening or fastening operation is simulated.",
+      "role": "fixture",
+      "mass_kg": 1.5,
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "burette",
+      "position_m": [
+        0.6,
+        0.32,
+        1.18
+      ],
+      "parts": [
+        {
+          "id": "tube",
+          "shape": "hollow_profile",
+          "position_m": [
+            0,
+            0,
+            0.056
+          ],
+          "profile": [
+            [
+              0,
+              0.00684,
+              0.009
+            ],
+            [
+              0.344,
+              0.00684,
+              0.009
+            ]
+          ],
+          "rgba": [
+            0.62,
+            0.8,
+            0.88,
+            0.4
+          ]
+        },
+        {
+          "id": "bottom",
+          "shape": "cylinder",
+          "position_m": [
+            0,
+            0,
+            0.0545
+          ],
+          "radius_m": 0.009,
+          "height_m": 0.003
+        },
+        {
+          "id": "tip",
+          "shape": "cylinder",
+          "radius_m": 0.00162,
+          "height_m": 0.032
+        },
+        {
+          "id": "tap",
+          "shape": "box",
+          "position_m": [
+            0,
+            0,
+            0.044
+          ],
+          "dimensions_m": [
+            0.0225,
+            0.0162,
+            0.024
+          ]
+        },
+        {
+          "id": "handle",
+          "shape": "cylinder",
+          "position_m": [
+            -0.0225,
+            0,
+            0.044
+          ],
+          "quaternion_wxyz": [
+            0.7071067811865476,
+            0,
+            0.7071067811865476,
+            0
+          ],
+          "radius_m": 0.0054,
+          "height_m": 0.045,
+          "rgba": [
+            0.1,
+            0.25,
+            0.7,
+            1
+          ]
+        }
+      ],
+      "motion": "fixed",
+      "fixed_reason": "Explicit installed fixture assumption; no tightening or fastening operation is simulated.",
+      "mass_kg": 0.12,
+      "ports": [
+        {
+          "id": "mouth",
+          "type": "opening",
+          "part_id": "tube"
+        }
+      ],
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "white_tile",
+      "position_m": [
+        0.6,
+        0.32,
+        1.017
+      ],
+      "parts": [
+        {
+          "id": "slab",
+          "shape": "box",
+          "position_m": [
+            0,
+            0,
+            0.004
+          ],
+          "dimensions_m": [
+            0.095,
+            0.1,
+            0.008
+          ]
+        }
+      ],
+      "motion": "fixed",
+      "fixed_reason": "Explicit installed fixture assumption; no tightening or fastening operation is simulated.",
+      "mass_kg": 0.25,
+      "appearance": {
+        "rgba": [
+          0.94,
+          0.94,
+          0.9,
+          1
+        ]
+      },
+      "ports": [
+        {
+          "id": "surface",
+          "type": "support",
+          "part_id": "slab"
+        }
+      ],
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "flask",
+      "position_m": [
+        0.6,
+        0.32,
+        1.025
+      ],
+      "parts": [
+        {
+          "id": "bottom",
+          "shape": "cylinder",
+          "radius_m": 0.04,
+          "height_m": 0.002
+        },
+        {
+          "id": "wall",
+          "shape": "hollow_profile",
+          "position_m": [
+            0,
+            0,
+            0.002
+          ],
+          "profile": [
+            [
+              0,
+              0.038,
+              0.04
+            ],
+            [
+              0.09175,
+              0.0108,
+              0.0128
+            ],
+            [
+              0.123,
+              0.0108,
+              0.0128
+            ]
+          ]
+        }
+      ],
+      "mass_kg": 0.09,
+      "appearance": {
+        "rgba": [
+          0.65,
+          0.75,
+          0.85,
+          0.45
+        ]
+      },
+      "limitations": [
+        "Dry glass geometry only; the pink liquid and acetic acid chemistry are not simulated."
+      ],
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "acid_bottle",
+      "position_m": [
+        0.35,
+        0.35,
+        1.005
+      ],
+      "parts": [
+        {
+          "id": "body",
+          "shape": "cylinder",
+          "radius_m": 0.025,
+          "height_m": 0.0851,
+          "rgba": [
+            0.35,
+            0.17,
+            0.04,
+            1
+          ]
+        },
+        {
+          "id": "neck",
+          "shape": "cylinder",
+          "position_m": [
+            0,
+            0,
+            0.0851
+          ],
+          "radius_m": 0.0135,
+          "height_m": 0.0207,
+          "rgba": [
+            0.35,
+            0.17,
+            0.04,
+            1
+          ]
+        },
+        {
+          "id": "cap",
+          "shape": "cylinder",
+          "position_m": [
+            0,
+            0,
+            0.1058
+          ],
+          "radius_m": 0.0145,
+          "height_m": 0.0092,
+          "rgba": [
+            0.11,
+            0.12,
+            0.13,
+            1
+          ]
+        }
+      ],
+      "mass_kg": 0.1,
+      "label": "Acetic acid bottle (exterior approximation)",
+      "limitations": [
+        "Label content is semantic metadata, not simulated concentration; cap is not removable."
+      ],
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "waste_beaker",
+      "position_m": [
+        0.72,
+        -0.32,
+        1.005
+      ],
+      "parts": [
+        {
+          "id": "bottom",
+          "shape": "cylinder",
+          "radius_m": 0.0375,
+          "height_m": 0.00215
+        },
+        {
+          "id": "walls",
+          "shape": "hollow_profile",
+          "position_m": [
+            0,
+            0,
+            0.00215
+          ],
+          "profile": [
+            [
+              0,
+              0.03535,
+              0.0375
+            ],
+            [
+              0.09785,
+              0.03535,
+              0.0375
+            ]
+          ]
+        }
+      ],
+      "mass_kg": 0.08,
+      "appearance": {
+        "rgba": [
+          0.7,
+          0.8,
+          0.85,
+          0.45
+        ]
+      },
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    },
+    {
+      "id": "funnel",
+      "position_m": [
+        0.34,
+        -0.34,
+        1.04
+      ],
+      "parts": [
+        {
+          "id": "stem",
+          "shape": "hollow_profile",
+          "profile": [
+            [
+              0,
+              0.0035,
+              0.005
+            ],
+            [
+              0.03825,
+              0.0035,
+              0.005
+            ]
+          ]
+        },
+        {
+          "id": "bowl",
+          "shape": "hollow_profile",
+          "position_m": [
+            0,
+            0,
+            0.03825
+          ],
+          "profile": [
+            [
+              0,
+              0.0035,
+              0.005
+            ],
+            [
+              0.04675,
+              0.0285,
+              0.03
+            ]
+          ]
+        }
+      ],
+      "mass_kg": 0.025,
+      "quaternion_wxyz": [
+        0.7071067811865476,
+        0,
+        0.7071067811865476,
+        0
+      ],
+      "appearance": {
+        "rgba": [
+          0.65,
+          0.8,
+          0.9,
+          0.5
+        ]
+      },
+      "ports": [
+        {
+          "id": "stem_tip",
+          "type": "peg",
+          "part_id": "stem"
+        },
+        {
+          "id": "grip",
+          "type": "grasp",
+          "position_m": [
+            0,
+            0,
+            0.068
+          ]
+        }
+      ],
+      "quantity_evidence": {
+        "geometry": {
+          "source": "assumed",
+          "source_detail": "Dimensions chosen for an illustrative small bench model, not measured from pixels.",
+          "uncertainty_m": 0.01
+        },
+        "pose": {
+          "source": "image_estimated",
+          "source_detail": "Relative layout interpreted; metric placement adapted to robot coordinates.",
+          "uncertainty_m": 0.03
+        }
+      }
+    }
+  ],
+  "assumptions": [
+    "The robot and mount frame are fixed; apparatus is adapted to the bounded workcell.",
+    "Default vessel dimensions are illustrative. The image has no supplied metric calibration.",
+    "Transparency is an appearance approximation. Liquids, labels, threads and clamp mechanics are omitted."
+  ],
+  "adjustments": [
+    {
+      "object_id": "waste_beaker",
+      "description": "Waste beaker placed on the opposite free workcell side.",
+      "reason": "Explicit adaptation to avoid clutter in the bounded robot workcell; not pixel-exact reconstruction."
+    }
+  ],
+  "relationships": [
+    {
+      "subject_id": "burette",
+      "relation": "attached_to",
+      "object_id": "stand",
+      "source": "assumed",
+      "notes": "Burette is world-fixed with a declared mounting assumption, not physically clamped by a simulated joint."
+    },
+    {
+      "subject_id": "flask",
+      "relation": "supported_by",
+      "object_id": "white_tile",
+      "source": "image_estimated",
+      "notes": "Contact determines physical support; relation metadata does not attach objects."
+    }
+  ],
+  "inventory": [
+    {
+      "id": "bench",
+      "label": "bench",
+      "status": "supplemental",
+      "object_ids": [
+        "bench"
+      ],
+      "reason": "Authored bench in the robot frame."
+    },
+    {
+      "id": "stand",
+      "label": "stand",
+      "status": "approximated",
+      "object_ids": [
+        "stand"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "burette",
+      "label": "burette",
+      "status": "approximated",
+      "object_ids": [
+        "burette"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "white_tile",
+      "label": "white_tile",
+      "status": "approximated",
+      "object_ids": [
+        "white_tile"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "flask",
+      "label": "flask",
+      "status": "approximated",
+      "object_ids": [
+        "flask"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "acid_bottle",
+      "label": "Acetic acid bottle (exterior approximation)",
+      "status": "approximated",
+      "object_ids": [
+        "acid_bottle"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "waste_beaker",
+      "label": "waste_beaker",
+      "status": "approximated",
+      "object_ids": [
+        "waste_beaker"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    },
+    {
+      "id": "funnel",
+      "label": "funnel",
+      "status": "approximated",
+      "object_ids": [
+        "funnel"
+      ],
+      "reason": "Visible apparatus recreated through generic geometry with assumed metric dimensions."
+    }
+  ]
+}

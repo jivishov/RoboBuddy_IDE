@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robobuddy.dev/schemas/observation.schema.json",
+  "title": "RoboBuddy physical observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessionId", "epoch", "simulationTimeSeconds", "view", "robotId", "frames", "model", "engine", "joints", "bodies", "contacts"],
+  "properties": {
+    "schemaVersion": { "const": "0.2.0-alpha.1" },
+    "sessionId": { "type": "string", "minLength": 1 },
+    "epoch": { "type": "integer", "minimum": 1 },
+    "simulationTimeSeconds": { "type": "number", "minimum": 0 },
+    "view": { "enum": ["ground_truth", "sensor"] },
+    "robotId": { "type": "string", "minLength": 1 },
+    "frames": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["world"],
+      "properties": {
+        "world": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "handedness", "upAxis", "linearUnit", "angularUnit"],
+          "properties": {
+            "id": { "type": "string" },
+            "handedness": { "const": "right-handed" },
+            "upAxis": { "const": "+Z" },
+            "linearUnit": { "const": "m" },
+            "angularUnit": { "const": "rad" }
+          }
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "asset", "sha256"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "asset": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "versionEvidence", "timestepSeconds"],
+      "properties": {
+        "name": { "const": "MuJoCo" },
+        "version": { "type": ["string", "null"] },
+        "versionEvidence": { "type": "string" },
+        "timestepSeconds": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "joints": { "type": "object" },
+    "bodies": { "type": "object" },
+    "contactCount": { "type": "integer", "minimum": 0 },
+    "contactsReadable": { "type": "boolean" },
+    "contacts": { "type": "array", "items": { "type": "object" } },
+    "sensors": { "type": "object" }
+  }
+}

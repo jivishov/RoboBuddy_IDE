@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="calm-light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Program robots in a browser IDE with Python, MuJoCo workspaces, laboratory scene construction and opt-in WebMCP collaboration.">
+  <meta name="theme-color" content="#f5f2eb">
+  <title>RoboBuddy IDE — Physics Preview v0.2.0-alpha.2</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.css">
+  <link rel="stylesheet" href="./design-tokens.css">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./toolbar-refinement.css">
+  <link rel="stylesheet" href="./microduck-controls.css">
+  <link rel="stylesheet" href="./physics-preview.css">
+  <link rel="stylesheet" href="./guides/ide-help.css">
+  <link rel="stylesheet" href="./theme-system.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('rbide.theme');
+      if (savedTheme === 'calm-light' || savedTheme === 'midnight-teal') document.documentElement.dataset.theme = savedTheme;
+    } catch { /* Theme persistence is optional. */ }
+  </script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="menubar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">RB</span><span>RoboBuddy IDE</span><span class="physics-version-chip">v0.2.0-alpha.2</span></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="file">File</button><div id="fileMenu" class="menu-popover" hidden><button data-action="import"><span>Open Python…</span></button><button data-action="save"><span>Save Draft</span><span class="shortcut">Ctrl+S</span></button><button data-action="exportMain"><span>Export main.py</span></button><button data-action="exportWorkspace"><span>Export Workspace</span></button><div class="menu-sep"></div><button data-action="resetWorkspace"><span>Reset to Starter</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="edit">Edit</button><div id="editMenu" class="menu-popover" hidden><button data-action="undo"><span>Undo</span><span class="shortcut">Ctrl+Z</span></button><button data-action="redo"><span>Redo</span><span class="shortcut">Ctrl+Y</span></button><button data-action="find"><span>Find</span><span class="shortcut">Ctrl+F</span></button><button data-action="replace"><span>Replace</span><span class="shortcut">Ctrl+H</span></button><button data-action="toggleComment"><span>Toggle Comment</span><span class="shortcut">Ctrl+/</span></button><div class="menu-sep"></div><button data-action="palette"><span>Command Palette</span><span class="shortcut">Ctrl+Shift+P</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="run">Run</button><div id="runMenu" class="menu-popover" hidden><button data-action="run"><span>Run</span><span class="shortcut">F5</span></button><button data-action="step"><span>Step Action</span><span class="shortcut">F10</span></button><button data-action="cursor"><span>Run to Cursor</span><span class="shortcut">Ctrl+F10</span></button><button data-action="stop"><span>Stop</span><span class="shortcut">Shift+F5 / Esc</span></button><button data-action="reset"><span>Reset Simulation</span></button></div></div>
+    <div class="menu-wrap theme-menu-wrap"><button class="menu-button" data-menu="theme" aria-haspopup="menu" aria-expanded="false">Theme</button><div id="themeMenu" class="menu-popover theme-menu" role="menu" aria-label="Color theme" hidden><div class="theme-menu-label">Color Theme</div><button class="theme-option" type="button" data-theme-id="calm-light" role="menuitemradio" aria-checked="false"><span class="theme-swatch calm-light" aria-hidden="true"></span><span>Paper</span><span class="theme-option-check" aria-hidden="true">✓</span></button><button class="theme-option" type="button" data-theme-id="midnight-teal" role="menuitemradio" aria-checked="false"><span class="theme-swatch midnight-teal" aria-hidden="true"></span><span>Graphite</span><span class="theme-option-check" aria-hidden="true">✓</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="view">View</button><div id="viewMenu" class="menu-popover" hidden><button data-action="sidebar"><span>Toggle Explorer</span><span class="shortcut">Ctrl+B</span></button><button data-action="panel"><span>Toggle Bottom Panel</span><span class="shortcut">Ctrl+J</span></button><button data-action="editorFocus"><span>Focus Editor</span></button><button data-action="simulatorFocus"><span>Focus Simulator</span></button><button data-action="fit"><span>Fit Simulator</span></button></div></div>
+    <div class="menu-wrap"><button class="menu-button" data-menu="robot">Robot</button><div id="robotMenu" class="menu-popover" hidden><button data-action="contacts"><span>Contact Diagnostics</span></button><button data-action="telemetry"><span>Simulated Telemetry</span></button><button data-action="reset"><span>Reset Robot Pose</span></button><div class="menu-sep"></div><button data-action="exportWorkspace"><span>Export Python Workspace</span></button></div></div>
+    <div class="menu-wrap help-menu"><button class="menu-button" data-menu="help" aria-haspopup="true" aria-expanded="false" aria-controls="helpMenu">Help</button><div id="helpMenu" class="menu-popover" hidden>
+      <a href="./guides/openarm.html" target="_blank" rel="noopener" data-help-guide="openarm">OpenArm manual <span class="shortcut">New tab</span></a>
+      <a href="./guides/webmcp.html" target="_blank" rel="noopener" data-help-guide="webmcp">WebMCP manual <span class="shortcut">New tab</span></a>
+      <a href="./index.html" target="_blank" rel="noopener" data-help-guide="overview">Visitor overview <span class="shortcut">New tab</span></a>
+      <div class="menu-sep"></div><button data-action="api"><span>Robot API</span></button><button data-action="shortcuts"><span>Keyboard Shortcuts</span></button><button data-action="fidelity"><span>Simulation Fidelity</span></button><div class="menu-sep"></div><button data-action="about"><span>About RoboBuddy IDE</span></button></div></div>
+    <div class="menubar-spacer"></div><span id="modeChip" class="mode-chip">PHYSICS MIGRATION · LEGACY BACKEND ACTIVE</span>
+  </header>
+
+  <div class="toolbar">
+    <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
+    <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="asimov">Asimov 1 — Physical</option><option value="unitree">Unitree G1 29-DoF</option><option value="microduck">MicroDuck Policy Demonstrator</option></select>
+    <select id="taskSelect" aria-label="Robot workspace or reviewed lab task"></select>
+    <div id="agentAccessControl" class="agent-access-control" data-access="off">
+      <button id="agentAccessToggle" type="button" role="switch" aria-checked="false" aria-label="Agent Assist" aria-describedby="agentAccessStatus" disabled>
+        <span class="agent-access-label">Agent</span>
+        <span class="agent-switch-track" aria-hidden="true"><span class="agent-switch-thumb"></span></span>
+        <span class="agent-access-state" aria-hidden="true">OFF</span>
+      </button>
+      <span id="agentAccessStatus" class="agent-access-status" role="status">Agent access is off.</span>
+    </div>
+    <span class="toolbar-sep"></span>
+    <button id="runBtn" class="primary" title="Run (F5)">▶ Run</button><button id="pauseBtn" title="Pause simulation" aria-label="Pause simulation" aria-pressed="false" disabled>⏸ Pause</button><button id="stepBtn" title="Step physical action (F10)">▷ Step Action</button><button id="cursorBtn" title="Run to Cursor (Ctrl+F10)">▶│ Cursor</button><button id="stopBtn" class="danger" title="Simulation STOP (Esc)">■ Stop</button><button id="resetBtn" title="Reset simulation">↻ Reset</button>
+    <span class="toolbar-sep"></span><button id="mobileCodeBtn" class="mobile-pane active">Code</button><button id="mobileSimBtn" class="mobile-pane">Simulator</button>
+    <span class="robot-title"><strong id="robotLabel"></strong> · <span id="driverLabel"></span></span>
+  </div>
+
+  <main id="workspace" class="workspace">
+    <aside id="sidebar" class="sidebar">
+      <nav class="activity" aria-label="IDE views"><button class="active" data-side-view="explorer" title="Explorer — files" aria-label="Explorer — files">▧</button><button data-side-view="task" title="Task — mission instructions" aria-label="Task — mission instructions">✓</button><button data-side-view="robot" title="Robot — view and diagnostics" aria-label="Robot — view and diagnostics">◎</button></nav>
+      <div class="side-content">
+        <section id="explorerSideView" class="side-view"><div class="side-heading">EXPLORER <span id="dirtyDot" class="dirty-dot" hidden></span></div><div id="filesList" class="files-list"></div></section>
+        <section id="taskSideView" class="side-view" hidden><div class="side-heading">TASK</div><section id="taskPanel" class="task-panel"></section></section>
+        <section id="robotSideView" class="side-view" hidden><div class="side-heading">ROBOT</div><div class="robot-side-card"><p id="sideRobotSummary"></p><button data-side-action="front">Front / Fit View</button><button data-side-action="telemetry">Simulated Telemetry</button><button data-side-action="contacts">Contact Diagnostics</button></div></section>
+      </div>
+    </aside>
+    <section id="mainPanes" class="main-panes">
+      <section class="editor-pane"><div id="editorTabs" class="editor-tabs"></div><div id="editor"></div></section>
+      <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize editor and simulator"></div>
+      <section class="sim-pane"><div class="sim-head"><strong>3D SIMULATOR</strong><span id="simActionLabel" class="sim-action-label">Ready</span><span id="physicsBackendBadge" class="physics-backend-badge" title="Execution backend, capability, and evidence are tracked separately.">legacy · model-derived</span><button id="fitBtn" type="button" title="Fit the active robot in the simulator viewport.">Fit</button><button id="highContrastSceneBtn" class="scene-contrast-toggle" type="button" aria-pressed="true" title="High-contrast scene boundaries are configured presentation aids; they do not alter collision, kinematics, or canonical mesh data.">Contrast</button><button id="panelToggle" type="button" aria-expanded="false" aria-controls="bottomPanel" title="Show or hide simulation diagnostics (Ctrl+J)">Diagnostics</button></div><div class="sim-workbench"><div class="sim-viewport"><canvas id="simCanvas" tabindex="0" aria-label="Robot simulator"></canvas><div id="cameraModeLabel" class="camera-mode-label" role="status" aria-live="polite" hidden>OVERVIEW · ORBIT ROBOT + BALL</div><div id="simBadge" class="sim-badge" title="Physics Preview keeps legacy simulation explicitly labeled until each physical backend passes its acceptance gates.">PHYSICS PREVIEW · LEGACY MODEL ACTIVE · NOT HARDWARE VALIDATION</div></div><aside id="microduckControlDeck" class="microduck-control-deck" aria-label="MicroDuck simulator controls" hidden></aside></div></section>
+    </section>
+  </main>
+
+  <section id="bottomPanel" class="bottom-panel collapsed">
+    <div id="bottomTabs" class="bottom-tabs"><button class="bottom-tab active" data-panel="problems">PROBLEMS</button><button class="bottom-tab" data-panel="telemetry">TELEMETRY</button><button class="bottom-tab" data-panel="commands">COMMANDS</button><button class="bottom-tab" data-panel="contacts">CONTACTS</button><button class="bottom-tab" data-panel="task">TASK</button><button id="bottomClose" class="bottom-close" title="Collapse panel">×</button></div>
+    <div id="problemsPanel" class="panel-view"></div><div id="telemetryPanel" class="panel-view" hidden></div><div id="commandsPanel" class="panel-view" hidden></div><div id="contactsPanel" class="panel-view" hidden></div><div id="taskBottomPanel" class="panel-view" hidden><p id="fidelityText"></p></div>
+  </section>
+
+  <footer class="statusbar"><span id="statusMessage">Starting…</span><span id="statusCursor">main.py</span><span class="right">Physics Preview v0.2.0-alpha.2 · Python 3 · <span id="driverStatus">legacy adapter</span> · Hardware validation: pending</span></footer>
+</div>
+
+<dialog id="aboutDialog" class="about-dialog" aria-labelledby="aboutDialogTitle" aria-describedby="aboutDialogDescription">
+  <div class="about-dialog-shell">
+    <button id="aboutCloseBtn" class="about-close" type="button" aria-label="Close About RoboBuddy IDE dialog">×</button>
+    <div class="about-head"><div class="about-mark" aria-hidden="true">RB</div><div><p class="about-eyebrow">Robotics learning environment</p><h2 id="aboutDialogTitle">RoboBuddy IDE Physics Preview</h2></div></div>
+    <p id="aboutDialogDescription" class="about-copy">A browser robotics IDE migrating robot by robot to a shared MuJoCo physics architecture while preserving Python programming and bounded WebMCP collaboration.</p>
+    <div class="about-rule" aria-hidden="true"></div>
+    <div class="about-license"><span class="about-license-label">Version</span><strong>v0.2.0-alpha.2</strong><span>OpenArm includes general laboratory scene construction. Robot workspaces have distinct capabilities and evidence; read their current fidelity notices. Simulation results are not hardware validation.</span></div>
+    <div class="about-license"><span class="about-license-label">License</span><strong>MIT License</strong><span>Open source under the MIT License. Bundled third-party assets retain their own notices.</span></div>
+    <p class="about-copyright">© 2026 Dr. Emil Jivishov</p>
+  </div>
+</dialog>
+<div id="commandPalette" class="command-palette" hidden><div class="command-box"><div class="command-input-row"><input id="commandInput" placeholder="Type a command…" aria-label="Command palette"><button id="commandClose" class="close">×</button></div><div id="commandList" class="command-list"></div></div></div>
+<input id="importFile" type="file" accept=".py,text/x-python" hidden>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
+<script type="module" src="./src/app-v2.js"></script>
+</body>
+</html>

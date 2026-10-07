@@ -225,10 +225,14 @@ export class MicroDuckPythonBridge {
       if (request.remainingSeconds > 1e-9) return { partialSleep: true };
       return { ok: true, sleptSeconds: Number(request.args?.seconds) || 0 };
     }
+    let previousClock = simulationClock(this.simulator);
     while (request.remainingSeconds > 1e-9 && this.isCurrent(active) && !active.paused) {
       const tick = Math.min(CONTROL_TICK_SECONDS, request.remainingSeconds);
       await delay(tick * 1000);
-      request.remainingSeconds = Math.max(0, request.remainingSeconds - tick);
+      const nextClock = simulationClock(this.simulator);
+      const elapsed = simulationSleepElapsed(previousClock, nextClock, tick);
+      request.remainingSeconds = Math.max(0, request.remainingSeconds - elapsed);
+      previousClock = nextClock;
     }
     if (active.paused && request.remainingSeconds > 1e-9) return { partialSleep: true };
     return { ok: true, sleptSeconds: Number(request.args?.seconds) || 0 };
@@ -297,6 +301,22 @@ export class MicroDuckPythonBridge {
 
 function cursorReached(source, cursor) { return Boolean(cursor && source?.file === cursor.file && Number(source.line) >= Number(cursor.line)); }
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function simulationClock(simulator) {
+  try {
+    const state = simulator?.getState?.();
+    const time = Number(state?.time);
+    if (!Number.isFinite(time)) return null;
+    const advancing = state?.lifecycle === 'ready'
+      && (state?.enabled === true || state?.actuationEnabled === false || state?.phase === 'initializing');
+    return { time, advancing };
+  } catch {
+    return null;
+  }
+}
+function simulationSleepElapsed(previousClock, nextClock, wallTick) {
+  if (!previousClock || !nextClock || !previousClock.advancing || !nextClock.advancing) return wallTick;
+  return Math.max(0, nextClock.time - previousClock.time);
+}
 function deferred() { let resolve; let reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function cancellationMessage(reason) { return ({ MANUAL_PREEMPTION: 'A trusted manual command preempted the Python simulation lease.', WORKSPACE_CHANGED: 'The MicroDuck workspace changed during execution.', PROFILE_CHANGED: 'The robot profile changed during execution.', RESET: 'The MicroDuck simulation was reset.', STOP: 'The MicroDuck Python run was stopped.' })[reason] || 'The MicroDuck Python operation was cancelled.'; }
 function bridgeError(code, message, details = {}) { const error = new Error(message); error.code = code; Object.assign(error, details); return error; }
