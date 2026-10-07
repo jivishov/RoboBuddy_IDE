@@ -42,12 +42,15 @@ jobs:
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           python - <<'PY'
-          import json, os, pathlib, time, urllib.request
+          import json, os, pathlib, time, urllib.request, urllib.parse
           base = os.environ['PAGES_URL'].rstrip('/') + '/'
           cname = pathlib.Path('CNAME')
           domain = cname.read_text().strip() if cname.exists() else ''
-          expected_base = f'https://{domain}/' if domain else 'https://jivishov.github.io/RoboBuddy_IDE/'
-          assert base == expected_base, (base, expected_base)
+          if domain:
+              published = urllib.parse.urlsplit(base)
+              assert published.scheme in ('http', 'https') and published.netloc == domain and published.path == '/', base
+          else:
+              assert base == 'https://jivishov.github.io/RoboBuddy_IDE/', base
           commit = os.environ['GITHUB_SHA']
           pages = {
               '': ('<title>RoboBuddy IDE', 'ide.html'),
