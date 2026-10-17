@@ -1,0 +1,23 @@
+name: Prepare pinned SO-101 offline dependencies
+on:
+  push:
+    branches: ["ci/so101-offline-runtime"]
+permissions:
+  contents: read
+jobs:
+  wheels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip download --only-binary=:all: --no-deps deepdiff==8.6.2 orderly-set==5.5.0 --dest wheels
+      - name: Export authenticated public-registry wheels for local offline installation
+        run: |
+          python - <<'PY'
+          import base64, hashlib, pathlib
+          for p in pathlib.Path('wheels').glob('*.whl'):
+              data=p.read_bytes()
+              print('OFFLINE_WHEEL='+p.name+':'+hashlib.sha256(data).hexdigest()+':'+base64.b64encode(data).decode())
+          PY
