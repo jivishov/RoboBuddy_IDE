@@ -1,0 +1,2 @@
+.toolbar .hardware-entry{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 11px;border:1px solid var(--line,#c8d2cb);border-radius:6px;background:var(--panel,#fffdf8);color:var(--text,#285c50);font-size:12px;font-weight:650;text-decoration:none;white-space:nowrap;flex-shrink:0}.toolbar .hardware-entry:hover{border-color:#438879}.toolbar .hardware-entry:focus-visible{outline:2px solid #438879;outline-offset:2px}
+

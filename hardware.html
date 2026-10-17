@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="calm-light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Local manual SO-101 hardware controls for RoboBuddy IDE.">
+<meta name="referrer" content="no-referrer">
+<title>SO-101 Hardware · RoboBuddy IDE</title>
+<link rel="stylesheet" href="./hardware.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="./ide.html?robot=so101"><span class="mark">RB</span>RoboBuddy IDE</a><span class="section-name">SO-101 / Hardware</span><span class="pill" id="modeBadge">LOCAL CONTROL</span></header>
+<main>
+<section class="intro"><div><p class="eyebrow">SO-101 FOLLOWER</p><h1>Your arm. Measured state.</h1><p>Connect locally, check calibration, then enable bounded manual control.</p></div><div class="status-card"><span class="dot" id="stateDot"></span><div><strong id="stateLabel">Helper not paired</strong><small id="stateDetail">Starting this page does not open USB.</small></div></div></section>
+<div id="demoBanner" class="notice demo" hidden><strong>DEMO MOTOR BUS · NO PHYSICAL HARDWARE</strong><span>Every position and motor response below is synthetic. This mode never opens a serial port.</span></div>
+<div id="feedback" role="status" aria-live="polite" class="feedback">Start the local helper to begin. Hardware commissioning is pending.</div>
+<div class="workspace">
+<section class="controls">
+<div class="card connection"><div class="card-title"><h2>1 / Connect</h2><span id="driverLabel" class="subtle">LeRobot 0.6.0</span></div>
+<form id="pairForm"><label>Helper address<input id="helperAddress" type="url" value="http://127.0.0.1:8765" required></label><label id="tokenRow">Pairing code<input id="pairingCode" type="password" autocomplete="off" spellcheck="false" placeholder="Local page pairs automatically"></label><button id="pairBtn" class="primary" type="submit">Pair helper</button></form>
+<div class="port-grid"><label>USB / COM port<select id="portSelect" aria-label="USB / COM port"><option value="">Pair helper first</option></select></label><button id="refreshPorts" disabled>Refresh</button><label>Arm / calibration name<input id="armId" value="my_so101" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_.-]*"></label></div>
+<div class="button-row"><button id="connectBtn" class="primary" disabled>Connect · read only</button><button id="disconnectBtn" disabled>Disconnect</button><button id="quitBtn" class="quiet" disabled>Quit helper</button></div>
+<p class="hint">Connect reads motor identity, encoders and torque. It never homes the arm or changes motor configuration.</p>
+</div>
+<div class="card"><div class="card-title"><h2>2 / Check &amp; enable</h2><span id="calibrationBadge" class="pill">CALIBRATION UNKNOWN</span></div>
+<p id="calibrationSummary" class="hint">Use the same arm name as your saved LeRobot calibration.</p>
+<label class="check"><input id="supportAck" type="checkbox">The arm is supported and mounted; its movement area is clear.</label>
+<div class="button-row"><button id="armBtn" class="primary" disabled>Enable motors at current pose</button><button id="disableBtn" disabled>Disable motors · support arm</button></div>
+<details id="calibrationDetails"><summary>Calibration setup or restore</summary>
+<p class="hint">Only use this workflow with the actual SO-101 configuration. Saved calibration is backed up before changes. Torque must already be disabled.</p>
+<div id="wizardText">Start, place joints at the documented middle pose, record their usable ranges by hand, then review and save. Wrist roll follows LeRobot's full-turn convention.</div>
+<div class="button-row"><button id="calStart" disabled>Start calibration</button><button id="calMiddle" disabled>Middle pose ready</button><button id="calFinish" disabled>Ranges reviewed · save</button><button id="calCancel" disabled>Cancel</button></div>
+<div id="rangeReport" class="range-report"></div>
+<label class="file-label">Import &amp; apply a saved LeRobot calibration<input id="calibrationFile" type="file" accept=".json,application/json" disabled></label>
+<a href="https://huggingface.co/docs/lerobot/so101" target="_blank" rel="noopener noreferrer">Official setup and middle-pose guide ↗</a>
+</details>
+</div>
+<div class="card"><div class="card-title"><h2>3 / Manual joints</h2><span class="subtle">Small, one-joint jogs</span></div>
+<p class="hint">Angles are calibrated degrees. Gripper opening uses calibrated percent. Jog limits: 3° or 5%; no motion queue.</p>
+<div id="jointRows"></div>
+</div>
+</section>
+<section class="monitor">
+<div class="card visual-card"><div class="card-title"><h2>Encoder view</h2><span id="sampleBadge" class="pill">NO DATA</span></div><div id="visualHost" class="visual-host"><p id="visualMessage">The 3D view waits for calibrated encoder readings.</p><canvas id="hardwareCanvas" aria-label="SO-101 encoder-driven illustrative 3D view" hidden></canvas></div><p class="hint">Robot geometry is illustrative; alignment with your arm has not been verified. It does not show actual obstacles, contacts or object positions.</p>
+<details><summary>Adjust 3D alignment · presentation only</summary><p class="hint">These offsets and directions affect the view only. They never change motor commands.</p><div id="alignmentRows"></div></details></div>
+<div class="stop-card"><div><h2>Stop motion</h2><p>Clears the jog and requests a hold while communication works. Motors remain enabled.</p></div><button id="stopBtn" class="stop" disabled>■ STOP <small>Esc</small></button></div>
+<div class="card compact"><dl><div><dt>Telemetry age</dt><dd id="telemetryAge">—</dd></div><div><dt>Motor state</dt><dd id="torqueState">Unknown</dd></div><div><dt>Connection</dt><dd id="connectionState">Not paired</dd></div><div><dt>Commissioning</dt><dd>Pending physical tests</dd></div></dl><p class="hint">After USB loss, a helper crash or loss of motor power, software cannot confirm a physical stop. Keep the arm's independent power cutoff accessible.</p></div>
+<details class="card"><summary>Recent events</summary><ol id="eventList" class="events"></ol></details>
+</section>
+</div>
+</main>
+<footer>Manual hardware control · Simulation programs and WebMCP cannot operate this panel.</footer>
+<script type="module" src="./src/hardware/hardware-panel.js"></script>
+</body></html>
+

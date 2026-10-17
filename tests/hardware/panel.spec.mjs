@@ -1,0 +1,37 @@
+import {test,expect} from '@playwright/test';
+test('manual panel keeps read-only connection, motor enable and small jogs separate',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/hardware.html');
+  await expect(page.getByText('DEMO MOTOR BUS · NO PHYSICAL HARDWARE',{exact:true})).toBeVisible();
+  await expect(page.locator('#stateLabel')).toHaveText('USB not connected');
+  await expect(page.locator('#armBtn')).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Jog Shoulder pan positive',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'Connect · read only',exact:true}).click();
+  await expect(page.locator('#stateLabel')).toHaveText('Connected · read only');
+  await expect(page.locator('#torqueState')).toHaveText('Disabled');
+  await expect(page.locator('#armBtn')).toBeDisabled();
+  await page.locator('#supportAck').check();
+  await page.locator('#armBtn').click();
+  await expect(page.locator('#stateLabel')).toHaveText('Motors enabled');
+  await page.getByRole('button',{name:'Jog Shoulder pan positive',exact:true}).click();
+  await expect(page.locator('#stateLabel')).toHaveText('Motors enabled');
+  await expect.poll(async()=>Number(await page.locator('[data-joint="shoulder_pan"] input').inputValue())).toBeGreaterThan(.5);
+  await page.locator('[data-joint="shoulder_pan"] input').fill('50');
+  await page.locator('[data-joint="shoulder_pan"] .apply').click();
+  await expect(page.locator('#feedback')).toContainText('increments no larger');
+  await page.getByRole('button',{name:'Jog Gripper positive',exact:true}).click();
+  await expect(page.locator('#stateLabel')).toHaveText('Motors enabled');
+  await page.locator('#stopBtn').click();
+  await expect(page.locator('#stateLabel')).toHaveText('Hold requested');
+  await expect(page.locator('#torqueState')).toHaveText('Enabled');
+  await page.locator('#disableBtn').click();
+  await expect(page.locator('#torqueState')).toHaveText('Disabled');
+  await page.screenshot({path:'test-results/so101-hardware-demo-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+  await page.screenshot({path:'test-results/so101-hardware-demo-mobile.png',fullPage:true});
+  await page.locator('#disconnectBtn').click();
+  await expect(page.locator('#stateLabel')).toHaveText('Helper not paired');
+  expect(errors).toEqual([]);
+});
+

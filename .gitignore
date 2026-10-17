@@ -21,3 +21,11 @@ planning/
 .env
 .env.*
 !.env.example
+
+# Local SO-101 helper: never publish environments, logs, tokens or calibrations.
+.hardware-venv/
+.hardware-runtime/
+.hardware-logs/
+__pycache__/
+*.pyc
+
