@@ -9,11 +9,12 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
-<header class="topbar"><a class="brand" href="./ide.html?robot=so101"><span class="mark">RB</span>RoboBuddy IDE</a><span class="section-name">SO-101 / Hardware</span><span class="pill" id="modeBadge">LOCAL CONTROL</span></header>
+<header class="topbar"><a class="brand" href="https://robobuddy.dev/ide.html?robot=so101" target="_blank" rel="noopener noreferrer" title="Open the simulator in a separate tab"><span class="mark">RB</span>RoboBuddy IDE</a><span class="section-name">SO-101 / Hardware</span><span class="pill" id="modeBadge">LOCAL CONTROL</span><button id="quickStopBtn" class="quick-stop" aria-label="Stop hardware motion" title="Clear the jog and request a software hold. Motors remain enabled." disabled>■ Stop</button></header>
 <main>
-<section class="intro"><div><p class="eyebrow">SO-101 FOLLOWER</p><h1>Your arm. Measured state.</h1><p>Connect locally, check calibration, then enable bounded manual control.</p></div><div class="status-card"><span class="dot" id="stateDot"></span><div><strong id="stateLabel">Helper not paired</strong><small id="stateDetail">Starting this page does not open USB.</small></div></div></section>
+<section class="intro"><div><p class="eyebrow">SO-101 FOLLOWER</p><h1>Hardware control</h1><p>Connect locally, check calibration, then enable bounded manual control.</p></div><div class="status-card"><span class="dot" id="stateDot"></span><div><strong id="stateLabel">Helper not paired</strong><small id="stateDetail">Starting this page does not open USB.</small></div></div></section>
 <div id="demoBanner" class="notice demo" hidden><strong>DEMO MOTOR BUS · NO PHYSICAL HARDWARE</strong><span>Every position and motor response below is synthetic. This mode never opens a serial port.</span></div>
 <div id="feedback" role="status" aria-live="polite" class="feedback">Start the local helper to begin. Hardware commissioning is pending.</div>
+<p class="hint" id="launchHelp">The Windows launcher opens this panel locally and pairs it automatically. <a id="openLocalPanel" href="http://127.0.0.1:8765/hardware.html" target="_blank" rel="noopener noreferrer">Open the running local panel ↗</a> · <a href="https://github.com/jivishov/RoboBuddy_IDE/blob/main/docs/hardware/SO101_MANUAL_CONTROL.md" target="_blank" rel="noopener noreferrer">Setup instructions ↗</a></p>
 <div class="workspace">
 <section class="controls">
 <div class="card connection"><div class="card-title"><h2>1 / Connect</h2><span id="driverLabel" class="subtle">LeRobot 0.6.0</span></div>
@@ -26,6 +27,7 @@
 <p id="calibrationSummary" class="hint">Use the same arm name as your saved LeRobot calibration.</p>
 <label class="check"><input id="supportAck" type="checkbox">The arm is supported and mounted; its movement area is clear.</label>
 <div class="button-row"><button id="armBtn" class="primary" disabled>Enable motors at current pose</button><button id="disableBtn" disabled>Disable motors · support arm</button></div>
+<p id="torqueHelp" class="hint" hidden>The motors are already powered. Support the arm and choose Disable Motors before enabling control in this panel.</p>
 <details id="calibrationDetails"><summary>Calibration setup or restore</summary>
 <p class="hint">Only use this workflow with the actual SO-101 configuration. Saved calibration is backed up before changes. Torque must already be disabled.</p>
 <div id="wizardText">Start, place joints at the documented middle pose, record their usable ranges by hand, then review and save. Wrist roll follows LeRobot's full-turn convention.</div>

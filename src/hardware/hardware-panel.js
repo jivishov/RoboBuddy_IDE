@@ -7,7 +7,7 @@ const client = new HardwareClient({onState: value => {state=value;transportOk=tr
 function message(text,error=false) {$('feedback').textContent=text;$('feedback').classList.toggle('error',error);}
 function supported() {if (!$('supportAck').checked) throw new Error('Confirm the arm is supported and its movement area is clear.');return true;}
 async function action(operation,args={}) {
-  try {message('Working…');await (operation==='stop' ? client.stop() : client.command(operation,args));message(operation==='stop'?'Hold requested. This is a software stop; motors remain enabled.':operation==='disconnect'?'Disconnected. Motor torque is no longer monitored.':'Operation complete.');}
+  try {message('Working…');const result=await (operation==='stop' ? client.stop() : client.command(operation,args));message(operation==='stop'?(result.state==='holding'?'Hold requested. This is a software stop; motors remain enabled.':'No panel jog was active. Check the observed motor state.'):operation==='disconnect'?'Disconnected. Motor torque is no longer monitored.':'Operation complete.');}
   catch(error) {message(error.message,true);}
   finally {render();}
 }
@@ -60,7 +60,8 @@ function render() {
   $('disconnectBtn').disabled=!connected||busy;$('quitBtn').disabled=!paired||busy;
   $('armBtn').disabled=!readOnly||!state?.calibrated||torque||!$('supportAck').checked;
   $('disableBtn').disabled=!connected||busy||!$('supportAck').checked;
-  $('stopBtn').disabled=!connected;$('calStart').disabled=!readOnly||torque||!$('supportAck').checked;
+  $('torqueHelp').hidden=!connected||state?.operatorEnabled||!torque;
+  $('stopBtn').disabled=!connected;$('quickStopBtn').disabled=!connected;$('calStart').disabled=!readOnly||torque||!$('supportAck').checked;
   $('calMiddle').disabled=state?.calibrationStage!=='middle'||!connected||busy;
   $('calFinish').disabled=state?.calibrationStage!=='ranges'||!connected||busy;
   $('calCancel').disabled=state?.state!=='calibrating'||!connected||busy;
@@ -108,6 +109,7 @@ $('disconnectBtn').addEventListener('click',()=>void action('disconnect'));
 $('armBtn').addEventListener('click',()=>{try{void action('arm',{supported:supported()});}catch(error){message(error.message,true);}});
 $('disableBtn').addEventListener('click',()=>{try{void action('disable',{supported:supported()});}catch(error){message(error.message,true);}});
 $('stopBtn').addEventListener('click',()=>void action('stop'));
+$('quickStopBtn').addEventListener('click',()=>void action('stop'));
 $('quitBtn').addEventListener('click',async()=>{try{await client.quit();state=null;transportOk=false;message('Helper closed. Motor torque is no longer monitored.');render();}catch(error){message(error.message,true);}});
 $('calStart').addEventListener('click',()=>{try{void action('calibration_start',{supported:supported()});}catch(error){message(error.message,true);}});
 $('calMiddle').addEventListener('click',()=>void action('calibration_middle',{middleConfirmed:true}));
@@ -131,4 +133,6 @@ async function bootstrap() {
   } catch(error){message(error.message,true);}
 }
 render();void bootstrap();
+if (['127.0.0.1','localhost'].includes(location.hostname)) $('launchHelp').hidden = true;
+$('helperAddress').addEventListener('change', () => {try {$('openLocalPanel').href=helperAddress($('helperAddress').value)+'/hardware.html';} catch {}});
 

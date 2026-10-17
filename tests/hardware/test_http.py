@@ -20,7 +20,8 @@ class HTTPTests(unittest.TestCase):
         req=urllib.request.Request(self.base+path,data=json.dumps(data).encode() if data is not None else None,headers=hdr)
         try:
             with urllib.request.urlopen(req,timeout=2) as r:return r.status,dict(r.headers),r.read()
-        except urllib.error.HTTPError as e:return e.code,dict(e.headers),e.read()
+        except urllib.error.HTTPError as e:
+            with e:return e.code,dict(e.headers),e.read()
     def test_health_does_not_connect_any_bus(self):
         status,_,body=self.request("/api/health",headers={"Authorization":""})
         self.assertEqual(status,200);self.assertEqual(json.loads(body)["mode"],"demo")
@@ -55,6 +56,7 @@ class HTTPTests(unittest.TestCase):
         req=urllib.request.Request(self.base+"/api/session",data=b"{}",headers={"Authorization":"Bearer test-only-demo-token","Content-Type":"application/json"})
         with self.assertRaises(urllib.error.HTTPError) as context:urllib.request.urlopen(req,timeout=2)
         self.assertEqual(context.exception.code,403)
+        context.exception.close()
 
 if __name__=="__main__": unittest.main()
 

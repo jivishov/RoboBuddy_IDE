@@ -3,3 +3,5 @@ lerobot[feetech]==0.6.0
 pyserial==3.5
 
 feetech-servo-sdk==1.0.0
+deepdiff==8.6.2
+orderly-set==5.5.0

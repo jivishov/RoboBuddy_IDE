@@ -9,6 +9,7 @@ test('manual panel keeps read-only connection, motor enable and small jogs separ
   await page.getByRole('button',{name:'Connect · read only',exact:true}).click();
   await expect(page.locator('#stateLabel')).toHaveText('Connected · read only');
   await expect(page.locator('#torqueState')).toHaveText('Disabled');
+  await expect(page.locator('#hardwareCanvas')).toBeVisible({timeout:20000});
   await expect(page.locator('#armBtn')).toBeDisabled();
   await page.locator('#supportAck').check();
   await page.locator('#armBtn').click();
@@ -28,6 +29,7 @@ test('manual panel keeps read-only connection, motor enable and small jogs separ
   await expect(page.locator('#torqueState')).toHaveText('Disabled');
   await page.screenshot({path:'test-results/so101-hardware-demo-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('#quickStopBtn')).toBeInViewport();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
   await page.screenshot({path:'test-results/so101-hardware-demo-mobile.png',fullPage:true});
   await page.locator('#disconnectBtn').click();

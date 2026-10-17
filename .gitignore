@@ -5,6 +5,7 @@ playwright-report/
 package-lock.json
 __pycache__/
 *.pyc
+.task/
 
 # Local planning artifacts
 plan/

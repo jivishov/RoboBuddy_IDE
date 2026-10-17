@@ -42,6 +42,25 @@ class ControllerTests(unittest.TestCase):
         bus=self.connect()
         with self.assertRaises(BridgeError): self.op("arm")
         self.assertEqual(bus.writes,[])
+    def test_enabling_resamples_after_position_mode_before_seeding_goals(self):
+        bus=self.connect()
+        previous=bus.set_position_mode
+        def mode_change():
+            previous();bus.positions["shoulder_pan"]=2250
+        bus.set_position_mode=mode_change
+        self.op("arm",{"supported":True})
+        self.assertEqual(bus.writes[1][1]["shoulder_pan"],2250)
+    def test_invalid_calibrated_pose_cannot_enable_motors(self):
+        bus=self.connect();bus.positions["shoulder_pan"]=20
+        with self.assertRaises(BridgeError):self.op("arm",{"supported":True})
+        self.assertEqual(bus.writes,[])
+    def test_slow_diagnostic_cannot_enable_or_configure_after_lease_expiry(self):
+        bus=self.connect();read=bus.read
+        def slow_read():
+            self.clock.step(3.1);return read()
+        bus.read=slow_read
+        with self.assertRaises(BridgeError):self.op("arm",{"supported":True})
+        self.assertEqual(bus.writes,[])
     def test_preexisting_torque_cannot_be_silently_taken_over(self):
         bus=self.connect();bus.torque["elbow_flex"]=True
         with self.assertRaises(BridgeError): self.op("arm",{"supported":True})

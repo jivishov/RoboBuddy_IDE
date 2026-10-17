@@ -98,6 +98,8 @@ class HardwareController:
         calibration_dict(sample["calibration"])
         require(all(sample["calibration"][j]["range_min"] <= sample["raw"][j] <= sample["calibration"][j]["range_max"] for j in JOINTS), "ENCODER_OUTSIDE_CALIBRATION", "A joint is outside its calibrated encoder range. Recheck calibration with torque disabled.")
         return sample
+    def _lease_alive(self):
+        require(self.owner is not None and self.clock() <= self.lease_until, "SESSION_EXPIRED", "The operator lease expired before the motor write.", 401)
     def _connect(self, args):
         require(self.bus is None, "ALREADY_CONNECTED", "Disconnect before selecting a different port.")
         port = args.get("port")
@@ -126,9 +128,14 @@ class HardwareController:
         sample = self._read()
         self._ready()
         require(not any(sample["torque"].values()), "TORQUE_ALREADY_ON", "Motors are already enabled. Support the arm and explicitly disable them before enabling control.")
+        self._lease_alive()
         # Set goals from actual ticks BEFORE torque. No rest pose, cached command or PID change.
         self._wrote_in_operation = True
         self.bus.set_position_mode()
+        sample = self._read()
+        self._ready()
+        require(not any(sample["torque"].values()), "TORQUE_ALREADY_ON", "A motor became enabled during arming; stop and check the arm locally.")
+        self._lease_alive()
         self.bus.write_raw_goals(sample["raw"])
         require(self.owner is not None and self.clock() <= self.lease_until, "SESSION_EXPIRED", "The operator lease expired before motor enable.", 401)
         self.bus.enable()

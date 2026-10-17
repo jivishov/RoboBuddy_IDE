@@ -29,16 +29,14 @@ jobs:
         run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
       - name: Pinned motor driver
         run: python -m pip install -r hardware_bridge/requirements.txt
-      - name: Published SDK source for reproducible offline setup
-        if: runner.os == 'Windows'
-        run: |
-          python -c "import base64,hashlib,urllib.request; d=urllib.request.urlopen('https://files.pythonhosted.org/packages/5f/8e/c53d6f9a8bf3a86a635b58eeb675723f1b040f1665a0681467756c8989aa/feetech-servo-sdk-1.0.0.tar.gz',timeout=30).read(); assert hashlib.sha256(d).hexdigest()=='d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c'; print('FEETECH_SDK_SDIST_BASE64='+base64.b64encode(d).decode())"
       - name: Real driver API check without USB
         run: python -m hardware_bridge.check_driver
       - name: Controller, transport, security and real driver adapter
         run: python -m unittest discover -s tests/hardware -v
       - name: Visual mapping and endpoint isolation
-        run: node tests/hardware/joint-map-core.mjs
+        run: |
+          node tests/hardware/joint-map-core.mjs
+          node tests/hardware/bridge-client-core.mjs
       - name: JavaScript syntax
         shell: bash
         run: |

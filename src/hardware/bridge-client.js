@@ -8,7 +8,7 @@ export class HardwareClient {
   constructor({onState = () => {}, onError = () => {}} = {}) {
     this.onState = onState; this.onError = onError;
     this.base = null; this.token = ''; this.session = null; this.sequence = 0;
-    this.busy = false; this.polling = false; this.heartbeatPending = false;
+    this.busy = false; this.inFlight = 0; this.generation = 0; this.polling = false; this.heartbeatPending = false;
   }
   async request(path, payload, {timeout = 6000, keepalive = false} = {}) {
     const response = await fetch(this.base + path, {
@@ -23,10 +23,12 @@ export class HardwareClient {
   }
   async pair(base, token) {
     this.close();
+    const generation = this.generation;
     this.base = helperAddress(base);
     if (!token || token.length > 256) throw new Error('Enter the pairing code or open the local hardware panel.');
     this.token = token;
     const result = await this.request('/api/session', {});
+    if (generation !== this.generation) throw new Error('A previous panel session response was ignored. Pair explicitly again.');
     if (result.state.apiVersion !== 'robobuddy.so101.hardware.v1') throw new Error('Hardware helper version mismatch.');
     this.session = result.session; this.sequence = 0;
     this.onState(result.state);
@@ -37,29 +39,33 @@ export class HardwareClient {
   async heartbeat() {
     if (!this.session || this.heartbeatPending) return;
     this.heartbeatPending = true;
-    try { this.onState(await this.request('/api/heartbeat', {session: this.session})); }
-    catch (error) { this.lost(error); }
-    finally { this.heartbeatPending = false; }
+    const generation = this.generation;
+    try { const data = await this.request('/api/heartbeat', {session: this.session}); if (generation === this.generation) this.onState(data); }
+    catch (error) { if (generation === this.generation) this.lost(error); }
+    finally { if (generation === this.generation) this.heartbeatPending = false; }
   }
   async poll() {
     if (!this.session || this.polling) return;
     this.polling = true;
-    try { this.onState(await this.request('/api/state')); }
-    catch (error) { this.lost(error); }
-    finally { this.polling = false; }
+    const generation = this.generation;
+    try { const data = await this.request('/api/state'); if (generation === this.generation) this.onState(data); }
+    catch (error) { if (generation === this.generation) this.lost(error); }
+    finally { if (generation === this.generation) this.polling = false; }
   }
   async ports() { return (await this.request('/api/ports')).ports; }
   async command(operation, args = {}, {priority = false, keepalive = false} = {}) {
     if (!this.session) throw new Error('Pair the local helper first.');
     if (this.busy && !priority) throw new Error('Wait for the current operation.');
-    this.busy = true;
+    this.inFlight += 1; this.busy = true;
     const session = this.session;
+    const generation = this.generation;
     try {
       const data = await this.request('/api/command', {session, sequence: ++this.sequence, issuedAtMs: Date.now(), operation, args}, {keepalive});
+      if (generation !== this.generation) throw new Error('A previous panel session response was ignored. Check the current state.');
       this.onState(data);
       if (operation === 'disconnect') this.close();
       return data;
-    } finally { this.busy = false; }
+    } finally { if (generation === this.generation) {this.inFlight = Math.max(0, this.inFlight - 1); this.busy = this.inFlight > 0;} }
   }
   async stop() { return this.command('stop', {}, {priority: true}); }
   bestEffortStop() {
@@ -78,7 +84,9 @@ export class HardwareClient {
   }
   close() {
     clearInterval(this.heartbeatTimer); clearInterval(this.pollTimer);
-    this.session = null; this.busy = false;
+    this.generation += 1;
+    this.session = null; this.busy = false; this.inFlight = 0;
+    this.polling = false; this.heartbeatPending = false;
   }
 }
 
