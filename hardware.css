@@ -103,8 +103,10 @@ button.torque-off { color: #983e33; border-color: #d7b4aa; background: #fff8f1; 
 .quick-stop.icon-button { width: 38px; height: 36px; min-width: 38px; min-height: 36px; padding: 7px; }
 .quick-stop.icon-button::after { bottom: auto; top: calc(100% + 8px); left: auto; right: 0; transform: none; }
 .action-strip .icon-button::after { left: 0; transform: none; }
+.action-strip .action-item:nth-child(n+3) .icon-button::after { left: auto; right: 0; }
 .motor-actions .icon-button::after, .target-control .icon-button::after, #pairBtn::after, #refreshPorts::after { left: auto; right: 0; transform: none; }
 .jog-buttons .icon-button::after { max-width: 150px; }
+.jog-buttons .icon-button:first-child::after { left: 0; transform: none; }
 .stop.icon-button { width: 48px; height: 46px; padding: 11px; }
 .stop.icon-button svg { width: 24px; height: 24px; }
 .stop.icon-button::after { left: auto; right: 0; transform: none; }
@@ -188,6 +190,9 @@ footer { font-size: 10px; color: var(--muted); padding: 0 28px 16px; text-align:
   .section-name { display: none; }
 }
 @media (max-width: 680px) {
+  /* Anchor hints to the viewport on narrow screens, including edge buttons. */
+  .icon-button[data-tooltip]::after { position: fixed; top: auto; bottom: 12px; left: 12px !important; right: 12px !important; transform: none !important; width: auto; max-width: none; text-align: center; }
+  .icon-button:active:not(:disabled) { transform: none; }
   .topbar { padding: 7px 12px; gap: 12px; }
   .topbar > .pill { display: none; }
   .quick-stop { margin-left: auto; }

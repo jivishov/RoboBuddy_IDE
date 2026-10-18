@@ -120,6 +120,12 @@ test('uncalibrated connection keeps setup available and controls locked',async({
   await expect(page.locator('#controlHint')).toContainText('Calibration required');
   await page.locator('#supportAck').check();
   await expect(page.locator('#armBtn')).toBeDisabled();
+  await page.setViewportSize({width:320,height:844});
+  await page.locator('#calibrationDetails summary').click();
+  for(const id of ['calStart','calMiddle','calFinish','calCancel']) {
+    await page.locator('#'+id).hover();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Calibration tooltip '+id+' stays within the narrow layout').toBeTruthy();
+  }
   await page.locator('#setupToggle').click();
   await expect(page.locator('#quickStopBtn')).toBeEnabled();
   await page.locator('#setupToggle').click();
