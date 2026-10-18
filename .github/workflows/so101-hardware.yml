@@ -1,0 +1,73 @@
+name: SO-101 hardware software checks
+on:
+  push:
+    branches: [main, "fix/so101-hardware-panel"]
+  pull_request:
+    paths: ["hardware*", "hardware_bridge/**", "src/hardware/**", "tests/hardware/**", "*RoboBuddy-Hardware*", "ide.html", ".github/workflows/so101-hardware.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  software:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: hardware_bridge/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: CPU runtime
+        run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - name: Pinned motor driver
+        run: python -m pip install -r hardware_bridge/requirements.txt
+      - name: Real driver API check without USB
+        run: python -m hardware_bridge.check_driver
+      - name: Controller, transport, security and real driver adapter
+        run: python -m unittest discover -s tests/hardware -v
+      - name: Visual mapping and endpoint isolation
+        run: |
+          node tests/hardware/joint-map-core.mjs
+          node tests/hardware/bridge-client-core.mjs
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          for file in src/hardware/*.js; do node --check "$file"; done
+      - name: Windows launcher syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($file in @('Start-RoboBuddy-Hardware.ps1','Setup-RoboBuddy-Hardware.ps1')) {
+            $tokens=$null; $errors=$null
+            [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd $file),[ref]$tokens,[ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors | Out-String) }
+          }
+  panel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm install --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Demo panel browser check; never opens USB
+        run: npx playwright test --config playwright.hardware.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: so101-hardware-panel-evidence
+          path: test-results/
+

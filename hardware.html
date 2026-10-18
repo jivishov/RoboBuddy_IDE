@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-theme="calm-light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Local manual SO-101 hardware controls for RoboBuddy IDE.">
+<meta name="referrer" content="no-referrer">
+<title>SO-101 Hardware · RoboBuddy IDE</title>
+<link rel="stylesheet" href="./hardware.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="header-main">
+    <a class="brand" href="https://robobuddy.dev/ide.html?robot=so101" target="_blank" rel="noopener noreferrer" title="Open the simulator in a separate tab"><span class="mark">RB</span><span class="brand-name">RoboBuddy IDE</span></a>
+    <div class="header-title"><h1>Hardware control</h1><span>SO-101 follower</span></div>
+    <div class="header-state"><span class="dot" id="stateDot"></span><div><strong id="stateLabel">Helper not paired</strong><small id="stateDetail">Starting this page does not open USB.</small></div></div>
+    <span class="pill" id="modeBadge">LOCAL CONTROL</span>
+    <button id="quickStopBtn" class="quick-stop" aria-label="Stop hardware motion" title="Clear the jog and request a software hold. Motors remain enabled." disabled>■ Stop <kbd>Esc</kbd></button>
+  </div>
+  <div class="header-meta">
+    <p id="feedback" role="status" aria-live="polite" class="feedback">Start the local helper to begin. Hardware commissioning is pending.</p>
+    <div id="demoBanner" class="header-demo" hidden title="All readings and motor responses are synthetic. No serial port is opened."><strong>DEMO MOTOR BUS · NO PHYSICAL HARDWARE</strong></div>
+  </div>
+</header>
+<main>
+  <details id="setupDetails" class="setup-shell" open>
+    <summary id="setupToggle"><span class="setup-heading">Connection &amp; calibration</span><span id="setupSummary">Helper not paired</span><span class="setup-toggle-label"><span class="when-closed">Show setup</span><span class="when-open">Hide setup</span></span></summary>
+    <div class="setup-body">
+      <p class="hint" id="launchHelp">The Windows launcher opens this panel locally and pairs it automatically. <a id="openLocalPanel" href="http://127.0.0.1:8765/hardware.html" target="_blank" rel="noopener noreferrer">Open the running local panel ↗</a> · <a href="https://github.com/jivishov/RoboBuddy_IDE/blob/fix/so101-hardware-panel/docs/hardware/SO101_MANUAL_CONTROL.md" target="_blank" rel="noopener noreferrer">Setup instructions ↗</a></p>
+      <div class="setup-grid">
+        <section class="connection setup-card">
+          <div class="card-title"><h2>Connect the arm</h2><span id="driverLabel" class="subtle">LeRobot 0.6.0</span></div>
+          <form id="pairForm"><label>Helper address<input id="helperAddress" type="url" value="http://127.0.0.1:8765" required></label><label id="tokenRow">Pairing code<input id="pairingCode" type="password" autocomplete="off" spellcheck="false" placeholder="Local page pairs automatically"></label><button id="pairBtn" class="primary" type="submit">Pair helper</button></form>
+          <div class="port-grid"><label>USB / COM port<select id="portSelect" aria-label="USB / COM port"><option value="">Pair helper first</option></select></label><button id="refreshPorts" disabled>Refresh</button><label>Arm / calibration name<input id="armId" value="my_so101" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_.-]*"></label></div>
+          <div class="button-row action-strip"><div class="action-item"><button id="connectBtn" class="primary" disabled>Connect · read only</button><span>Connect</span></div><div class="action-item"><button id="disconnectBtn" disabled>Disconnect</button><span>Disconnect</span></div><div class="action-item"><button id="quitBtn" class="quiet" disabled>Quit helper</button><span>Quit helper</span></div></div>
+          <p class="hint">Connect only reads motor identity, encoders and torque. It never homes the arm or changes its motor configuration.</p>
+        </section>
+        <section class="setup-card calibration-card">
+          <div class="card-title"><h2>Calibration</h2><span id="calibrationBadge" class="pill">CALIBRATION UNKNOWN</span></div>
+          <p id="calibrationSummary" class="hint">Use the same arm name as your saved LeRobot calibration.</p>
+          <details id="calibrationDetails"><summary>Calibration setup or restore</summary>
+            <p class="hint">Use the actual SO-101 configuration. Saved calibration is backed up before changes. Support the arm, confirm below and disable torque first.</p>
+            <div id="wizardText">Start, place joints at the documented middle pose, record their usable ranges by hand, then review and save. Wrist roll follows LeRobot's full-turn convention.</div>
+            <div class="button-row action-strip"><div class="action-item"><button id="calStart" disabled>Start calibration</button><span>1 · Start</span></div><div class="action-item"><button id="calMiddle" disabled>Middle pose ready</button><span>2 · Middle pose</span></div><div class="action-item"><button id="calFinish" disabled>Ranges reviewed · save</button><span>3 · Save</span></div><div class="action-item"><button id="calCancel" disabled>Cancel</button><span>Cancel</span></div></div>
+            <div id="rangeReport" class="range-report"></div>
+            <label class="file-label">Import &amp; apply a saved LeRobot calibration<input id="calibrationFile" type="file" accept=".json,application/json" disabled></label>
+            <a href="https://huggingface.co/docs/lerobot/so101" target="_blank" rel="noopener noreferrer">Official setup and middle-pose guide ↗</a>
+          </details>
+          <p class="hint setup-explainer">Setup folds away after a calibrated arm connects. Open it again at any time to disconnect or adjust calibration.</p>
+        </section>
+      </div>
+    </div>
+  </details>
+
+  <div class="workspace">
+    <section class="controls" aria-label="Manual arm controls">
+      <div class="card manual-card">
+        <div class="card-title"><h2>Manual joints</h2><span id="controlBadge" class="pill">CONTROLS LOCKED</span></div>
+        <div class="motor-controls">
+          <div class="motor-heading"><div><strong>Motor power</strong><span>Enable at the current pose. Support the arm before torque off.</span></div><div class="motor-actions"><div class="action-item"><button id="armBtn" class="primary" disabled>Enable motors at current pose</button><span>Enable</span></div><div class="action-item"><button id="disableBtn" class="torque-off" disabled>Disable motors · support arm</button><span>Torque off</span></div></div></div>
+          <label class="check"><input id="supportAck" type="checkbox">The arm is supported and mounted; its movement area is clear.</label>
+          <p id="torqueHelp" class="hint" hidden>The motors are already powered. Support the arm and choose Disable Motors before enabling control in this panel.</p>
+        </div>
+        <p id="controlHint" class="control-hint">Pair the local helper and connect an arm to unlock manual controls.</p>
+        <div class="joint-columns" aria-hidden="true"><span>Joint</span><span>Encoder</span><span>Jog step</span><span>Target / apply</span></div>
+        <div id="jointRows"></div>
+        <p class="hint joint-help">Maximum target change: 3° / 5%. One joint at a time; no motion queue.</p>
+      </div>
+      <details class="card events-card"><summary>Recent events</summary><ol id="eventList" class="events"></ol></details>
+    </section>
+
+    <section class="monitor" aria-label="Encoder monitor">
+      <div class="card visual-card">
+        <div class="card-title"><h2>Encoder view</h2><span id="sampleBadge" class="pill">NO DATA</span></div>
+        <div id="visualHost" class="visual-host"><p id="visualMessage">The 3D view waits for calibrated encoder readings.</p><canvas id="hardwareCanvas" aria-label="SO-101 encoder-driven illustrative 3D view" hidden></canvas></div>
+        <dl class="telemetry"><div><dt>Motor state</dt><dd id="torqueState">Unknown</dd></div><div><dt>Telemetry age</dt><dd id="telemetryAge">—</dd></div><div><dt>Connection</dt><dd id="connectionState">Not paired</dd></div></dl>
+        <p class="hint visual-note">Illustrative geometry · Physical alignment unverified. Actual obstacles, contacts and objects are not shown.</p>
+        <details class="alignment-details"><summary>Adjust 3D alignment · presentation only</summary><p class="hint">These offsets and directions affect the view only. They never change motor commands.</p><div id="alignmentRows"></div></details>
+      </div>
+      <div class="stop-card"><div><h2>Stop motion</h2><p>Clears the jog and requests a hold. Motors remain enabled.</p></div><button id="stopBtn" class="stop" disabled>■ STOP <kbd>Esc</kbd></button></div>
+      <p class="safety-note">Physical commissioning pending. After USB, helper or power loss, a physical stop cannot be confirmed. Keep the independent power cutoff accessible.</p>
+    </section>
+  </div>
+</main>
+<footer>Manual hardware control · Simulation programs and WebMCP cannot operate this panel.</footer>
+<script type="module" src="./src/hardware/hardware-panel.js"></script>
+</body></html>
+

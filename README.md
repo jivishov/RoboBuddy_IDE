@@ -35,3 +35,12 @@ The original **Mounted Joint Lab**, **Free-base Dynamics** and **Passive Gravity
 **Actuator Lab (experimental)** and **Whole-Body Dynamics (experimental)** add continuous motor caps, estimated speed/friction/delay behavior, and a separate synthetic sensor view. **Standing Trial (experimental)** tests a bounded torso-feedback controller with an observation-derived support assessment.
 
 Opt-in WebMCP additionally exposes `run_whole_body_motion` in actuated free-base Asimov scenes. An agent can generate bounded multi-joint keyframes for stepping/walking attempts, turning, squatting, reaching, gestures or other coordinated motion. The trajectory is executed through the same joint actuators and MuJoCo contacts; the tool never writes root pose/velocity or applies a hidden external force. Results report measured displacement, support transitions, tilt and fall-like conditions so the agent can revise its next trajectory. An optional bounded ground-truth ankle-target stabilizer is explicitly simulator-only. This capability is **not** a trained walking policy, a validated stable gait, hardware calibration, or a completed ankle transmission model. See [WebMCP programming and whole-body motion](docs/physics/ASIMOV_WEBMCP_PROGRAMMING.md) and [scope, source reconciliation and validation](docs/physics/asimov-actuator-fidelity.md).
+
+## SO-101 USB hardware panel
+
+Open **Hardware ↗** in the IDE or [SO-101 Hardware](hardware.html). The manual panel uses a local, authenticated Python helper; it never sends simulation Run/Reset or WebMCP actions to real motors. Connection is read-only, enabling torque is explicit, and manual jogs are bounded to one joint.
+
+On Windows, run [Setup-RoboBuddy-Hardware.ps1](Setup-RoboBuddy-Hardware.ps1) once, then double-click [Start-RoboBuddy-Hardware.cmd](Start-RoboBuddy-Hardware.cmd). Starting the helper opens no USB port. Use `-Demo` for the explicitly synthetic bus. Read [setup, control semantics and final hardware commissioning](docs/hardware/SO101_MANUAL_CONTROL.md) before attaching the arm.
+
+**Status:** software implementation with automated demo/driver checks; actual USB communication, calibration, movement, stopping response and visual alignment still require the supervised commissioning procedure on the named arm. A browser model or demo test is not hardware validation.
+

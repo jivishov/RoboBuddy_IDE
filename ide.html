@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./physics-preview.css">
   <link rel="stylesheet" href="./guides/ide-help.css">
   <link rel="stylesheet" href="./theme-system.css">
+  <link rel="stylesheet" href="./hardware-entry.css">
   <script>
     try {
       const savedTheme = localStorage.getItem('rbide.theme');
@@ -53,6 +54,7 @@
     <button id="sidebarToggle" title="Toggle Explorer (Ctrl+B)" aria-label="Toggle Explorer">☰</button>
     <select id="robotSelect" aria-label="Robot profile"><option value="openarm">OpenArm Bimanual</option><option value="so101">SO-101 Follower</option><option value="lekiwi">LeKiwi</option><option value="asimov">Asimov 1 — Physical</option><option value="unitree">Unitree G1 29-DoF</option><option value="microduck">MicroDuck Policy Demonstrator</option></select>
     <select id="taskSelect" aria-label="Robot workspace or reviewed lab task"></select>
+    <a class="hardware-entry" href="./hardware.html" target="_blank" rel="noopener" title="Open the local SO-101 manual hardware panel. Simulation controls never operate motors.">Hardware ↗</a>
     <div id="agentAccessControl" class="agent-access-control" data-access="off">
       <button id="agentAccessToggle" type="button" role="switch" aria-checked="false" aria-label="Agent Assist" aria-describedby="agentAccessStatus" disabled>
         <span class="agent-access-label">Agent</span>
@@ -118,3 +120,4 @@
 <script type="module" src="./src/app-v2.js"></script>
 </body>
 </html>
+
