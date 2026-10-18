@@ -1,27 +1,47 @@
 import {HardwareClient, helperAddress} from './bridge-client.js';
 import {JOINTS, visualPose} from './joint-map.js';
+import {iconButton} from './icons.js';
 const $ = id => document.getElementById(id);
 const names = {shoulder_pan:'Shoulder pan', shoulder_lift:'Shoulder lift', elbow_flex:'Elbow', wrist_flex:'Wrist flex', wrist_roll:'Wrist roll', gripper:'Gripper'};
-let state = null, transportOk = false, visualizer = null, visualLoading = false, visualFailed = false, mapping = {}, receivedAt = 0;
+let state = null, transportOk = false, visualizer = null, visualLoading = false, visualFailed = false, mapping = {}, receivedAt = 0, setupWasReady = false, setupFocusPending = false;
+for (const [id, name, label, tooltip] of [
+  ['pairBtn','link','Pair helper'],
+  ['refreshPorts','refresh','Refresh USB ports'],
+  ['connectBtn','plug','Connect · read only','Connect read only. No homing or motor configuration changes.'],
+  ['disconnectBtn','unplug','Disconnect','Disconnect the serial port. Motor torque will no longer be monitored.'],
+  ['quitBtn','exit','Quit helper'],
+  ['armBtn','power','Enable motors at current pose','Enable motors at the measured pose after confirming the arm is supported.'],
+  ['disableBtn','powerOff','Disable motors · support arm','Remove motor torque. Support the arm first; it can fall.'],
+  ['calStart','calibrate','Start calibration','1 · Start calibration with the arm supported and torque disabled.'],
+  ['calMiddle','middle','Middle pose ready','2 · Confirm the documented middle pose. Writes homing offsets.'],
+  ['calFinish','save','Ranges reviewed · save','3 · Save the reviewed joint ranges.'],
+  ['calCancel','cancel','Cancel calibration'],
+  ['stopBtn','stop','Stop motion','Stop · Esc. Clear the jog and request a hold. Motors remain enabled.'],
+  ['quickStopBtn','stop','Stop hardware motion','Stop · Esc. Clear the jog and request a hold. Motors remain enabled.'],
+]) iconButton($(id), name, label, tooltip);
 const client = new HardwareClient({onState: value => {state=value;transportOk=true;receivedAt=performance.now();render();},onError: error => {transportOk=false;message(error.message,true);render();}});
 function message(text,error=false) {$('feedback').textContent=text;$('feedback').classList.toggle('error',error);}
 function supported() {if (!$('supportAck').checked) throw new Error('Confirm the arm is supported and its movement area is clear.');return true;}
 async function action(operation,args={}) {
-  try {message('Working…');const result=await (operation==='stop' ? client.stop() : client.command(operation,args));message(operation==='stop'?(result.state==='holding'?'Hold requested. This is a software stop; motors remain enabled.':'No panel jog was active. Check the observed motor state.'):operation==='disconnect'?'Disconnected. Motor torque is no longer monitored.':'Operation complete.');}
+  if(['connect','calibration_finish','calibration_import'].includes(operation)) setupFocusPending=$('setupDetails').contains(document.activeElement);
+  try {message('Working…');const pending=operation==='stop' ? client.stop() : client.command(operation,args);render();const result=await pending;message(operation==='stop'?(result.state==='holding'?'Hold requested. This is a software stop; motors remain enabled.':'No panel jog was active. Check the observed motor state.'):operation==='disconnect'?'Disconnected. Motor torque is no longer monitored.':'Operation complete.');}
   catch(error) {message(error.message,true);}
-  finally {render();}
+  finally {setupFocusPending=false;render();}
 }
 for (const [index,joint] of JOINTS.entries()) {
   const row=document.createElement('div');row.className='joint-row';row.dataset.joint=joint;
-  row.innerHTML='<div class="joint-name"></div><output class="actual">—</output><button class="minus" type="button">−</button><input type="number" step="'+(joint==='gripper'?'1':'.1')+'"><button class="plus" type="button">+</button><button class="apply" type="button">Apply</button>';
+  row.innerHTML='<div class="joint-name"></div><div class="encoder-readout"><output class="actual" aria-live="off">—</output><small class="raw-value">No data</small></div><div class="jog-buttons"><button class="minus" type="button"></button><span class="jog-step">'+(joint==='gripper'?'2%':'1°')+'</span><button class="plus" type="button"></button></div><div class="target-control"><input type="number" step="'+(joint==='gripper'?'1':'.1')+'"><button class="apply" type="button"></button></div>';
   row.querySelector('.joint-name').append(document.createTextNode(names[joint]));
   const note=document.createElement('small');note.textContent='Motor '+(index+1)+(joint==='gripper'?' · % open':' · degrees');row.querySelector('.joint-name').append(note);
   const input=row.querySelector('input');input.setAttribute('aria-label',names[joint]+' target');
+  input.title='Absolute target in '+(joint==='gripper'?'percent open; maximum change 5%.':'degrees; maximum change 3°.');
+  row.querySelector('.actual').setAttribute('aria-label',names[joint]+' encoder');
   for(const [selector,delta] of [['.minus',-1],['.plus',1]]) {
-    const button=row.querySelector(selector);button.setAttribute('aria-label','Jog '+names[joint]+' '+(delta>0?'positive':'negative'));
+    const button=row.querySelector(selector);iconButton(button,delta>0?'plus':'minus','Jog '+names[joint]+' '+(delta>0?'positive':'negative'),names[joint]+' · '+(delta>0?'+':'−')+(joint==='gripper'?'2%':'1°'));
     button.addEventListener('click',()=>{const actual=state?.joints[joint]?.position;if(typeof actual==='number')void action('move',{targets:{[joint]:actual+delta*(joint==='gripper'?2:1)}});});
   }
-  row.querySelector('.apply').addEventListener('click',()=>void action('move',{targets:{[joint]:Number(input.value)}}));
+  const apply=row.querySelector('.apply');iconButton(apply,'apply','Apply '+names[joint]+' target');
+  apply.addEventListener('click',()=>void action('move',{targets:{[joint]:Number(input.value)}}));
   $('jointRows').append(row);
 }
 for(const joint of JOINTS.filter(j=>j!=='gripper')) {
@@ -50,12 +70,20 @@ function render() {
   const age=state?.sampleAgeMs===null?null:(state?.sampleAgeMs||0)+(performance.now()-receivedAt);
   const fresh=connected&&state?.fresh&&age!==null&&age<600;
   const busy=client.busy;
-  const moving=state?.state==='moving';
+  const moving=connected&&state?.state==='moving';
   const canMove=fresh&&state.calibrated&&state.operatorEnabled&&['armed','holding'].includes(state.state)&&!busy;
   const readOnly=connected&&state?.state==='read_only'&&fresh&&!busy;
   const torque=Object.values(state?.joints||{}).some(j=>j.torqueEnabled);
+  const setupReady=connected&&state?.calibrated&&!['calibrating','fault'].includes(state.state);
+  if(setupReady&&!setupWasReady) {
+    const restoreFocus=$('setupDetails').contains(document.activeElement)||(setupFocusPending&&document.activeElement===document.body);
+    $('setupDetails').open=false;
+    if(restoreFocus)$('setupToggle').focus({preventScroll:true});
+  }
+  setupWasReady=setupReady;
+  $('setupSummary').textContent=connected?state.port+' · '+state.armId+' · Calibration '+(state.calibrated?'matched':'required'):paired?'Helper paired · Choose a USB port':'Helper not paired';
   $('demoBanner').hidden=state?.mode!=='demo';$('modeBadge').textContent=state?.mode==='demo'?'DEMO · NO HARDWARE':'LOCAL HARDWARE';
-  $('pairBtn').disabled=paired;$('pairBtn').textContent=paired?'Helper paired':'Pair helper';
+  $('pairBtn').disabled=paired;iconButton($('pairBtn'),paired?'check':'link',paired?'Helper paired':'Pair helper');
   $('refreshPorts').disabled=!paired||busy;$('connectBtn').disabled=!paired||connected||busy||!$('portSelect').value;
   $('disconnectBtn').disabled=!connected||busy;$('quitBtn').disabled=!paired||busy;
   $('armBtn').disabled=!readOnly||!state?.calibrated||torque||!$('supportAck').checked;
@@ -76,10 +104,16 @@ function render() {
   $('telemetryAge').textContent=age===null||!connected?'—':Math.round(age)+' ms';
   $('torqueState').textContent=!connected||state.state==='fault'?'Unknown / not monitored':torque?'Enabled':'Disabled';
   $('connectionState').textContent=connected?state.port:paired?'Paired · no USB':'Not paired';
+  const fault=state?.state==='fault';
+  $('controlBadge').textContent=fault?'FAULT':!connected?'CONTROLS LOCKED':!fresh?'STALE DATA':moving?'JOG IN PROGRESS':busy?'WORKING':state.state==='calibrating'?'CALIBRATING':canMove?'READY TO JOG':'READ ONLY';
+  $('controlBadge').dataset.tone=fault?'fault':moving||busy?'moving':canMove?'ready':'';
+  $('controlHint').textContent=fault?'Control locked. Check the arm locally; a physical stop is unconfirmed.':!paired?'Pair the local helper and connect an arm to unlock manual controls.':!connected?'Connect read only, then confirm support and enable motors.':!fresh?'Waiting for fresh encoder readings. Jog controls are locked.':!state.calibrated?'Calibration required. Open Connection & calibration to set up or restore it.':moving?'A bounded jog is in progress. Stop remains available.':busy?'Command in progress. Stop remains available.':canMove?'Ready · use a jog step or enter an absolute target, then apply.':torque?'Motors are powered. Support the arm, disable motors, then enable control here.':!$('supportAck').checked?'Confirm the arm is supported, then enable motors at its current pose.':'Ready to enable motors at the measured pose.';
   if(state?.driver)$('driverLabel').textContent=state.driver;
   for(const row of $('jointRows').children) {
     const j=state?.joints?.[row.dataset.joint],input=row.querySelector('input');
     row.querySelector('.actual').textContent=typeof j?.position==='number'?j.position.toFixed(1)+(j.unit==='degrees'?'°':'%'):j?j.rawTicks+' ticks':'—';
+    row.querySelector('.raw-value').textContent=j?j.rawTicks+' ticks':'No data';
+    row.querySelector('.encoder-readout').classList.toggle('stale',!fresh);
     if(document.activeElement!==input&&typeof j?.position==='number')input.value=j.position.toFixed(1);
     if(j?.limits){input.min=j.limits[0];input.max=j.limits[1];}
     for(const el of row.querySelectorAll('button,input'))el.disabled=!canMove;

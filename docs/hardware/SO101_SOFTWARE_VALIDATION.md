@@ -16,6 +16,12 @@ A Hardware entry opens a dedicated manual panel. Local helpers pair their own pa
 
 The simulator, user Python, Reset and WebMCP have no hardware handle. Hardware code does not call SO101Follower.connect/configure or its torque-disabled configuration context. Closing does not silently disable torque. The bridge uses an expiring operator lease, monotonic target scheduling and no motion queue.
 
+## Panel usability checks
+
+The compact panel revision keeps connection/calibration in one collapsible section, with persistent motor controls and a summary of the selected arm. Demo-browser checks cover manual and keyboard folding, automatic folding only after matched calibration, restored focus, reopening across telemetry polls without a motor command, and an uncalibrated connection staying open with motor enable locked. All action buttons use local SVG icons with accessible names and explanatory tooltips.
+
+The six joint controls and encoder canvas fit in a 1366 × 768 viewport after setup folds. Responsive checks cover eleven widths from 320 to 1366 pixels, with no horizontal overflow and the header Stop still visible when scrolling to the encoder view. The real pinned mesh was rendered in the local demo checks using a test-only copy of that exact asset and the pinned Three.js package; production retains its existing asset URLs. Final remote browser/driver results are recorded in the PR's Actions checks.
+
 ## Still intentionally pending
 
 Actual controller/motor identity and power rating, USB handshake, physical calibration, response of all six motors, true stopping latency, failure behavior of the assembled controller, cable clearance and visual zero/direction alignment have not been tested. Passing demo/software checks does not establish these facts. Follow the final commissioning procedure in SO101_MANUAL_CONTROL.md beside the supported arm before treating it as hardware-tested.

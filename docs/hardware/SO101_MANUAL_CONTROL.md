@@ -6,6 +6,12 @@ The manual panel is a separate page in the existing RoboBuddy IDE repository. Th
 
 All physical commissioning is pending. Tests use a clearly identified fake bus and a released LeRobot class with its wire replaced by a spy. Real driver import/construction checks never open serial. Neither passing test group establishes actual motion accuracy, stopping latency or hardware safety.
 
+## Panel layout
+
+Connection and calibration share a collapsible setup section. It starts open and folds away when a calibrated arm connects; an uncalibrated connection leaves setup open. Reopening it preserves the selected port and calibration name, and folding it does not send a motor command. Its summary always shows the connection and calibration status.
+
+Motor enable, torque off, the support acknowledgement and control readiness stay beside the manual joints. Compact outline buttons have accessible names and hover/focus tooltips. Enable and torque-off keep visible captions; Stop uses a distinct red octagon and stays in the sticky header. Each row separates the encoder value and raw ticks, the 1° / 2% jog step, and the absolute target with an apply icon. The adjacent encoder view includes motor state, sample age and port. On narrow screens the joint controls wrap into two rows and the monitor follows below.
+
 ## Windows preparation
 
 Use this repository checkout, not files under the ChatGPT project's read-only sources folder. One-time setup:
