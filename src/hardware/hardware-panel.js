@@ -82,7 +82,7 @@ function render() {
   }
   setupWasReady=setupReady;
   $('setupSummary').textContent=connected?state.port+' · '+state.armId+' · Calibration '+(state.calibrated?'matched':'required'):paired?'Helper paired · Choose a USB port':'Helper not paired';
-  $('demoBanner').hidden=state?.mode!=='demo';$('modeBadge').textContent=state?.mode==='demo'?'DEMO · NO HARDWARE':'LOCAL HARDWARE';
+  $('demoBanner').hidden=state?.mode!=='demo';$('modeBadge').hidden=state?.mode==='demo';$('modeBadge').textContent='LOCAL HARDWARE';
   $('pairBtn').disabled=paired;iconButton($('pairBtn'),paired?'check':'link',paired?'Helper paired':'Pair helper');
   $('refreshPorts').disabled=!paired||busy;$('connectBtn').disabled=!paired||connected||busy||!$('portSelect').value;
   $('disconnectBtn').disabled=!connected||busy;$('quitBtn').disabled=!paired||busy;

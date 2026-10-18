@@ -31,6 +31,10 @@ test('manual panel keeps read-only connection, motor enable and small jogs separ
   await expect(page.getByText('DEMO MOTOR BUS · NO PHYSICAL HARDWARE',{exact:true})).toBeVisible();
   await expect(page.locator('#stateLabel')).toHaveText('USB not connected');
   await expect(page.locator('#armBtn')).toBeDisabled();
+  await expect(page.locator('header #stateLabel')).toBeVisible();
+  await expect(page.locator('header #feedback')).toBeVisible();
+  await expect(page.locator('header h1')).toContainText('Hardware control');
+  await expect(page.locator('main h1')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Jog Shoulder pan positive',exact:true})).toBeDisabled();
   await expect(page.locator('#setupDetails')).toHaveAttribute('open','');
   await page.locator('#setupToggle').click();
