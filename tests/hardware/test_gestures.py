@@ -91,5 +91,35 @@ class GestureTests(unittest.TestCase):
         self.assertIsNone(self.ctl.gesture); self.assertIsNone(self.ctl.target)
         self.assertFalse(self.ctl.fault["physicalStopConfirmed"])
 
+    def test_slow_bus_read_cannot_write_expired_motion(self):
+        self.move(self.start())
+        read = self.ctl.bus.read
+        def slow_read():
+            self.clock.step(.36)
+            return read()
+        self.ctl.bus.read = slow_read
+        before = dict(self.ctl.bus.positions)
+        self.ctl.tick()
+        self.assertIsNone(self.ctl.gesture)
+        self.assertIsNone(self.ctl.target)
+        self.assertEqual(self.ctl.bus.goals, before)
+    def test_center_samples_current_pose_once_even_after_target_settled(self):
+        token = self.start()
+        self.move(token)
+        self.ctl.target = None  # A settled command may still have a residual goal.
+        self.ctl.bus.goals['shoulder_pan'] += 3
+        writes = len(self.ctl.bus.writes)
+        self.move(token, 0)
+        self.assertEqual(self.ctl.bus.goals['shoulder_pan'], self.ctl.sample['raw']['shoulder_pan'])
+        self.assertEqual(len(self.ctl.bus.writes), writes + 1)
+        self.move(token, 0)
+        self.assertEqual(len(self.ctl.bus.writes), writes + 1)
+    def test_unselected_joint_hold_is_not_rebased_by_stream(self):
+        token = self.start()
+        held = self.ctl.gesture_hold['elbow_flex']
+        self.ctl.sample['raw']['elbow_flex'] += 5
+        self.move(token)
+        self.assertEqual(self.ctl.target['elbow_flex'], held)
+
 
 if __name__ == "__main__": unittest.main()

@@ -4,24 +4,29 @@ export const GESTURE_JOINTS = Object.freeze({
   shoulder_pan: 'Shoulder pan', shoulder_lift: 'Shoulder lift', elbow_flex: 'Elbow',
   wrist_flex: 'Wrist flex', wrist_roll: 'Wrist roll', gripper: 'Gripper',
 });
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
-export function analyzeHand(result) {
+export function analyzeHand(result, aspectRatio = 4 / 3) {
   if (result?.landmarks?.length !== 1) return {valid: false, reason: result?.landmarks?.length > 1 ? 'Show only one hand.' : 'Show one open hand.'};
   const points = result.landmarks[0];
+  if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) return {valid: false, reason: 'Camera dimensions unavailable. Restart the camera.'};
   if (!Array.isArray(points) || points.length !== 21 || points.some(p => !p || !Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z) || p.x < .02 || p.x > .98 || p.y < .02 || p.y > .98)) return {valid: false, reason: 'Keep your whole hand inside the camera view.'};
+  // MediaPipe normalizes x and y independently. Measure in image-width units
+  // so angles and pinch ratios do not change when the camera changes aspect.
+  const distance = (a, b) => Math.hypot(a.x - b.x, (a.y - b.y) / aspectRatio);
   const width = distance(points[5], points[17]);
   if (width < .055 || width > .48) return {valid: false, reason: 'Move your hand to a comfortable camera distance.'};
   const extended = [8, 12, 16, 20].map(tip => {
     const pip = points[tip - 2], base = points[tip - 3], end = points[tip];
-    const ax = base.x - pip.x, ay = base.y - pip.y, bx = end.x - pip.x, by = end.y - pip.y;
+    const ax = base.x - pip.x, ay = (base.y - pip.y) / aspectRatio, bx = end.x - pip.x, by = (end.y - pip.y) / aspectRatio;
     const cosine = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1);
     return cosine < -.65 && distance(end, points[0]) > distance(pip, points[0]) * 1.1;
   });
   const palmIds = [0, 5, 9, 13, 17];
+  const identity = result.handedness?.[0]?.[0];
+  if (!['Left', 'Right'].includes(identity?.categoryName) || !Number.isFinite(identity.score) || identity.score < .7) return {valid: false, reason: 'Hand tracking uncertain. Face your palm toward the camera.'};
   return {
-    valid: true, points, hand: result.handedness?.[0]?.[0]?.categoryName || 'hand',
+    valid: true, points, hand: identity.categoryName,
     x: 1 - palmIds.reduce((sum, i) => sum + points[i].x, 0) / palmIds.length,
     pinch: distance(points[4], points[8]) / width,
     open: extended.every(Boolean), gripReady: extended.slice(1).every(Boolean),
@@ -38,5 +43,13 @@ export function gestureDirection(hand, neutral, joint, previous = 0) {
   // Center has an immediate zero; smoothing may never prolong a released command.
   if (Math.abs(delta) <= deadband) return 0;
   const requested = Math.sign(delta) * clamp((Math.abs(delta) - deadband) / span, 0, 1);
+  // Reversing intent must never briefly continue in the old direction.
+  if (Math.sign(previous) !== Math.sign(requested)) previous = 0;
   return clamp(previous * .45 + requested * .55, -1, 1);
+}
+
+export function containedImageRect(imageWidth, imageHeight, width, height) {
+  const scale = Math.min(width / imageWidth, height / imageHeight);
+  const w = imageWidth * scale, h = imageHeight * scale;
+  return {x: (width - w) / 2, y: (height - h) / 2, width: w, height: h};
 }

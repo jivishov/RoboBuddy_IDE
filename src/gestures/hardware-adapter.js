@@ -1,12 +1,23 @@
 export function hardwareGestureAdapter(client, getState, isSupported) {
   let gestureId = null;
+  const availability = () => {
+    const state = getState();
+    if (!state?.capabilities?.webcamGestures) return 'Update and restart the local hardware helper to use gesture control.';
+    if (!state.fresh || !state.calibrated || !state.operatorEnabled || !['armed','holding'].includes(state.state)) return 'Connect, calibrate and explicitly enable motors before enabling gestures.';
+    if (!isSupported()) return 'Confirm that the arm is supported, mounted and clear.';
+    return '';
+  };
   return {
-    label: 'LOCAL ARM · BOUNDED JOINT JOGS',
+    label: 'SO-101 · Local arm',
+    context: () => getState()?.mode === 'demo' ? 'SO-101 · Demo motors' : 'SO-101 · Local arm',
+    availability,
+    readback(joint) {
+      const state = getState(), position = state?.joints?.[joint]?.position;
+      return {label: state?.mode === 'demo' ? 'Demo encoder' : 'Encoder', value: state?.fresh && Number.isFinite(position) ? position.toFixed(1) + (joint === 'gripper' ? '% open' : '°') : 'Unavailable'};
+    },
     async begin(joint) {
-      const state = getState();
-      if (!state?.capabilities?.webcamGestures) throw new Error('Update and restart the local hardware helper to use gesture control.');
-      if (!state.fresh || !state.calibrated || !state.operatorEnabled || !['armed','holding'].includes(state.state)) throw new Error('Connect, calibrate and explicitly enable motors before enabling gestures.');
-      if (!isSupported()) throw new Error('Confirm that the arm is supported, mounted and clear.');
+      const reason = availability();
+      if (reason) throw new Error(reason);
       const result = await client.command('gesture_start', {joint, supported: true});
       gestureId = result.gesture?.id;
       if (!gestureId) throw new Error('The helper did not accept gesture control.');

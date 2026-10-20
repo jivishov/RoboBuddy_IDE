@@ -17,7 +17,7 @@ self.onmessage = async ({data}) => {
     try {
       if (!landmarker) throw new Error('Hand tracker is not ready.');
       const result = landmarker.detectForVideo(data.bitmap, data.capturedAt);
-      self.postMessage({type: 'result', result: {landmarks: result.landmarks, handedness: result.handedness}, capturedAt: data.capturedAt});
+      self.postMessage({type: 'result', result: {landmarks: result.landmarks, handedness: result.handedness, imageWidth: data.bitmap.width, imageHeight: data.bitmap.height}, capturedAt: data.capturedAt});
     } catch { self.postMessage({type: 'error', message: 'Hand tracking stopped. Restart the camera.'}); }
     finally { data.bitmap?.close(); }
   }

@@ -432,7 +432,7 @@ class App {
     const pauseButton = $('pauseBtn');
     const policyReady = workspaceReady && this.isPolicyWorkspace();
     const physical = workspaceReady && this.isPhysicalWorkspace();
-    pauseButton.disabled = !active && !policyReady;
+    pauseButton.disabled = !active && !policyReady && !this.gestures?.enabled && !this.gestures?.enabling;
     pauseButton.textContent = paused ? '▶ Resume' : '⏸ Pause';
     pauseButton.title = paused ? 'Resume simulation' : 'Pause simulation';
     pauseButton.setAttribute('aria-label', paused ? 'Resume simulation' : 'Pause simulation');
@@ -488,6 +488,10 @@ class App {
   }
 
   togglePause() {
+    if (this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping) {
+      void this.gestures.pause('Paused. Set neutral and enable to continue.');
+      return;
+    }
     if (this.workspaceStatus === 'ready' && this.isPhysicalWorkspace() && !this.openarmAgentProgramActive) {
       if (!this.physicalRuntime.isActive()) return;
       if (this.executionState === 'paused') {
@@ -712,10 +716,19 @@ class App {
   }
 
   stop() {
-    void this.gestures?.stopCamera('Stopped. Restart the camera to continue.');
+    const gestureOwned = this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping;
+    const authority = gestureOwned ? this.sim.getPhysicalAuthorityToken() : null;
+    const gestureStop = this.gestures?.stopCamera('Stopped. Restart the camera to continue.');
     const physicalPythonActive = this.physicalRuntime.isActive();
     this.cancelExecution('STOP');
-    if (this.isPolicyWorkspace() || (this.isPhysicalWorkspace() && !physicalPythonActive)) void this.sim.stop();
+    if (gestureOwned) {
+      // Finish the bounded input step before cancelling its physics authority.
+      // A delayed stop must never cancel a newly loaded workspace.
+      void gestureStop.then(() => {
+        const current = this.sim.getPhysicalAuthorityToken();
+        if (authority && current?.sessionId === authority.sessionId && current.epoch === authority.epoch) return this.sim.stop();
+      });
+    } else if (this.isPolicyWorkspace() || (this.isPhysicalWorkspace() && !physicalPythonActive)) void this.sim.stop();
     this.editor.highlightLine(null);
     $('simActionLabel').textContent = 'Stopped';
     this.setStatus('Simulation stopped');
@@ -984,7 +997,7 @@ class App {
 
   setAgentAccessFromTrustedEvent(access, event) {
     if (!event?.isTrusted || !['off', 'assist'].includes(access)) return false;
-    if (access === 'assist' && this.getExecutionState() !== 'idle' && (this.gestures?.enabled || this.gestures?.enabling)) { this.setStatus('Pause hand control before enabling Agent Assist.'); return false; }
+    if (access === 'assist' && (this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping)) { this.setStatus('Pause hand control before enabling Agent Assist.'); return false; }
     if (access === 'assist' && !this.agentRegistrationState.available) return false;
     if (this.agentAccess === access) return true;
     this.agentAccess = access;

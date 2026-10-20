@@ -39,6 +39,8 @@ class HardwareController:
         self.events = []
         self.gesture = None
         self.gesture_until = 0.0
+        self.gesture_moving = False
+        self.gesture_hold = None
     def _event(self, event, **details):
         self.events.append({"time": self.wall_clock(), "event": event, **details})
         self.events = self.events[-100:]
@@ -183,7 +185,9 @@ class HardwareController:
         require(isinstance(joint, str) and joint in JOINTS, "INVALID_ARGUMENT", "Choose one SO-101 joint.", 400)
         self.gesture = {"id": secrets.token_urlsafe(18), "joint": joint}
         self.gesture_until = self.clock() + self.GESTURE_SECONDS
+        self.gesture_moving = False
         self.last_sent = self._positions(sample)
+        self.gesture_hold = dict(self.last_sent)
         self.last_tick = self.clock()
         self._event("gesture_enabled", joint=joint)
     def _gesture_move(self, args):
@@ -198,22 +202,33 @@ class HardwareController:
         positions = self._positions(sample)
         self.gesture_until = self.clock() + self.GESTURE_SECONDS
         if direction == 0:
-            if self.target is not None:
+            # A settled command can still leave a small residual servo goal.
+            # Capture fresh encoders once on the transition back to neutral;
+            # repeated centered frames must not continually rebase the hold.
+            if self.gesture_moving:
+                sample = self._read()
+                self._ready()
+                require(all(sample["torque"].values()), "TORQUE_LOST", "A motor is no longer enabled.")
+                self._lease_alive()
+                self.gesture_hold[joint] = self._positions(sample)[joint]
                 self._wrote_in_operation = True
-                self.bus.write_raw_goals(sample["raw"])
+                self.bus.write_raw_goals({j: raw_target(v, j, sample["calibration"][j]) for j, v in self.gesture_hold.items()})
             self.target = None
-            self.last_sent = dict(positions)
+            self.gesture_moving = False
+            self.last_sent = dict(self.gesture_hold)
             self.state = "holding"
             return
         lo, hi = control_limits(joint, sample["calibration"][joint])
         # At most half a degree (or 1% opening) ahead of measured state, no queue.
         target = min(hi, max(lo, positions[joint] + direction * (1.0 if joint == "gripper" else 0.5)))
         require(abs(target - positions[joint]) <= (1.01 if joint == "gripper" else 0.51), "JOINT_LIMIT", "The measured joint is outside its usable range.")
-        self.target = {**positions, joint: target}
+        self.target = {**self.gesture_hold, joint: target}
+        self.gesture_moving = True
         self.command_until = self.gesture_until
         self.state = "moving"
     def _stop(self, args=None):
         self.gesture = None
+        self.gesture_moving = False
         self.target = None
         if self.bus is not None and self.operator_enabled:
             sample = self._read()
@@ -345,6 +360,9 @@ class HardwareController:
                 return
             try:
                 sample = self._read()
+                # A slow bus read may consume the remaining camera/operator lease.
+                # Never send an old moving goal after that read completes.
+                self._expire()
                 if self.state == "calibrating" and self.calibration_stage == "ranges":
                     require(not any(sample["torque"].values()), "TORQUE_LOST", "A motor became enabled during calibration.")
                     self._record_ranges()
@@ -362,6 +380,7 @@ class HardwareController:
                         speed = 10.0 if j == "gripper" else 5.0
                         delta = self.target[j] - self.last_sent[j]
                         next_values[j] = self.last_sent[j] + math.copysign(min(abs(delta), speed * dt), delta)
+                    self._lease_alive()
                     self.bus.write_raw_goals({j: raw_target(v, j, sample["calibration"][j]) for j, v in next_values.items()})
                     self.last_sent = next_values
                     if all(abs(actual[j] - self.target[j]) <= (0.2 if j == "gripper" else 0.15) for j in JOINTS):

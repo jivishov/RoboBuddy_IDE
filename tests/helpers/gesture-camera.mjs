@@ -7,9 +7,9 @@ export async function fakeWebcam(page) {
     window.testCameraTracks = [];
     navigator.mediaDevices.getUserMedia = async () => {
       if (window.testCameraDenied) throw new DOMException('Denied', 'NotAllowedError');
-      const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
+      const canvas = document.createElement('canvas'); canvas.width = window.testCameraDimensions?.[0] || 640; canvas.height = window.testCameraDimensions?.[1] || 480;
       const ctx = canvas.getContext('2d');
-      const interval = setInterval(() => {ctx.fillStyle='#243a31';ctx.fillRect(0,0,640,480);ctx.fillStyle='#cadbd1';ctx.font='20px sans-serif';ctx.fillText('Synthetic camera · browser test',60,60);},60);
+      const interval = setInterval(() => {ctx.fillStyle='#243a31';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#cadbd1';ctx.font='20px sans-serif';ctx.fillText('Synthetic camera · browser test',60,60);},60);
       const stream = canvas.captureStream(15); window.testCameraTracks.push(...stream.getTracks());
       stream.getTracks()[0].addEventListener('ended',()=>clearInterval(interval));
       return stream;
@@ -21,10 +21,11 @@ export async function fakeWebcam(page) {
         this.active=true;
       }
       postMessage(data) {
-        if(data.type === 'init') return setTimeout(()=>this.active&&this.onmessage?.({data:{type:'ready'}}),0);
+        if(data.type === 'init') return setTimeout(()=>this.active&&this.onmessage?.({data:{type:'ready'}}),window.testTrackerInitDelay || 0);
+        const imageWidth=data.bitmap?.width, imageHeight=data.bitmap?.height;
         data.bitmap?.close();
         if(window.testTrackerStalled) return;
-        setTimeout(()=>this.active&&this.onmessage?.({data:{type:'result', result:window.testHand, capturedAt:data.capturedAt - (window.testStaleFrames ? 700 : 0)}}),5);
+        setTimeout(()=>this.active&&this.onmessage?.({data:{type:'result', result:{...window.testHand,imageWidth,imageHeight}, capturedAt:data.capturedAt - (window.testStaleFrames ? 700 : 0)}}),5);
       }
       terminate(){this.active=false;}
     };

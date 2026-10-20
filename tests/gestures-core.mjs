@@ -16,3 +16,18 @@ const pinch=openHand();pinch.landmarks[0][4]={...pinch.landmarks[0][8],x:pinch.l
 assert.ok(gestureDirection(analyzeHand(pinch),neutral,'gripper')<0);
 const other=analyzeHand(openHand());other.hand='Left';assert.equal(gestureDirection(other,neutral,'shoulder_pan'),0);
 console.log('Gesture geometry, mirroring, pinch, deadband and ambiguous-input checks passed.');
+// Identical pixel geometry encoded by a wider camera must retain pose and pinch.
+const wide=openHand();
+wide.landmarks[0].forEach(point=>point.y=.5+(point.y-.5)*(16/9)/(4/3));
+const wideHand=analyzeHand(wide,16/9);
+assert.equal(wideHand.open,true);
+assert.ok(Math.abs(wideHand.pinch-neutral.pinch)<1e-12);
+assert.equal(analyzeHand(openHand(),NaN).valid,false);
+const uncertain=openHand();uncertain.handedness[0][0].score=.5;
+assert.equal(analyzeHand(uncertain).valid,false);
+assert.ok(gestureDirection(analyzeHand(openHand(.06)),neutral,'shoulder_pan',1)<0,'Reversal cannot retain the old positive direction');
+const {containedImageRect}=await import('../src/gestures/gesture-core.js');
+assert.deepEqual(containedImageRect(1280,720,640,400),{x:0,y:20,width:640,height:360});
+const portrait=containedImageRect(480,640,640,400);
+assert.deepEqual(portrait,{x:170,y:0,width:300,height:400});
+console.log('Aspect-correct geometry, confidence, reversal and preview fit passed.');

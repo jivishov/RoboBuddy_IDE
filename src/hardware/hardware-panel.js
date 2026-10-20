@@ -103,7 +103,7 @@ function render() {
   $('calCancel').disabled=state?.state!=='calibrating'||!connected||busy;
   $('calibrationFile').disabled=!readOnly||torque||!$('supportAck').checked;
   $('portSelect').disabled=connected;$('armId').disabled=connected;
-  $('stateLabel').textContent=!paired?'Helper not paired':({disconnected:'USB not connected',read_only:'Connected · read only',armed:'Motors enabled',moving:'Bounded jog in progress',holding:'Hold requested',calibrating:'Calibration in progress',fault:'Fault · stop unconfirmed'})[state.state]||state.state;
+  $('stateLabel').textContent=!paired?'Helper not paired':gestureActive?'Hand control active':({disconnected:'USB not connected',read_only:'Connected · read only',armed:'Motors enabled',moving:'Bounded jog in progress',holding:'Hold requested',calibrating:'Calibration in progress',fault:'Fault · stop unconfirmed'})[state.state]||state.state;
   $('stateDetail').textContent=state?.fault?.message||(!paired?'Starting this page does not open USB.':connected?(state.mode==='demo'?'Synthetic demo readings':state.port+' · '+state.armId):'Choose a port and Connect.');
   $('stateDot').className='dot'+(state?.state==='fault'?' fault':connected?' active':'');
   $('calibrationBadge').textContent=state?.calibrated?'CALIBRATION MATCHED':'CALIBRATION REQUIRED';

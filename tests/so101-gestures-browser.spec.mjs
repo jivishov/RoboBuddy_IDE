@@ -11,6 +11,12 @@ test('webcam targets use the existing SO-101 MuJoCo authority and pause without 
   await expect(page.getByRole('button',{name:'Set gesture neutral',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'Set gesture neutral',exact:true}).click();
   const before=await page.evaluate(()=>window.__robobuddyCi.app.sim.getState());
+  // A prior program left an unexecuted elbow goal. Taking over must replace it
+  // with a measured actuator hold before advancing the selected shoulder joint.
+  await page.evaluate(()=>{
+    const sim=window.__robobuddyCi.app.sim;
+    return sim.applyPhysicalTargets({elbow_flex:sim.getState().observation.joints.elbow_flex.positionRad+.5},{maxSteps:100,advanceSeconds:0});
+  });
   await page.getByRole('button',{name:'Enable gesture control',exact:true}).click();
   await expect(page.locator('.gesture-panel')).toHaveAttribute('data-active','true');
   await expect(page.locator('#runBtn')).toBeDisabled();
@@ -20,7 +26,9 @@ test('webcam targets use the existing SO-101 MuJoCo authority and pause without 
   expect(during.authority.sessionId).toBe(before.authority.sessionId);
   expect(during.authority.epoch).toBe(before.authority.epoch);
   expect(during.observation.simulationTimeSeconds).toBeGreaterThan(before.observation.simulationTimeSeconds);
-  await page.getByRole('button',{name:'Pause gesture control',exact:true}).click();
+  expect(Math.abs(during.observation.joints.elbow_flex.positionRad-before.observation.joints.elbow_flex.positionRad)).toBeLessThan(.08);
+  await expect(page.locator('#pauseBtn')).toBeEnabled();
+  await page.locator('#pauseBtn').click();
   await expect(page.locator('.gesture-panel')).toHaveAttribute('data-active','false');
   await expect(page.locator('#runBtn')).toBeEnabled();
   const paused=await page.evaluate(()=>window.__robobuddyCi.app.sim.getState().observation.simulationTimeSeconds);
@@ -31,6 +39,18 @@ test('webcam targets use the existing SO-101 MuJoCo authority and pause without 
   await page.getByRole('button',{name:'Enable gesture control',exact:true}).click();
   await expect(page.locator('.gesture-panel')).toHaveAttribute('data-active','true');
   await page.screenshot({path:'test-results/so101-simulator-hand-control.png'});
+  expect(await page.locator('#gestureControlBtn').evaluate(button=>getComputedStyle(button,'::before').display)).toBe('none');
+  await page.getByRole('button',{name:'Theme',exact:true}).click();
+  await page.getByRole('menuitemradio',{name:'Graphite'}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','midnight-teal');
+  expect(await page.locator('.gesture-panel').evaluate(panel=>getComputedStyle(panel).backgroundColor)).toBe('rgb(37, 40, 35)');
+  await page.screenshot({path:'test-results/so101-simulator-hand-control-dark.png'});
+  await page.locator('#stopBtn').click();
+  await expect(page.locator('.gesture-panel')).toHaveAttribute('data-stopping','false');
+  await expect(page.locator('.gesture-panel')).toHaveAttribute('data-camera','off');
+  await expect.poll(()=>page.evaluate(()=>window.__robobuddyCi.app.sim.isReady())).toBe(false);
+  await page.locator('#resetBtn').click();
+  await expect.poll(()=>page.evaluate(()=>window.__robobuddyCi.app.sim.isReady())).toBe(true);
   await page.locator('[data-ui="close"]').click();
   await page.locator('#robotSelect').selectOption('openarm');
   await expect(page.locator('#gestureControlBtn')).toBeHidden();
