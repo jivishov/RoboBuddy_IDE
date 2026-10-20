@@ -117,7 +117,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             relative = unquote(path).lstrip("/") or "hardware.html"
             target = (self.server.root / relative).resolve()
             require(target.is_relative_to(self.server.root) and not any(p.startswith(".") for p in Path(relative).parts), "NOT_FOUND", "File not found.", 404)
-            allowed = relative in ("hardware.html", "hardware.css", "design-tokens.css", "theme-system.css") or relative.startswith(("src/", "assets/"))
+            allowed = relative in ("hardware.html", "hardware.css", "gesture-control.css", "design-tokens.css", "theme-system.css") or relative.startswith(("src/", "assets/"))
             require(allowed and target.suffix in (".html", ".css", ".js", ".mjs", ".json", ".svg", ".woff2", ".png") and target.is_file(), "NOT_FOUND", "File not found.", 404)
             mime = mimetypes.guess_type(target)[0] or "application/octet-stream"
             return self._send(200, target.read_bytes(), mime)

@@ -1,6 +1,8 @@
 import {HardwareClient, helperAddress} from './bridge-client.js';
 import {JOINTS, visualPose} from './joint-map.js';
 import {iconButton} from './icons.js';
+import {GesturePanel} from '../gestures/gesture-panel.js';
+import {hardwareGestureAdapter} from '../gestures/hardware-adapter.js';
 const $ = id => document.getElementById(id);
 const names = {shoulder_pan:'Shoulder pan', shoulder_lift:'Shoulder lift', elbow_flex:'Elbow', wrist_flex:'Wrist flex', wrist_roll:'Wrist roll', gripper:'Gripper'};
 let state = null, transportOk = false, visualizer = null, visualLoading = false, visualFailed = false, mapping = {}, receivedAt = 0, setupWasReady = false, setupFocusPending = false;
@@ -20,9 +22,14 @@ for (const [id, name, label, tooltip] of [
   ['quickStopBtn','stop','Stop hardware motion','Stop · Esc. Clear the jog and request a hold. Motors remain enabled.'],
 ]) iconButton($(id), name, label, tooltip);
 const client = new HardwareClient({onState: value => {state=value;transportOk=true;receivedAt=performance.now();render();},onError: error => {transportOk=false;message(error.message,true);render();}});
+const gestures = new GesturePanel($('gestureControlBtn'), hardwareGestureAdapter(client, () => {
+  if (!state) return null;
+  return {...state, fresh: transportOk && state.fresh && state.sampleAgeMs + performance.now() - receivedAt < 600};
+}, () => $('supportAck').checked));
 function message(text,error=false) {$('feedback').textContent=text;$('feedback').classList.toggle('error',error);}
 function supported() {if (!$('supportAck').checked) throw new Error('Confirm the arm is supported and its movement area is clear.');return true;}
 async function action(operation,args={}) {
+  if (gestures.enabled || gestures.enabling) await gestures.pause('Manual control selected. Set neutral to use gestures again.');
   if(['connect','calibration_finish','calibration_import'].includes(operation)) setupFocusPending=$('setupDetails').contains(document.activeElement);
   try {message('Working…');const pending=operation==='stop' ? client.stop() : client.command(operation,args);render();const result=await pending;message(operation==='stop'?(result.state==='holding'?'Hold requested. This is a software stop; motors remain enabled.':'No panel jog was active. Check the observed motor state.'):operation==='disconnect'?'Disconnected. Motor torque is no longer monitored.':'Operation complete.');}
   catch(error) {message(error.message,true);}
@@ -71,7 +78,8 @@ function render() {
   const fresh=connected&&state?.fresh&&age!==null&&age<600;
   const busy=client.busy;
   const moving=connected&&state?.state==='moving';
-  const canMove=fresh&&state.calibrated&&state.operatorEnabled&&['armed','holding'].includes(state.state)&&!busy;
+  const gestureActive=connected&&!!state?.gesture;
+  const canMove=fresh&&state.calibrated&&state.operatorEnabled&&['armed','holding'].includes(state.state)&&!busy&&!state.gesture;
   const readOnly=connected&&state?.state==='read_only'&&fresh&&!busy;
   const torque=Object.values(state?.joints||{}).some(j=>j.torqueEnabled);
   const setupReady=connected&&state?.calibrated&&!['calibrating','fault'].includes(state.state);
@@ -105,9 +113,9 @@ function render() {
   $('torqueState').textContent=!connected||state.state==='fault'?'Unknown / not monitored':torque?'Enabled':'Disabled';
   $('connectionState').textContent=connected?state.port:paired?'Paired · no USB':'Not paired';
   const fault=state?.state==='fault';
-  $('controlBadge').textContent=fault?'FAULT':!connected?'CONTROLS LOCKED':!fresh?'STALE DATA':moving?'JOG IN PROGRESS':busy?'WORKING':state.state==='calibrating'?'CALIBRATING':canMove?'READY TO JOG':'READ ONLY';
+  $('controlBadge').textContent=fault?'FAULT':!connected?'CONTROLS LOCKED':!fresh?'STALE DATA':gestureActive?'HAND CONTROL':moving?'JOG IN PROGRESS':busy?'WORKING':state.state==='calibrating'?'CALIBRATING':canMove?'READY TO JOG':'READ ONLY';
   $('controlBadge').dataset.tone=fault?'fault':moving||busy?'moving':canMove?'ready':'';
-  $('controlHint').textContent=fault?'Control locked. Check the arm locally; a physical stop is unconfirmed.':!paired?'Pair the local helper and connect an arm to unlock manual controls.':!connected?'Connect read only, then confirm support and enable motors.':!fresh?'Waiting for fresh encoder readings. Jog controls are locked.':!state.calibrated?'Calibration required. Open Connection & calibration to set up or restore it.':moving?'A bounded jog is in progress. Stop remains available.':busy?'Command in progress. Stop remains available.':canMove?'Ready · use a jog step or enter an absolute target, then apply.':torque?'Motors are powered. Support the arm, disable motors, then enable control here.':!$('supportAck').checked?'Confirm the arm is supported, then enable motors at its current pose.':'Ready to enable motors at the measured pose.';
+  $('controlHint').textContent=fault?'Control locked. Check the arm locally; a physical stop is unconfirmed.':!paired?'Pair the local helper and connect an arm to unlock manual controls.':!connected?'Connect read only, then confirm support and enable motors.':!fresh?'Waiting for fresh encoder readings. Jog controls are locked.':!state.calibrated?'Calibration required. Open Connection & calibration to set up or restore it.':gestureActive?'Webcam hand control is active. Pause hand control to use manual jogs. Stop remains available.':moving?'A bounded jog is in progress. Stop remains available.':busy?'Command in progress. Stop remains available.':canMove?'Ready · use a jog step or enter an absolute target, then apply.':torque?'Motors are powered. Support the arm, disable motors, then enable control here.':!$('supportAck').checked?'Confirm the arm is supported, then enable motors at its current pose.':'Ready to enable motors at the measured pose.';
   if(state?.driver)$('driverLabel').textContent=state.driver;
   for(const row of $('jointRows').children) {
     const j=state?.joints?.[row.dataset.joint],input=row.querySelector('input');

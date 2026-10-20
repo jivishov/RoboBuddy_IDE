@@ -6,6 +6,7 @@
 <meta name="referrer" content="no-referrer">
 <title>SO-101 Hardware · RoboBuddy IDE</title>
 <link rel="stylesheet" href="./hardware.css">
+<link rel="stylesheet" href="./gesture-control.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
@@ -15,6 +16,7 @@
     <div class="header-title"><h1>Hardware control</h1><span>SO-101 follower</span></div>
     <div class="header-state"><span class="dot" id="stateDot"></span><div><strong id="stateLabel">Helper not paired</strong><small id="stateDetail">Starting this page does not open USB.</small></div></div>
     <span class="pill" id="modeBadge">LOCAL CONTROL</span>
+    <button id="gestureControlBtn" class="gesture-launch" type="button" aria-label="SO-101 hand gesture control" title="Webcam hand control"></button>
     <button id="quickStopBtn" class="quick-stop" aria-label="Stop hardware motion" title="Clear the jog and request a software hold. Motors remain enabled." disabled>■ Stop <kbd>Esc</kbd></button>
   </div>
   <div class="header-meta">

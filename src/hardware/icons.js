@@ -1,5 +1,7 @@
 // Small, local outline icons. No external font, script, or runtime dependency.
 const paths = {
+  camera: '<path d="M9 4 7 7H3v13h18V7h-4l-2-3H9Z"/><circle cx="12" cy="13" r="4"/>',
+  hand: '<path d="M8 13V5a2 2 0 0 1 4 0v7-9a2 2 0 0 1 4 0v9-7a2 2 0 0 1 4 0v10c0 4-3 7-7 7h-1c-2 0-4-1-5-3l-4-5a2 2 0 0 1 3-2l2 2"/>',
   link: '<path d="M10 13a5 5 0 0 0 7 .2l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7-.2l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
   refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/>',

@@ -1,5 +1,7 @@
 # RoboBuddy IDE — Physics Preview
 
+SO-101 includes opt-in **webcam hand control** in the simulator and local hardware panel: choose a joint, set neutral and explicitly enable; use palm movement to jog or pinch for the gripper. See [webcam controls and software-stop limits](docs/hardware/SO101_WEBCAM_CONTROL.md). Live-camera usability and physical operation remain pending supervised testing.
+
 The complete v0.2.0 application is deployed at [RoboBuddy IDE](https://jivishov.github.io/RoboBuddy_IDE/). This repository replaces the original application with the source snapshot from `jivishov/RoboBuddy_IDE_v020` at commit `4ea0655dbc7e58e162f6d847acef595f26a48973`. Historical model and validation provenance remains tied to its recorded source revisions.
 
 ## Visitors and help

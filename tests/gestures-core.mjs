@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {analyzeHand,gestureDirection} from '../src/gestures/gesture-core.js';
+import {openHand,fist} from './fixtures/gesture-hand.mjs';
+const neutral=analyzeHand(openHand());
+assert.equal(neutral.open,true);assert.equal(neutral.fist,false);
+assert.equal(analyzeHand(fist()).fist,true);
+assert.equal(analyzeHand({landmarks:[]}).valid,false);
+assert.equal(analyzeHand({landmarks:[...openHand().landmarks,...openHand().landmarks]}).valid,false);
+const invalid=openHand();invalid.landmarks[0][5].x=NaN;assert.equal(analyzeHand(invalid).valid,false);
+assert.equal(gestureDirection(neutral,neutral,'shoulder_pan',1),0);
+assert.ok(gestureDirection(analyzeHand(openHand(-.10)),neutral,'shoulder_pan')>0);
+assert.ok(gestureDirection(analyzeHand(openHand(.10)),neutral,'wrist_roll')<0);
+assert.equal(gestureDirection(neutral,neutral,'unknown'),0);
+assert.equal(gestureDirection(analyzeHand(fist()),neutral,'shoulder_pan'),0);
+const pinch=openHand();pinch.landmarks[0][4]={...pinch.landmarks[0][8],x:pinch.landmarks[0][8].x-.01};
+assert.ok(gestureDirection(analyzeHand(pinch),neutral,'gripper')<0);
+const other=analyzeHand(openHand());other.hand='Left';assert.equal(gestureDirection(other,neutral,'shoulder_pan'),0);
+console.log('Gesture geometry, mirroring, pinch, deadband and ambiguous-input checks passed.');

@@ -33,6 +33,10 @@ The reproducible transformations, limitations and numerical checks are documente
 in `docs/physics/asimov-provenance.md`. The added ideal torque actuators and PD
 gains are simulator assumptions, not an official Menlo policy or hardware calibration.
 
+## MediaPipe hand tracking
+
+The optional SO-101 webcam feature loads `@mediapipe/tasks-vision` 0.10.21 (Apache-2.0) from jsDelivr and Google's versioned `hand_landmarker/float16/1` task model from Google Storage. These runtime assets are not bundled into this repository. See [MediaPipe source and license](https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE) and [Hand Landmarker model documentation](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker).
+
 ## IBM Plex Sans
 
 The locally hosted UI font in `assets/fonts/ibm-plex-sans-latin-variable.woff2` is distributed under the SIL Open Font License 1.1. Source: `@fontsource-variable/ibm-plex-sans` 5.3.0. See `assets/fonts/OFL-IBM-Plex-Sans.txt` for the complete license and copyright notice.
