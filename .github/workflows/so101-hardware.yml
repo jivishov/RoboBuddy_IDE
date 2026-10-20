@@ -1,9 +1,9 @@
 name: SO-101 hardware software checks
 on:
   push:
-    branches: [main, "fix/so101-hardware-panel"]
+    branches: [main, "fix/so101-hardware-panel", "feat/so101-webcam-gestures"]
   pull_request:
-    paths: ["hardware*", "hardware_bridge/**", "src/hardware/**", "tests/hardware/**", "*RoboBuddy-Hardware*", "ide.html", ".github/workflows/so101-hardware.yml"]
+    paths: ["hardware*", "hardware_bridge/**", "src/hardware/**", "src/gestures/**", "src/app-v2.js", "gesture-control.css", "tests/hardware/**", "tests/gestures-core.mjs", "tests/gesture-adapters.mjs", "tests/fixtures/gesture*", "tests/helpers/gesture*", "tests/so101-gestures-browser.spec.mjs", "tests/hand-worker-browser.spec.mjs", "tests/gesture-lifecycle-browser.spec.mjs", "tests/helpers/sandbox-assets.mjs", "playwright*.mjs", "*RoboBuddy-Hardware*", "ide.html", ".github/workflows/so101-hardware.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -37,10 +37,12 @@ jobs:
         run: |
           node tests/hardware/joint-map-core.mjs
           node tests/hardware/bridge-client-core.mjs
+          node tests/gestures-core.mjs
+          node tests/gesture-adapters.mjs
       - name: JavaScript syntax
         shell: bash
         run: |
-          for file in src/hardware/*.js; do node --check "$file"; done
+          for file in src/hardware/*.js src/gestures/*.js; do node --check "$file"; done
       - name: Windows launcher syntax
         if: runner.os == 'Windows'
         shell: pwsh
@@ -65,6 +67,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Demo panel browser check; never opens USB
         run: npx playwright test --config playwright.hardware.config.mjs
+      - name: Webcam integration with browser MuJoCo; synthetic camera only
+        run: npx playwright test tests/so101-gestures-browser.spec.mjs tests/hand-worker-browser.spec.mjs tests/gesture-lifecycle-browser.spec.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -14,6 +14,7 @@ class HardwareController:
     SAMPLE_MAX_AGE = 0.6
     COMMAND_SECONDS = 3.0
     PERIOD = 0.1
+    GESTURE_SECONDS = 0.35
     def __init__(self, demo=False, bus_factory=None, clock=time.monotonic, wall_clock=time.time):
         self.demo, self.clock, self.wall_clock = demo, clock, wall_clock
         self.factory = bus_factory or (FakeMotorBus if demo else LeRobotMotorBus)
@@ -36,6 +37,10 @@ class HardwareController:
         self.homing_offsets = {}
         self.operator_enabled = False
         self.events = []
+        self.gesture = None
+        self.gesture_until = 0.0
+        self.gesture_moving = False
+        self.gesture_hold = None
     def _event(self, event, **details):
         self.events.append({"time": self.wall_clock(), "event": event, **details})
         self.events = self.events[-100:]
@@ -61,10 +66,13 @@ class HardwareController:
             require(type(sequence) is int and self.sequence < sequence <= 2147483647, "STALE_COMMAND", "Duplicate or out-of-order command rejected.", 400)
             timestamp = number(issued_at_ms, "issuedAtMs") / 1000
             require(abs(self.wall_clock() - timestamp) <= 2.0, "EXPIRED_COMMAND", "The command expired before reaching the helper.", 400)
+            if operation == "gesture_move":
+                require(abs(self.wall_clock() - timestamp) <= 0.25, "EXPIRED_COMMAND", "The camera command arrived too late. Enable gestures again.", 400)
             self.sequence = sequence
             require(isinstance(args, dict), "INVALID_ARGUMENT", "Command arguments must be an object.", 400)
             operations = {"connect": self._connect, "disconnect": self._disconnect, "arm": self._arm,
                           "move": self._move, "stop": self._stop, "disable": self._disable,
+                          "gesture_start": self._gesture_start, "gesture_move": self._gesture_move,
                           "calibration_start": self._calibration_start, "calibration_middle": self._calibration_middle,
                           "calibration_finish": self._calibration_finish, "calibration_cancel": self._calibration_cancel,
                           "calibration_import": self._calibration_import}
@@ -148,6 +156,7 @@ class HardwareController:
     def _positions(self, sample):
         return {j: normalized(sample["raw"][j], j, sample["calibration"][j]) for j in JOINTS}
     def _move(self, args):
+        require(self.gesture is None, "GESTURE_ACTIVE", "Pause gesture control before manual jogging.")
         require(self.state in ("armed", "moving", "holding") and self.operator_enabled, "NOT_ARMED", "Explicitly enable the motors before jogging.")
         sample = self._ready()
         require(all(sample["torque"].values()), "TORQUE_LOST", "A motor is no longer enabled.")
@@ -167,7 +176,59 @@ class HardwareController:
         self.last_tick = self.clock()
         self.state = "moving"
         self._event("manual_jog", joint=joint, requested=requested)
+    def _gesture_start(self, args):
+        require(args.get("supported") is True, "SUPPORT_REQUIRED", "Confirm the arm is supported, mounted and clear.")
+        require(self.state in ("armed", "holding") and self.operator_enabled and self.target is None and self.gesture is None, "NOT_ARMED", "Enable motors and finish any manual jog before enabling gestures.")
+        sample = self._ready()
+        require(all(sample["torque"].values()), "TORQUE_LOST", "A motor is no longer enabled.")
+        joint = args.get("joint")
+        require(isinstance(joint, str) and joint in JOINTS, "INVALID_ARGUMENT", "Choose one SO-101 joint.", 400)
+        self.gesture = {"id": secrets.token_urlsafe(18), "joint": joint}
+        self.gesture_until = self.clock() + self.GESTURE_SECONDS
+        self.gesture_moving = False
+        self.last_sent = self._positions(sample)
+        self.gesture_hold = dict(self.last_sent)
+        self.last_tick = self.clock()
+        self._event("gesture_enabled", joint=joint)
+    def _gesture_move(self, args):
+        require(self.gesture is not None and secrets.compare_digest(str(args.get("gestureId", "")), self.gesture["id"]), "GESTURE_EXPIRED", "Gesture control expired. Set neutral and explicitly enable it again.")
+        joint = args.get("joint")
+        require(joint == self.gesture["joint"], "INVALID_ARGUMENT", "Pause gestures before selecting another joint.", 400)
+        direction = number(args.get("direction"), "direction")
+        require(-1 <= direction <= 1, "INVALID_ARGUMENT", "Gesture direction must be between -1 and 1.", 400)
+        require(self.operator_enabled and self.state in ("armed", "holding", "moving"), "NOT_ARMED", "Motors must be explicitly enabled.")
+        sample = self._ready()
+        require(all(sample["torque"].values()), "TORQUE_LOST", "A motor is no longer enabled.")
+        positions = self._positions(sample)
+        self.gesture_until = self.clock() + self.GESTURE_SECONDS
+        if direction == 0:
+            # A settled command can still leave a small residual servo goal.
+            # Capture fresh encoders once on the transition back to neutral;
+            # repeated centered frames must not continually rebase the hold.
+            if self.gesture_moving:
+                sample = self._read()
+                self._ready()
+                require(all(sample["torque"].values()), "TORQUE_LOST", "A motor is no longer enabled.")
+                self._lease_alive()
+                self.gesture_hold[joint] = self._positions(sample)[joint]
+                self._wrote_in_operation = True
+                self.bus.write_raw_goals({j: raw_target(v, j, sample["calibration"][j]) for j, v in self.gesture_hold.items()})
+            self.target = None
+            self.gesture_moving = False
+            self.last_sent = dict(self.gesture_hold)
+            self.state = "holding"
+            return
+        lo, hi = control_limits(joint, sample["calibration"][joint])
+        # At most half a degree (or 1% opening) ahead of measured state, no queue.
+        target = min(hi, max(lo, positions[joint] + direction * (1.0 if joint == "gripper" else 0.5)))
+        require(abs(target - positions[joint]) <= (1.01 if joint == "gripper" else 0.51), "JOINT_LIMIT", "The measured joint is outside its usable range.")
+        self.target = {**self.gesture_hold, joint: target}
+        self.gesture_moving = True
+        self.command_until = self.gesture_until
+        self.state = "moving"
     def _stop(self, args=None):
+        self.gesture = None
+        self.gesture_moving = False
         self.target = None
         if self.bus is not None and self.operator_enabled:
             sample = self._read()
@@ -181,6 +242,7 @@ class HardwareController:
         require(args.get("supported") is True, "SUPPORT_REQUIRED", "Support the arm before removing motor torque.")
         require(self.bus is not None, "NOT_CONNECTED", "Connect before disabling motors.")
         self.target = None
+        self.gesture = None
         self._wrote_in_operation = True
         self.bus.disable()
         sample = self._read()
@@ -265,6 +327,12 @@ class HardwareController:
                 self.range_mins[j] = min(self.range_mins[j], value)
                 self.range_maxes[j] = max(self.range_maxes[j], value)
     def _expire(self):
+        if self.gesture is not None and self.clock() > self.gesture_until:
+            try:
+                self._stop()
+                self._event("gesture_deadline_hold")
+            except Exception as exc:
+                self._fault("GESTURE_STOP_UNCONFIRMED", str(exc))
         if self.owner is not None and self.clock() > self.lease_until:
             try:
                 self._stop()
@@ -280,6 +348,7 @@ class HardwareController:
                 self.state = "read_only"
             self._event("operator_lease_expired")
     def _fault(self, code, detail):
+        self.gesture = None
         self.target = None
         self.state = "fault"
         self.fault = {"code": code, "message": detail, "physicalStopConfirmed": False}
@@ -291,6 +360,9 @@ class HardwareController:
                 return
             try:
                 sample = self._read()
+                # A slow bus read may consume the remaining camera/operator lease.
+                # Never send an old moving goal after that read completes.
+                self._expire()
                 if self.state == "calibrating" and self.calibration_stage == "ranges":
                     require(not any(sample["torque"].values()), "TORQUE_LOST", "A motor became enabled during calibration.")
                     self._record_ranges()
@@ -308,6 +380,7 @@ class HardwareController:
                         speed = 10.0 if j == "gripper" else 5.0
                         delta = self.target[j] - self.last_sent[j]
                         next_values[j] = self.last_sent[j] + math.copysign(min(abs(delta), speed * dt), delta)
+                    self._lease_alive()
                     self.bus.write_raw_goals({j: raw_target(v, j, sample["calibration"][j]) for j, v in next_values.items()})
                     self.last_sent = next_values
                     if all(abs(actual[j] - self.target[j]) <= (0.2 if j == "gripper" else 0.15) for j in JOINTS):
@@ -331,6 +404,7 @@ class HardwareController:
                                  "limits": control_limits(j, c) if calibrated else None,
                                  "requested": self.target.get(j) if self.target else None}
             return {"apiVersion": API_VERSION, "mode": "demo" if self.demo else "hardware",
+                    "capabilities": {"webcamGestures": True}, "gesture": copy.deepcopy(self.gesture),
                     "state": self.state, "connected": self.bus is not None,
                     "port": self.bus.port if self.bus else None,
                     "armId": self.bus.robot_id if self.bus else None,

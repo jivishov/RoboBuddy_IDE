@@ -4,7 +4,7 @@ const pythonLauncher = process.platform === 'win32' ? 'py -3' : 'python3';
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: /(?:visitor-site-browser|visitor-ide-browser|asimov-physical-browser|asimov-whole-body-browser|browser-smoke|microduck-policy-parity|webmcp|physics-slice-browser|physics-load-failure-browser|so101-physics-browser|so101-live-python-browser|so101-manipulation-browser|so101-ide-physical-browser|openarm-phase5a-browser|openarm-workcell-browser|openarm-general-scene-browser|lekiwi-phase5b-browser|lekiwi-conformance-browser|lekiwi-presentation-browser|microduck-phase5c-browser|microduck-interfaces-browser|microduck-presentation-browser|unitree-g1-conformance-browser|unitree-g1-phase5d-browser|unitree-g1-presentation-browser|webmcp-robot-controls)\.spec\.mjs/,
+  testMatch: /(?:visitor-site-browser|visitor-ide-browser|asimov-physical-browser|asimov-whole-body-browser|browser-smoke|microduck-policy-parity|webmcp|physics-slice-browser|physics-load-failure-browser|gesture-lifecycle-browser|hand-worker-browser|so101-gestures-browser|so101-physics-browser|so101-live-python-browser|so101-manipulation-browser|so101-ide-physical-browser|openarm-phase5a-browser|openarm-workcell-browser|openarm-general-scene-browser|lekiwi-phase5b-browser|lekiwi-conformance-browser|lekiwi-presentation-browser|microduck-phase5c-browser|microduck-interfaces-browser|microduck-presentation-browser|unitree-g1-conformance-browser|unitree-g1-phase5d-browser|unitree-g1-presentation-browser|webmcp-robot-controls)\.spec\.mjs/,
   workers: process.env.CI ? 1 : undefined,
   timeout: 120_000,
   expect: { timeout: 20_000 },

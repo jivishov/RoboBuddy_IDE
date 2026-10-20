@@ -1,8 +1,10 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {sandboxAssets} from '../helpers/sandbox-assets.mjs';
 
 test.beforeEach(async({page})=>{
+  await sandboxAssets(page);
   // Optional, test-only mirrors of the exact pinned production assets for offline runners.
   if(!process.env.HARDWARE_OFFLINE_MESH) return;
   await page.route('https://cdn.jsdelivr.net/npm/three@0.180.0/**',async route=>{

@@ -14,6 +14,8 @@ import { LivePythonBridge } from './runtime/live-python-bridge.js';
 import { MicroDuckPhysicalBridge } from './runtime/microduck-physical-bridge.js';
 import { applyPhysicsPreviewStatus } from './physics/ui-status.js';
 import { installPhysicalAgentFacade } from './webmcp/physical-agent-facade.js';
+import { GesturePanel } from './gestures/gesture-panel.js';
+import { simulatorGestureAdapter } from './gestures/simulator-adapter.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -84,6 +86,7 @@ class App {
       onState: () => { if (!$('bottomPanel').classList.contains('collapsed')) this.renderPanels(); },
     });
     this.microduckDeck.setActive(false);
+    this.gestures = new GesturePanel($('gestureControlBtn'), simulatorGestureAdapter(this));
     this.renderHighContrastSceneControl();
     this.editor = new IdeEditor($('editor'), {
       onChange: (f, v) => this.onEdit(f, v),
@@ -140,6 +143,7 @@ class App {
   }
 
   async loadProfile(id, { preserve = true, taskId = '' } = {}) {
+    await this.gestures?.close({restoreFocus: false});
     if (preserve && Object.keys(this.files).length) this.save(false);
     this.cancelExecution('PROFILE_CHANGED');
     const generation = ++this.workspaceGeneration;
@@ -402,6 +406,7 @@ class App {
 
   async resetSimulation({ cancel = true } = {}) {
     if (this.workspaceStatus !== 'ready') return false;
+    await this.gestures?.pause('Simulator reset. Set neutral to continue.');
     if (cancel) this.cancelExecution('RESET');
     const generation = this.workspaceGeneration;
     const profileId = this.profileId;
@@ -427,12 +432,15 @@ class App {
     const pauseButton = $('pauseBtn');
     const policyReady = workspaceReady && this.isPolicyWorkspace();
     const physical = workspaceReady && this.isPhysicalWorkspace();
-    pauseButton.disabled = !active && !policyReady;
+    pauseButton.disabled = !active && !policyReady && !this.gestures?.enabled && !this.gestures?.enabling;
     pauseButton.textContent = paused ? '▶ Resume' : '⏸ Pause';
     pauseButton.title = paused ? 'Resume simulation' : 'Pause simulation';
     pauseButton.setAttribute('aria-label', paused ? 'Resume simulation' : 'Pause simulation');
     pauseButton.setAttribute('aria-pressed', String(paused));
-    $('runBtn').disabled = active || !executableWorkspace;
+    const gestureActive = this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping;
+    $('gestureControlBtn').hidden = this.profileId !== 'so101';
+    $('gestureControlBtn').disabled = !workspaceReady;
+    $('runBtn').disabled = active || !executableWorkspace || gestureActive;
     $('stepBtn').disabled = physical || (!this.isPolicyWorkspace() && active) || !executableWorkspace || (this.isPolicyWorkspace() && active && !paused);
     $('stepBtn').title = physical ? 'Physical MuJoCo Python uses live async execution; edit code and use Run.' : 'Step physical action (F10)';
     $('cursorBtn').disabled = physical || active || !executableWorkspace;
@@ -441,7 +449,7 @@ class App {
   }
 
   beginExecution() {
-    if (this.executionState !== 'idle') return null;
+    if (this.getExecutionState() !== 'idle') return null;
     const token = ++this.runToken;
     this.executionState = 'running';
     this.updateExecutionControls();
@@ -480,6 +488,10 @@ class App {
   }
 
   togglePause() {
+    if (this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping) {
+      void this.gestures.pause('Paused. Set neutral and enable to continue.');
+      return;
+    }
     if (this.workspaceStatus === 'ready' && this.isPhysicalWorkspace() && !this.openarmAgentProgramActive) {
       if (!this.physicalRuntime.isActive()) return;
       if (this.executionState === 'paused') {
@@ -704,9 +716,19 @@ class App {
   }
 
   stop() {
+    const gestureOwned = this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping;
+    const authority = gestureOwned ? this.sim.getPhysicalAuthorityToken() : null;
+    const gestureStop = this.gestures?.stopCamera('Stopped. Restart the camera to continue.');
     const physicalPythonActive = this.physicalRuntime.isActive();
     this.cancelExecution('STOP');
-    if (this.isPolicyWorkspace() || (this.isPhysicalWorkspace() && !physicalPythonActive)) void this.sim.stop();
+    if (gestureOwned) {
+      // Finish the bounded input step before cancelling its physics authority.
+      // A delayed stop must never cancel a newly loaded workspace.
+      void gestureStop.then(() => {
+        const current = this.sim.getPhysicalAuthorityToken();
+        if (authority && current?.sessionId === authority.sessionId && current.epoch === authority.epoch) return this.sim.stop();
+      });
+    } else if (this.isPolicyWorkspace() || (this.isPhysicalWorkspace() && !physicalPythonActive)) void this.sim.stop();
     this.editor.highlightLine(null);
     $('simActionLabel').textContent = 'Stopped';
     this.setStatus('Simulation stopped');
@@ -957,7 +979,7 @@ class App {
   }
 
   getAgentAccess() { return this.agentAccess; }
-  getExecutionState() { return this.executionState; }
+  getExecutionState() { return this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping ? 'running' : this.executionState; }
 
   onAgentAccessChange(listener) {
     this.agentAccessListeners.add(listener);
@@ -975,6 +997,7 @@ class App {
 
   setAgentAccessFromTrustedEvent(access, event) {
     if (!event?.isTrusted || !['off', 'assist'].includes(access)) return false;
+    if (access === 'assist' && (this.gestures?.enabled || this.gestures?.enabling || this.gestures?.stopping)) { this.setStatus('Pause hand control before enabling Agent Assist.'); return false; }
     if (access === 'assist' && !this.agentRegistrationState.available) return false;
     if (this.agentAccess === access) return true;
     this.agentAccess = access;
